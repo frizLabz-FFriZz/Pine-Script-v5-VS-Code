@@ -27,7 +27,7 @@ Simply hover over the import statement to view the source code in a hover over p
 
 ![LibHover](https://cdn.discordapp.com/attachments/1004112195707207683/1181022167878619197/LibHover.gif?ex=657f8b9b&is=656d169b&hm=07043670cb8462b34ff75f9e9141d43597733d59a885037f91080c444d78fa29&)
 
-**Function Signatures && Code Completions** 
+**Function Signatures && Code Completions**  
 View function parameter information as you type. Intelligent suggestions for built-ins and parameters..
 
 ![Signatures_and_Completions](https://media.discordapp.net/attachments/1004112195707207683/1190801687527563345/signatureCompletions.gif?ex=65a31f7e&is=6590aa7e&hm=c61b886d7dae9175b5badf9f7bce3daced22d4587fa5b184c131693595706e1b&=&width=757&height=400)
