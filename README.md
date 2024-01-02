@@ -22,7 +22,7 @@ Autocomplete import statements with relevant library suggestions.
 
 ![LibCompletions](https://cdn.discordapp.com/attachments/1004112195707207683/1181021260961034421/LibCompletion.gif?ex=657f8ac2&is=656d15c2&hm=a71b4eb7b5cc5d5408a186421623ff915431d1daee8d2e083a6328b12f92fbf2&)
 
-**Quick Library Source Code Refrence**
+**Quick Library Source Code Refrence**  
 Simply hover over the import statement to view the source code in a hover over pop-up.
 
 ![LibHover](https://cdn.discordapp.com/attachments/1004112195707207683/1181022167878619197/LibHover.gif?ex=657f8b9b&is=656d169b&hm=07043670cb8462b34ff75f9e9141d43597733d59a885037f91080c444d78fa29&)
@@ -62,7 +62,7 @@ Automatically generate and insert types for untyped variables in your scripts.
 ***
 
 ### **Installation**
-**Via Visual Studio Code**
+**Via Visual Studio Code**  
 - Open VS Code and navigate to the Extensions view by clicking on the square iconin the sidebar or pressing Ctrl+Shift+X.
 - Search for Pinescript v5 Language Server in the Extensions view search bar.
 - Click on the Install button.
