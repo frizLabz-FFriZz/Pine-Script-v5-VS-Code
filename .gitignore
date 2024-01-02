@@ -1,0 +1,41 @@
+# .gitignore
+
+# Ignore node_modules folder
+node_modules
+
+# Ignore all log files
+*.log
+
+# Ignore all .env files
+*.env
+
+# Ignore the .vscode folder
+.vscode
+
+# Ignore build output
+out
+
+# Ignore dist folder
+dist
+
+# Ignore coverage folder
+coverage
+
+# Ignore npm debug logs
+npm-debug.log*
+
+# Ignore yarn debug logs
+yarn-debug.log*
+
+# Ignore yarn error logs
+yarn-error.log*
+
+# Ignore package-lock.json to avoid conflicts (optional)
+# package-lock.json
+
+# Ignore .DS_Store on macOS
+.DS_Store
+
+# Pine Script folder
+Pine Scripts
+PineScripts

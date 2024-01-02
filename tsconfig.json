@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "typeRoots": ["./node_modules/@types"],
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "target": "ESNext",
+    "outDir": "out",
+    "lib": [
+      "es6",
+      "dom"
+    ],
+    "rootDir": "src",
+    "strict": true
+  },
+  "include": [
+    "src/**/**.ts",
+    "types/**/*",
+    "ExtensionExtras/.vscode-test.js",
+    "webpack.config.js"
+ ],
+  "exclude": [
+    "node_modules",
+    "**/*.d.ts",
+    "./other",
+    ".vscode-test"
+  ]
+}

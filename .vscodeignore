@@ -1,0 +1,60 @@
+# Exclude the .vscode settings and test directories
+.vscode/**
+.vscode-test/**
+
+# Exclude the TypeScript output directory
+out/**
+
+# Exclude the node_modules directory
+node_modules/**
+
+# Exclude the source directory where raw TypeScript files reside
+src/**
+
+# Exclude various configuration files and directories
+.gitignore
+.yarnrc
+webpack.config.cjs
+vsc-extension-quickstart.md
+
+# Exclude TypeScript and ESLint configuration files from all directories
+**/tsconfig.json
+**/.eslintrc.json
+
+# Exclude source map files from all directories
+**/*.map
+**/*.js.map
+
+# Exclude TypeScript source files from all directories
+**/*.ts
+
+# Exclude the history directory if it's a folder used by an editor for local history
+.history
+
+# Additionally, you might want to exclude other files that are not needed in the packaged extension:
+# For example, README files, or other documentation that is not user-facing
+**/*.md
+
+# If there are any specific build scripts or tools configurations that are not needed in the final package
+build-scripts/
+tools/
+
+# If you have any CI configuration files or scripts
+**/.travis.yml
+**/appveyor.yml
+**/.github/
+**/.gitlab-ci.yml
+
+# If you have any test files or test configuration files
+**/*test*/
+**/*spec*/
+**/karma.conf.js
+**/jest.config.js
+
+# If you have any example files or directories
+examples/
+**/*.example
+**/*.sample
+
+# If you have any graphic assets that are not used directly by the extension
+assets/images/design/

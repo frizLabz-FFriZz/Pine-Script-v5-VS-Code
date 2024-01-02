@@ -1,0 +1,342 @@
+{
+  "name": "pinescript",
+  "publisher": "frizLabz",
+  "displayName": "Pine Script v5",
+  "description": "Pine Script Language Server",
+  "version": "0.0.1",
+  "type": "commonjs",
+  "engines": {
+    "vscode": "^1.85.0",
+    "node": ">=16.0.0"
+  },
+  "categories": [
+    "Language Packs",
+    "Programming Languages",
+    "Themes"
+  ],
+  "keywords": [
+    "pine",
+    "pinescript",
+    "Pine Script",
+    "Pinescript",
+    "TradingView",
+    "TradingView.com"
+  ],
+  "activationEvents": [],
+  "icon": "media/PineLogo.png",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "secrets": true
+  },
+  "main": "./dist/extension.js",
+  "contributes": {
+    "themes": [
+      {
+        "label": "Pine-Original-Dark",
+        "id": "pine-original-dark",
+        "uiTheme": "vs-dark",
+        "path": "themes/Pine-Original.json"
+      },
+      {
+        "label": "Pine-Basic",
+        "id": "Pine-Theme-Basic",
+        "uiTheme": "vs-dark",
+        "path": "themes/Pine-Basic.json"
+      },
+      {
+        "label": "Pine-Universal",
+        "id": "Pine-Theme-Universal",
+        "uiTheme": "vs-dark",
+        "path": "themes/Pine-Universal.json"
+      },
+      {
+        "label": "Pine-Extended# 1",
+        "id": "Pine-Theme#1",
+        "uiTheme": "vs-dark",
+        "path": "themes/Pine-Extended#1.json"
+      },
+      {
+        "label": "Pine-Extended# 2",
+        "id": "Pine-Theme#2",
+        "uiTheme": "vs-dark",
+        "path": "themes/Pine-Extended#2.json"
+      },
+      {
+        "label": "Pine-Extended# 3",
+        "id": "Pine-Theme#3",
+        "uiTheme": "vs-dark",
+        "path": "themes/Pine-Extended#3.json"
+      },
+      {
+        "label": "Pine-Extended# 4",
+        "id": "Pine-Theme#4",
+        "uiTheme": "vs-dark",
+        "path": "themes/Pine-Extended#4.json"
+      },
+      {
+        "label": "Pine-Extended# 5",
+        "id": "Pine-Theme#5",
+        "uiTheme": "vs-dark",
+        "path": "themes/Pine-Extended#5.json"
+      },
+      {
+        "label": "Pine-Extended# 6",
+        "id": "Pine-Theme#6",
+        "uiTheme": "vs-dark",
+        "path": "themes/Pine-Extended#6.json"
+      },
+      {
+        "label": "Pine-Extended# 8",
+        "id": "Pine-Theme#8",
+        "uiTheme": "vs-dark",
+        "path": "themes/Pine-Extended#8.json"
+      },
+      {
+        "label": "Pine-Extended# 9",
+        "id": "Pine-Theme#9",
+        "uiTheme": "vs-dark",
+        "path": "themes/Pine-Extended#9.json"
+      },
+      {
+        "label": "Pine-Extended#10",
+        "id": "Pine-Theme#10",
+        "uiTheme": "vs-dark",
+        "path": "themes/Pine-Extended#10.json"
+      },
+      {
+        "label": "Pine-Extended#12",
+        "id": "Pine-Theme#12",
+        "uiTheme": "vs-dark",
+        "path": "themes/Pine-Extended#12.json"
+      },
+      {
+        "label": "Pine-Extended#13",
+        "id": "Pine-Theme#13",
+        "uiTheme": "vs-dark",
+        "path": "themes/Pine-Extended#13.json"
+      },
+      {
+        "label": "Pine-Extended#14",
+        "id": "Pine-Theme#14",
+        "uiTheme": "vs-dark",
+        "path": "themes/Pine-Extended#14.json"
+      },
+      {
+        "label": "Pine-Light#1",
+        "id": "Pine-Light#1",
+        "uiTheme": "vs",
+        "path": "themes/Pine-Light#1.json"
+      },
+      {
+        "label": "Pine-Light#2",
+        "id": "Pine-Light#2",
+        "uiTheme": "vs",
+        "path": "themes/Pine-Light#2.json"
+      }
+    ],
+    "configuration": {},
+    "submenus": [
+      {
+        "id": "pine.mysubmenuNonPineFile",
+        "label": " Pine Script v5"
+      },
+      {
+        "id": "pine.mysubmenu2",
+        "label": " Pine Script v5"
+      }
+    ],
+    "commands": [
+      {
+        "command": "pine.mysubmenuNonPineFile",
+        "title": "Pine Script Options",
+        "category": "navigation",
+        "when": "!editorLangId == pine"
+      },
+      {
+        "command": "pine.mysubmenu2",
+        "title": "Pine Script Options",
+        "category": "navigation",
+        "when": "editorLangId == pine"
+      },
+      {
+        "command": "pine.typify",
+        "title": "Typify Variables",
+        "category": "navigation"
+      },
+      {
+        "command": "pine.completionAccepted",
+        "title": "Completion Accepted"
+      },
+      {
+        "command": "pine.getStandardList",
+        "title": "Open Built-in Script",
+        "category": "navigation"
+      },
+      {
+        "command": "pine.docString",
+        "title": "Generate Docstring",
+        "when": "editorLangId == pine",
+        "category": "navigation"
+      },
+      {
+        "command": "pine.setUsername",
+        "title": "Set/Remove Username",
+        "category": "navigation",
+        "when": "editorLangId == pine"
+      },
+      {
+        "command": "pine.getIndicatorTemplate",
+        "title": "New Indicator",
+        "category": "navigation"
+      },
+      {
+        "command": "pine.getStrategyTemplate",
+        "title": "New Strategy",
+        "category": "navigation"
+      },
+      {
+        "command": "pine.getLibraryTemplate",
+        "title": "New Library",
+        "category": "navigation"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "submenu": "pine.mysubmenuNonPineFile",
+          "when": "editorLangId !== pine",
+          "group": "Pine"
+        },
+        {
+          "submenu": "pine.mysubmenu2",
+          "group": "1Pine",
+          "when": "editorLangId == pine"
+        },
+        {
+          "command": "pine.typify",
+          "group": "1Pine",
+          "when": "editorLangId == pine && editorHasSelection"
+        },
+        {
+          "command": "pine.docString",
+          "group": "1Pine",
+          "when": "editorLangId == pine && editorHasSelection"
+        },
+        {
+          "command": "pine.getStandardList",
+          "group": "1Pine",
+          "when": "editorLangId == pine"
+        }
+      ],
+      "pine.mysubmenuNonPineFile": [
+        {
+          "command": "pine.getStandardList"
+        },
+        {
+          "command": "pine.getIndicatorTemplate"
+        },
+        {
+          "command": "pine.getStrategyTemplate"
+        },
+        {
+          "command": "pine.getLibraryTemplate"
+        }
+      ],
+      "pine.mysubmenu2": [
+        {
+          "command": "pine.docString"
+        },
+        {
+          "command": "pine.setUsername"
+        },
+        {
+          "command": "pine.typify"
+        },
+        {
+          "command": "pine.getIndicatorTemplate"
+        },
+        {
+          "command": "pine.getStrategyTemplate"
+        },
+        {
+          "command": "pine.getLibraryTemplate"
+        }
+      ]
+    },
+    "snippets": [],
+    "languages": [
+      {
+        "id": "pine",
+        "icon": {
+          "light": "media/PineLogo.png",
+          "dark": "media/PineLogo.png"
+        },
+        "aliases": [
+          "pinescript",
+          "pine"
+        ],
+        "extensions": [
+          ".ps",
+          ".pine",
+          ".pinescript"
+        ],
+        "configuration": "config/language-configuration.json"
+      }
+    ],
+    "documentSymbolProvider": [
+      {
+        "language": "pine",
+        "scheme": "file"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "pine",
+        "scopeName": "source.pine",
+        "path": "themes/pine.tmLanguage.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile",
+    "lint": "eslint src --ext ts",
+    "tests": "node ./out/test/runTest.js",
+    "runTest": "npm run pretest && npm run tests",
+    "vsce-package": "vsce package -o pinescriptv5.vsix"
+  },
+  "dependencies": {
+    "debounce": "^2.0.0",
+    "lodash": "^4.17.21",
+    "node-fetch": "^3.3.2",
+    "typedoc": "^0.25.6"
+  },
+  "devDependencies": {
+    "@types/debounce": "^1.2.4",
+    "@types/lodash": "^4.14.202",
+    "@types/node": "^20.10.6",
+    "@types/source-map-support": "^0.5.10",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.16.0",
+    "@typescript-eslint/parser": "^6.16.0",
+    "eslint": "^8.56.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-airbnb-typescript": "^17.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-jsx-a11y": "^6.8.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "source-map-support": "^0.5.21",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  }
+}
