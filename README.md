@@ -97,11 +97,9 @@ Your feedback is valuable and contributes to the continuous development and enha
 
 ### **Version Control**
 
-This project uses Git for version control, in conjunction with `standard-version` to automate versioning and CHANGELOG generation. This ensures that our versioning practices are consistent and semantic.
+This project uses Git for version control
 
-When contributing, please follow the conventions outlined in [CONTRIBUTING.md](https://github.com/FFriZ/Pine-Script-v5-VS-Code/blob/main/CONTRIBUTING.md) for commit messages, which `standard-version` relies on to determine version bumps and generate changelogs.
-
-For more information on `standard-version`, see the [official documentation](https://github.com/conventional-changelog/standard-version).
+When contributing, please follow the conventions outlined in [CONTRIBUTING.md](https://github.com/FFriZ/Pine-Script-v5-VS-Code/blob/main/CONTRIBUTING.md) for commit messages.
 
 
 ### **To-Do List**
