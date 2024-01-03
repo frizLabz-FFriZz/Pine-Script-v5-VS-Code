@@ -132,9 +132,7 @@ export class PineRequest {
   async getBuiltInScript(scriptIdPart: string): Promise<any> {
     try {
       const url = `${this.pineUrl}get/${encodeURIComponent(scriptIdPart)}/last`
-      const r = this.request('GET', url)
-      console.log(JSON.stringify(r))
-      return await r
+      return await this.request('GET', url)
     } catch (error) {
       console.error(error)
     }
