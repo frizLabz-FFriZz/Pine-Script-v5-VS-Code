@@ -31,7 +31,7 @@
     "secrets": true
   },
   "scripts": {
-    "build-docs": "typedoc",
+    "build-docs": "typedoc --name \"Pine Script v5\"",
     "vscode:prepublish": "npm run package",
     "compile": "webpack",
     "watch": "webpack --watch",
