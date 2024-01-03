@@ -30,6 +30,21 @@
     },
     "secrets": true
   },
+  "scripts": {
+    "release": "standard-version",
+    "build-docs": "typedoc",
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile",
+    "lint": "eslint src --ext ts",
+    "tests": "node ./out/test/runTest.js",
+    "runTest": "npm run pretest && npm run tests",
+    "vsce-package": "vsce package -o pinescriptv5.vsix"
+  },
   "main": "./dist/extension.js",
   "contributes": {
     "themes": [
@@ -299,20 +314,6 @@
       }
     ]
   },
-  "scripts": {
-    "build-docs": "typedoc",
-    "vscode:prepublish": "npm run package",
-    "compile": "webpack",
-    "watch": "webpack --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "npm run compile-tests && npm run compile",
-    "lint": "eslint src --ext ts",
-    "tests": "node ./out/test/runTest.js",
-    "runTest": "npm run pretest && npm run tests",
-    "vsce-package": "vsce package -o pinescriptv5.vsix"
-  },
   "dependencies": {
     "debounce": "^2.0.0",
     "lodash": "^4.17.21",
@@ -334,6 +335,7 @@
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "source-map-support": "^0.5.21",
+    "standard-version": "^9.5.0",
     "ts-loader": "^9.5.1",
     "typedoc": "^0.25.6",
     "typescript": "^5.3.3",

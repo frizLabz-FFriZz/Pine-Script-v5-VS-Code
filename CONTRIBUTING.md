@@ -1,68 +1,116 @@
 # Contributing to Pine-Script-v5-VS-Code
 
-👋 Welcome, and thank you for considering contributing to Pine-Script-v5-VS-Code! Your help is essential for keeping it great.
+Thank you for your interest in contributing to Pine-Script-v5-VS-Code. Your contributions are highly appreciated!
 
 ## Code of Conduct
 
-Please note we have a code of conduct, please follow it in all your interactions with the project.
+Adhere to our code of conduct in all interactions with the project.
 
-## How Can I Contribute?
+## Contributions
 
 ### Reporting Bugs
 
-Before creating bug reports, please check the list as you might find out that you don't need to create one. When you are creating a bug report, please include as many details as possible by filling in the template. This helps maintainers and the community understand your report.
+- Check existing issues before submitting a new one.
+- Use the provided template to report bugs, including as many details as possible.
 
-#### Before Submitting A Bug Report
+#### Bug Report Template
 
-* **Check the FAQs** for a list of common questions and problems.
-* **Perform a cursory search** to see if the problem has already been reported.
+**Title:**
 
-#### How Do I Submit A Good Bug Report?
+`[Type]: Short description of the bug`
 
-Bugs are tracked as GitHub issues. Create an issue and provide the necessary information by filling in the template.
+**Description:**
+A clear and concise description of what the bug is.
+
+**Steps To Reproduce:**
+1. Go to '...'
+2. Click on '....'
+3. Scroll down to '....'
+4. See error
+
+**Expected Behavior:**
+A clear and concise description of what you expected to happen.
+
+**Actual Behavior:**
+What actually happened. Include screenshots if applicable.
+
+**VS Code Version:**
+Specify the version of Visual Studio Code you're using.
+
+**Operating System:**
+Provide details about your operating system.
+
+**Additional Context:**
+Add any other context about the problem here.
+
+`Copy and fill out this template when submitting a bug report to ensure that all necessary details are provided.`
+
+---
 
 ### Suggesting Enhancements
 
-This section guides you through submitting an enhancement suggestion for Pine-Script-v5-VS-Code, including new features and minor improvements to existing functionality.
+- Review existing suggestions before making a new one.
+- Provide detailed information in your enhancement suggestion using the provided template.
 
-Before creating enhancement suggestions, please check the list as you might find out that you don't need to create one. When you are creating an enhancement suggestion, please include as many details as possible by filling in the template.
+### Code Contributions
 
-### Your First Code Contribution
-
-Unsure where to begin contributing to Pine-Script-v5-VS-Code? You can start by looking through these `beginner` and `help-wanted` issues.
-
-### Pull Requests
-
-Here are some steps to guide you through the process:
-
-1. Follow all instructions in the pull request template.
-2. Follow the styleguides.
+- Start with beginner and help-wanted issues if you're new.
+- Follow the instructions in the pull request template.
 
 ## Styleguides
 
 ### Git Commit Messages
 
-* Use the present tense ("Add feature" not "Added feature")
-* Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
-* Limit the first line to 72 characters or less
-* Reference issues and pull requests liberally after the first line
+Follow Conventional Commits guidelines:
 
-### TypeScript/JavaScript Styleguide
+- **Type**: Use type to specify the nature of the commit: feat, fix, docs, style, refactor, test, chore.
+- **Scope**: Include a scope to provide additional contextual information (optional).
+- **Description**: A brief description of changes. Write in present tense and imperative mood.
+- **Body**: Use the body to explain what and why vs. how (optional).
+- **Footer**: Reference issues and pull requests (optional).
 
-All TypeScript/JavaScript must adhere to the [Airbnb JavaScript Style Guide](https://github.com/airbnb/javascript).
+Example:
 
-* Prefer `const` and `let` over `var`
-* Use template strings instead of concatenation
-* Use imports and exports (`import`/`export`) over `require`
+`docs(readme): update installation instructions`
 
-### Documentation Styleguide
+This commit message indicates that the commit is related to documentation (docs) and specifically updates the README file with new installation instructions.
 
-* Use [Markdown](https://daringfireball.net/projects/markdown/)
-* Use `-` for unordered lists
-* Include the language for code blocks
+`fix(api): resolve race condition in user authentication`
 
-## Additional Notes
+In this example, the commit is a bug fix (fix) for the API component (api) where a race condition in the user authentication process has been resolved.
 
-* Issue and pull request labels - This link will take you to a page that explains what each label on GitHub issues and pull requests mean.
+`refactor(database): normalize user table schema`
 
-We are excited to have you join our community and look forward to your contributions!
+This commit message shows that the commit involves refactoring (refactor) the database code, particularly to normalize the user table schema.
+
+`test(auth): add unit tests for login functionality`
+
+Here, the commit adds new tests (test) related to the authentication system (auth), specifically unit tests for the login functionality.
+
+`chore(deps): bump lodash from 4.17.19 to 4.17.21`
+
+Lastly, this commit message describes a chore (chore), which is an update to dependencies (deps), in this case, bumping the version of lodash used in the project.
+
+### TypeScript/JavaScript
+
+Follow the Airbnb JavaScript Style Guide.
+
+- Use `const` and `let`, avoid `var`.
+- Use template literals instead of concatenation.
+- Use ES6 module syntax (`import`/`export`).
+
+### Documentation
+
+- Use Markdown for documentation.
+- Use `-` for bullet points.
+- Specify language for code blocks.
+
+## Pull Requests
+
+Ensure your pull requests adhere to the following:
+
+- Comply with the styleguides.
+- Include meaningful commit messages following Conventional Commits.
+- Reference related issues and pull requests.
+
+Your contributions help improve Pine-Script-v5-VS-Code for everyone!
