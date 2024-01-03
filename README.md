@@ -13,10 +13,6 @@
 > Disclaimer: Pine Script™ is a trademark of TradingView. This project is not affiliated with, endorsed by, or connected to TradingView.
 
 
-
-
-
-
 The Pine Script v5 Language Server Extension is a powerful addition to your VS Code setup, designed specifically to enhance the development experience for Pine Script v5. It brings a suite of advanced features to your fingertips, including robust syntax highlighting and intelligent code completion, which greatly facilitate the coding process. While TradingView offers an excellent domain-specific text editor, it lacks the level of customization that some users may desire. The advent of AI technology presents an opportunity to harness these tools to accelerate the production speed. This potential was one of my motivations for developing this extension. Furthermore, VS Code is on the cusp of releasing API features that will allow the creation of custom copilot agents, a capability already available in the insiders edition, which could provide additional impetus for using this extension. My aspiration is that the Pine Script community finds great value and utility in this tool, as its development has been a significant endeavor.
 
 
@@ -136,6 +132,9 @@ For more information on `standard-version`, see the [official documentation](htt
 
 
 ### **Contributing**
+
+Repo Documentation  
+https://ffriz.github.io/Pine-Script-v5-VS-Code/
 
 Please read [CONTRIBUTING.md](https://github.com/FFriZ/Pine-Script-v5-VS-Code/blob/main/CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 

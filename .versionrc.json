@@ -1,8 +1,0 @@
-{
-    "skip": {
-      "changelog": false
-    },
-    "commitUrlFormat": "{{host}}/{{owner}}/{{repository}}/commits/{{hash}}",
-    "issueUrlFormat": "{{host}}/{{owner}}/{{repository}}/issues/{{id}}"
-  }
-  

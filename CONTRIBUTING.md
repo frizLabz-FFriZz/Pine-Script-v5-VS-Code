@@ -2,6 +2,9 @@
 
 Thank you for your interest in contributing to Pine-Script-v5-VS-Code. Your contributions are highly appreciated!
 
+## Repo Documentation
+https://ffriz.github.io/Pine-Script-v5-VS-Code/
+
 ## Code of Conduct
 
 Adhere to our code of conduct in all interactions with the project.
@@ -61,35 +64,47 @@ Add any other context about the problem here.
 
 ### Git Commit Messages
 
-Follow Conventional Commits guidelines:
+Git Commit Message Rules:
 
-- **Type**: Use type to specify the nature of the commit: feat, fix, docs, style, refactor, test, chore.
-- **Scope**: Include a scope to provide additional contextual information (optional).
-- **Description**: A brief description of changes. Write in present tense and imperative mood.
-- **Body**: Use the body to explain what and why vs. how (optional).
-- **Footer**: Reference issues and pull requests (optional).
+`<type>(<scope>): <description>`  
+`<body>`  
+`<footer>`
 
-Example:
+1. **Type**: Always start your commit message with a type. Types include:
+   - feat (new feature)
+   - fix (bug fix)
+   - docs (changes to documentation)
+   - style (formatting, missing semi colons, etc; no code change)
+   - refactor (refactoring production code)
+   - test (adding tests, refactoring tests; no production code change)
+   - chore (updating grunt tasks etc; no production code change)
 
-`docs(readme): update installation instructions`
+2. **Scope** (optional): Include a scope to provide additional context. Enclose it in parentheses. Examples: (admin) (server) (auth)
 
-This commit message indicates that the commit is related to documentation (docs) and specifically updates the README file with new installation instructions.
+3. **Description**: Write a concise description in the imperative mood, not exceeding 50 characters. Example: "add new button for login"
 
-`fix(api): resolve race condition in user authentication`
+4. **Body** (optional): Use the body to explain the what and the why of the commit, not the how.
 
-In this example, the commit is a bug fix (fix) for the API component (api) where a race condition in the user authentication process has been resolved.
+5. **Footer** (optional): Reference any relevant issues or pull requests. Prefix with "Closes" or "Fixes" for issues, and "Relates to" for pull requests.
 
-`refactor(database): normalize user table schema`
+Example Commit Messages:
 
-This commit message shows that the commit involves refactoring (refactor) the database code, particularly to normalize the user table schema.
+>feat(auth): implement user registration
 
-`test(auth): add unit tests for login functionality`
+>fix(server): handle null pointer exception in data layer
 
-Here, the commit adds new tests (test) related to the authentication system (auth), specifically unit tests for the login functionality.
+>docs(readme): update with API endpoint details
 
-`chore(deps): bump lodash from 4.17.19 to 4.17.21`
+>style(css): correct indentation in main stylesheet
 
-Lastly, this commit message describes a chore (chore), which is an update to dependencies (deps), in this case, bumping the version of lodash used in the project.
+>refactor(utils): streamline date parsing functions
+
+>test(api): increase coverage for user service class
+
+>chore(build): upgrade project dependencies
+
+Remember to keep each line under 72 characters if possible.
+
 
 ### TypeScript/JavaScript
 
@@ -98,6 +113,9 @@ Follow the Airbnb JavaScript Style Guide.
 - Use `const` and `let`, avoid `var`.
 - Use template literals instead of concatenation.
 - Use ES6 module syntax (`import`/`export`).
+- For Airbnb linting in VS Code. Download the ESLint extension from the marketplace,
+after the first time you use `npm install` it should download all of the needed packages and
+ESLint should be configured and linting.
 
 ### Documentation
 
