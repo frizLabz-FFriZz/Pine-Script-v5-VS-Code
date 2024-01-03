@@ -84,7 +84,11 @@ Automatically generate and insert types for untyped variables in your scripts.
 
 You can also install the extension directly from the command line:
     
-    code --install-extension frizLabz.pinescript
+`code --install-extension frizLabz.pinescript`
+
+**Building from Source**
+
+For instructions on how to build the extension from source, please refer to the [README Installation Guide](https://github.com/FFriZ/Pine-Script-v5-VS-Code/blob/main/README_INSTALLATION.md) file in the repository.
 
 
 ### **Reporting Bugs**
@@ -96,7 +100,13 @@ If you encounter any bugs or issues while using this extension, please report th
 Your feedback is valuable and contributes to the continuous development and enhancement of the extension.
 
 ### **Version Control**
-This project uses Git for version control. Each update is carefully documented through commits and tags to ensure you can track changes, updates, and fixes throughout the development process.
+
+This project uses Git for version control, in conjunction with `standard-version` to automate versioning and CHANGELOG generation. This ensures that our versioning practices are consistent and semantic.
+
+When contributing, please follow the conventions outlined in [CONTRIBUTING.md](https://github.com/FFriZ/Pine-Script-v5-VS-Code/blob/main/CONTRIBUTING.md) for commit messages, which `standard-version` relies on to determine version bumps and generate changelogs.
+
+For more information on `standard-version`, see the [official documentation](https://github.com/conventional-changelog/standard-version).
+
 
 ### **To-Do List**
  - [ ] **Automated Testing**: Implement automated tests to ensure stability and reliability of the extension.
@@ -125,14 +135,16 @@ This project uses Git for version control. Each update is carefully documented t
  - [ ] **TradingView Script Syncing**: Explore secure methods for synchronizing scripts with TradingView. Although a direct approach using the sessionId was identified, it was not pursued due to respect for TradingView's policies and potential security concerns. Future plans include developing a solution that could involve a Chrome extension facilitating script operations without exposing sensitive session information. This would require users to be logged into their local Chrome browser. Contributions, especially from those with experience in Chrome extension development, are welcome and encouraged.
 
 
-
 ### **Contributing**
+
+Please read [CONTRIBUTING.md](https://github.com/FFriZ/Pine-Script-v5-VS-Code/blob/main/CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
+
 Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
 
 - Fork the Project
-- Create your Feature Branch (git checkout -b feature/AmazingFeature)
-- Commit your Changes (git commit -m 'Add some AmazingFeature')
-- Push to the Branch (git push origin feature/AmazingFeature)
+- Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+- Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+- Push to the Branch (`git push origin feature/AmazingFeature`)
 - Open a Pull Request
 
 
