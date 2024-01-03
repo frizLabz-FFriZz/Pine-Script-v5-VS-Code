@@ -1,12 +1,17 @@
-
 import { PineDocsManager } from '../PineDocsManager'
 import { PineHoverHelpers } from './PineHoverHelpers'
 import { Helpers } from '../PineHelpers'
 import { PineStrings } from '../PineStrings'
 
-
+/** Builds the markdown for the hover provider. */
 export class PineHoverBuildMarkdown {
   static iconString: string = `\n${Helpers.boldWrap('See Also')}  \n${PineStrings.pineIconSeeAlso} - `
+
+  /**
+   * Builds the markdown for the hover provider.
+   * @param item - The item to build the markdown for.
+   * @returns A promise that formats the provided item to be bold in markdown.
+   */
   static boldWrap(item: string) {
     try {
       return `**${item}**`
@@ -15,7 +20,12 @@ export class PineHoverBuildMarkdown {
       return ''
     }
   }
-      
+
+  /** 
+   * Builds the markdown for the hover provider.
+   * @param item - The item to build the markdown for.
+   * @returns A promise that resolves to a markdown codeblock.
+   */
   static cbWrap(item: string) {
     try {
       return `\n\`\`\`pine\n${item.trim()}\n\`\`\`\n`
@@ -25,9 +35,24 @@ export class PineHoverBuildMarkdown {
     }
   }
 
-  static async appendSyntax(keyedDocs: PineDocsManager, key: string, namespace: string | undefined, regexId: string, mapArrayMatrix: string) {
+  /** 
+   * Appends the syntax to the markdown.
+   * @param keyedDocs - The PineDocsManager instance.
+   * @param key - The key identifying the symbol.
+   * @param namespace - The namespace of the symbol, if any.
+   * @param regexId - The regex ID of the symbol.
+   * @param mapArrayMatrix - The map, array, or matrix, if any.
+   * @returns A promise that resolves to an array containing the syntax.
+   * @remarks This method is used for fields, variables, constants, functions, methods, UDTs, types, and parameters.
+   */
+  static async appendSyntax(
+    keyedDocs: PineDocsManager,
+    key: string,
+    namespace: string | undefined,
+    regexId: string,
+    mapArrayMatrix: string,
+  ) {
     try {
-      
       let syntax
       if (['function', 'method', 'UDT', 'type', 'param'].includes(regexId)) {
         const isMethod = regexId === 'method'
@@ -37,11 +62,11 @@ export class PineHoverBuildMarkdown {
         syntax = await this.checkSyntaxContent(syntax, isMethod)
       }
 
-      if (['field', 'variable', 'constant'].includes(regexId)) {     
+      if (['field', 'variable', 'constant'].includes(regexId)) {
         syntax = await this.buildKeyBasedContent(keyedDocs, key)
         syntax = Helpers.replaceSyntax(syntax)
       }
-      
+
       if (['control', 'annotation'].includes(regexId)) {
         syntax = keyedDocs?.name ?? key
       }
@@ -49,8 +74,8 @@ export class PineHoverBuildMarkdown {
       console.log(regexId, 'REGEX ID')
       if (!syntax || syntax === '') {
         return [key]
-      } 
-      
+      }
+
       let syntaxPrefix = this.getSyntaxPrefix(syntax, regexId) // fieldPropertyAddition
 
       if (syntax.includes('chart.point') && !/chart\.point$/.test(syntax)) {
@@ -59,7 +84,10 @@ export class PineHoverBuildMarkdown {
 
       if (regexId !== 'control') {
         if (syntax.includes('\n')) {
-          syntax = syntax.split('\n').map((s: string) => (syntaxPrefix + s)).join('\n')
+          syntax = syntax
+            .split('\n')
+            .map((s: string) => syntaxPrefix + s)
+            .join('\n')
         } else {
           syntax = syntaxPrefix + syntax.trim()
         }
@@ -72,15 +100,25 @@ export class PineHoverBuildMarkdown {
     }
   }
 
+  /** 
+   * Gets the syntax prefix.
+   * @param syntax - The syntax.
+   * @param regexId - The regex ID.
+   * @returns The syntax prefix.
+   */
   static getSyntaxPrefix(syntax: string, regexId: string) {
     let prefix = ''
     if (regexId === 'variable') {
-      if (!/(?::\s*)(array|map|matrix|int|float|bool|string|color|line|label|box|table|linefill|polyline|undefined type)\b/g.test(syntax)) {
+      if (
+        !/(?::\s*)(array|map|matrix|int|float|bool|string|color|line|label|box|table|linefill|polyline|undefined type)\b/g.test(
+          syntax,
+        )
+      ) {
         prefix = '(object) '
       } else {
         prefix = '(variable) '
       }
-      
+
       if (syntax.includes('chart.point')) {
         prefix = '(object) '
       }
@@ -88,14 +126,18 @@ export class PineHoverBuildMarkdown {
       if (syntax.includes('<?>')) {
         prefix = '(variable) '
       }
-
     } else if (regexId !== 'control') {
       prefix = '(' + regexId + ') '
     }
     return prefix
   }
 
-
+  /** 
+   * Formats the syntax content.
+   * @param syntax - The syntax content.
+   * @param mapArrayMatrix - The map, array, or matrix, if any.
+   * @returns The formatted syntax content.
+   */
   static formatSyntaxContent(syntax: string | undefined, mapArrayMatrix: string) {
     try {
       if (!syntax) {
@@ -103,7 +145,7 @@ export class PineHoverBuildMarkdown {
       }
       syntax = syntax.replace(/undetermined type/g, '<?>')
       if (mapArrayMatrix && /(map|array|matrix)(\.new)?<[^>]+>/.test(syntax)) {
-        return PineHoverHelpers.replaceMapArrayMatrix(syntax, mapArrayMatrix)      
+        return PineHoverHelpers.replaceMapArrayMatrix(syntax, mapArrayMatrix)
       }
       console.log('SYNTAX', syntax)
       return syntax
@@ -113,15 +155,13 @@ export class PineHoverBuildMarkdown {
     }
   }
 
-  /** Builds the syntax or key content.
-     * @param syntaxContent - The syntax content.
-     * @param key - The key identifying the symbol.
-     * @returns A promise that resolves to the built content.
-     */
-  static async checkSyntaxContent(
-    syntaxContent: string,
-    isMethod: boolean = false,
-  ) {
+  /** 
+   * Builds the syntax or key content.
+   * @param syntaxContent - The syntax content.
+   * @param isMethod - Whether or not the symbol is a method.
+   * @returns A promise that resolves to the built content.
+   */
+  static async checkSyntaxContent(syntaxContent: string, isMethod: boolean = false) {
     try {
       console.log('syntaxContent', syntaxContent)
       return Helpers.checkSyntax(syntaxContent, isMethod)
@@ -131,17 +171,19 @@ export class PineHoverBuildMarkdown {
     }
   }
 
-
-  /** Builds the content based on the key.
-     * @param keyedDocs - The PineDocsManager instance.
-     * @param key - The key identifying the symbol.
-     * @returns A promise that resolves to the built content.
-     */
+  /** 
+   * Builds the content based on the key.
+   * @param keyedDocs - The PineDocsManager instance.
+   * @param key - The key identifying the symbol.
+   * @returns A promise that resolves to the built content.
+   */
   static async buildKeyBasedContent(keyedDocs: PineDocsManager, key: string) {
     try {
       console.log(JSON.stringify(keyedDocs), 'KEYED DOCS')
       if (keyedDocs?.type || keyedDocs?.returnedType || keyedDocs?.returnedTypes || keyedDocs?.returnType) {
-        const syntax = `${keyedDocs?.name ?? key}: ${(keyedDocs?.type ?? keyedDocs?.returnedType ?? keyedDocs?.returnedTypes[0]) || '<?>'} `
+        const syntax = `${keyedDocs?.name ?? key}: ${
+          (keyedDocs?.type ?? keyedDocs?.returnedType ?? keyedDocs?.returnedTypes[0]) || '<?>'
+        } `
         return syntax
       } else {
         return key
@@ -152,10 +194,11 @@ export class PineHoverBuildMarkdown {
     }
   }
 
-  /** Appends the description to the markdown.
-     * @param keyedDocs - The PineDocsManager instance.
-     * @returns A promise that resolves to an array containing the description.
-     */
+  /** 
+   * Appends the description to the markdown.
+   * @param keyedDocs - The PineDocsManager instance.
+   * @returns A promise that resolves to an array containing the description.
+   */
   static async appendDescription(keyedDocs: PineDocsManager) {
     try {
       const infoDesc = keyedDocs?.info ?? keyedDocs?.desc
@@ -170,19 +213,14 @@ export class PineHoverBuildMarkdown {
     }
   }
 
-  /** Appends parameters or fields to the markdown.
-     * @param keyedDocs - The PineDocsManager instance.
-     * @param argsOrFields - The arguments or fields to append.
-     * @param title - The title of the section.
-     * @param namespace - The namespace of the symbol, if any.
-     * @param isMethod - Whether or not the symbol is a method.
-     * @returns A promise that resolves to an array containing the parameters or fields.
-     */
-  static async appendParamsFields(
-    keyedDocs: PineDocsManager,
-    argsOrFields: string,
-    title: string = 'Params',
-  ) {
+  /** 
+   * Appends parameters or fields to the markdown.
+   * @param keyedDocs - The PineDocsManager instance.
+   * @param argsOrFields - The arguments or fields to append.
+   * @param title - The title of the section.
+   * @returns A promise that resolves to an array containing the parameters or fields.
+   */
+  static async appendParamsFields(keyedDocs: PineDocsManager, argsOrFields: string, title: string = 'Params') {
     try {
       // If no arguments or fields are provided, return an empty array
       if (!keyedDocs?.[argsOrFields] || keyedDocs[argsOrFields]?.length === 0) {
@@ -190,14 +228,16 @@ export class PineHoverBuildMarkdown {
       }
       let build: string[] = ['  \n', Helpers.boldWrap(title), '\n'] // Initialize the markdown string
       // If a namespace is provided and the symbol is a method with arguments, add a namespace indicator
-      for (const argFieldInfo of keyedDocs[argsOrFields]) { // Loop over the arguments or fields
-        if (!argFieldInfo) { // If no information is provided for the argument or field, skip it
+      for (const argFieldInfo of keyedDocs[argsOrFields]) {
+        // Loop over the arguments or fields
+        if (!argFieldInfo) {
+          // If no information is provided for the argument or field, skip it
           continue
         }
-        const description = this.getDescriptionAndTypeKey(argFieldInfo)  // Get the description and type of the argument or field
+        const description = this.getDescriptionAndTypeKey(argFieldInfo) // Get the description and type of the argument or field
         const qm = argsOrFields === 'args' && (argFieldInfo?.required ?? true) ? ':' : '?:' // If the argument or field is optional, add a '?' to its name
-        const arg = Helpers.boldWrap(`${argFieldInfo.name}${qm}`)  // Format the name of the argument or field
-        build.push(`- ${arg} ${Helpers.formatUrl(description) ?? ''}  \n`)  // Add the argument or field to the markdown string
+        const arg = Helpers.boldWrap(`${argFieldInfo.name}${qm}`) // Format the name of the argument or field
+        build.push(`- ${arg} ${Helpers.formatUrl(description) ?? ''}  \n`) // Add the argument or field to the markdown string
       }
       // Return the markdown string
       return build
@@ -207,10 +247,11 @@ export class PineHoverBuildMarkdown {
     }
   }
 
-  /** Gets the description and type key from the detail item.
-     * @param argFieldInfo - The detail item.
-     * @returns The description and type key.
-     */
+  /** 
+   * Gets the description and type key from the detail item.
+   * @param argFieldInfo - The detail item.
+   * @returns The description and type key.
+   */
   static getDescriptionAndTypeKey(argFieldInfo: any) {
     try {
       let typeKey
@@ -226,11 +267,12 @@ export class PineHoverBuildMarkdown {
     }
   }
 
-  /** Builds the hover description for a parameter.
-     * @param paramDocs - The documentation for the parameter.
-     * @param typeKey - The type key.
-     * @returns The hover description.
-     */
+  /** 
+   * Builds the hover description for a parameter.
+   * @param paramDocs - The documentation for the parameter.
+   * @param typeKey - The type key.
+   * @returns The hover description.
+   */
   static buildParamHoverDescription(paramDocs: Record<string, any>, typeKey: string) {
     try {
       return `${paramDocs?.info ?? paramDocs?.desc ?? ''} \`${Helpers.replaceType(paramDocs[typeKey] ?? '')}\``
@@ -240,11 +282,11 @@ export class PineHoverBuildMarkdown {
     }
   }
 
-  /** Appends parameters to the markdown.
-     * @param keyedDocs - The PineDocsManager instance.
-     * @param namespace - The namespace of the symbol, if any.
-     * @returns A promise that resolves to an array containing the parameters.
-     */
+  /**
+   * Appends parameters to the markdown.
+   * @param keyedDocs - The PineDocsManager instance.
+   * @returns A promise that resolves to an array containing the parameters.
+   */
   static async appendParams(keyedDocs: PineDocsManager) {
     try {
       return await this.appendParamsFields(keyedDocs, 'args', 'Params')
@@ -253,7 +295,8 @@ export class PineHoverBuildMarkdown {
       return []
     }
   }
-  /** Appends details to the markdown.
+  /**
+   * Appends details to the markdown.
    * @param detail - The detail to append.
    * @param detailType - The type of the detail.
    * @returns An array containing the details.
@@ -264,8 +307,6 @@ export class PineHoverBuildMarkdown {
       if (detail) {
         if (detailType.toLowerCase() !== 'examples') {
           build = [`  \n${Helpers.boldWrap(detailType)} - ${Helpers.formatUrl(detail)}`]
-        // } else {
-        //   build = [`\n***  \n${Helpers.boldWrap(detailType)}  \n`, cbWrap(detail)]
         }
       }
       return build
@@ -275,7 +316,8 @@ export class PineHoverBuildMarkdown {
     }
   }
 
-  /** Appends return values to the markdown.
+  /**
+   * Appends return values to the markdown.
    * @param keyedDocs - The PineDocsManager instance.
    * @returns A promise that resolves to an array containing the return values.
    */
@@ -306,7 +348,8 @@ export class PineHoverBuildMarkdown {
     }
   }
 
-  /** Appends remarks to the markdown.
+  /**
+   * Appends remarks to the markdown.
    * @param keyedDocs - The PineDocsManager instance.
    * @returns A promise that resolves to an array containing the remarks.
    */
@@ -325,7 +368,8 @@ export class PineHoverBuildMarkdown {
     }
   }
 
-  /** Appends "see also" references to the markdown.
+  /**
+   * Appends "see also" references to the markdown.
    * @param keyedDocs - The PineDocsManager instance.
    * @param key - The key identifying the symbol.
    * @returns A promise that resolves to an array containing the "see also" references.

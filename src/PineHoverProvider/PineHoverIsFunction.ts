@@ -1,17 +1,27 @@
-
-
 import { PineDocsManager } from '../PineDocsManager';
 import { Class } from '../PineClass';
 
+/**
+ * Represents a PineHoverFunction.
+ */
 export class PineHoverFunction {
   private key: string;
   private keyedDocs: PineDocsManager;
 
+  /**
+   * Initializes a new instance of the PineHoverFunction class.
+   * @param keyedDocs The PineDocsManager instance.
+   * @param key The key.
+   */
   constructor(keyedDocs: PineDocsManager, key: string) {
     this.key = key;
     this.keyedDocs = keyedDocs;
   }
 
+  /**
+   * Checks if the function is a valid function.
+   * @returns A Promise that resolves to an array containing PineDocsManager, key, and undefined.
+   */
   public async isFunction(): Promise<[PineDocsManager, string, undefined] | undefined> {
     try {
       if (!this.keyedDocs) {
@@ -25,9 +35,9 @@ export class PineHoverFunction {
       const argsMap = this.createArgsMap();
 
       if (!argsMap) {
-        return [this.keyedDocs, this.key, undefined]
+        return [this.keyedDocs, this.key, undefined];
       }
-        
+
       this.processFunctionDocs(getDocs, argsMap, returnTypes, syntax);
 
       if (syntax.length <= 1) {
@@ -44,6 +54,10 @@ export class PineHoverFunction {
     }
   }
 
+  /**
+   * Creates a map of function arguments.
+   * @returns A Map containing the function arguments.
+   */
   private createArgsMap(): Map<string, Record<string, any>> | undefined {
     try {
       if (this.keyedDocs.args && this.keyedDocs.args.length > 0) {
@@ -57,6 +71,13 @@ export class PineHoverFunction {
     }
   }
 
+  /**
+   * Processes the function documentation.
+   * @param getDocs The array of function documentation.
+   * @param argsMap The map of function arguments.
+   * @param returnTypes The array of return types.
+   * @param syntax The array of syntax.
+   */
   private processFunctionDocs(getDocs: any[], argsMap: Map<string, Record<string, any>>, returnTypes: string[], syntax: string[]): void {
     try {
       for (const doc of getDocs) {
@@ -64,10 +85,9 @@ export class PineHoverFunction {
           for (const arg of doc.args) {
             this.updateArgsMap(argsMap, arg);
             syntax.push(doc.syntax);
-            returnTypes.push(doc.returnType)
+            returnTypes.push(doc.returnType);
           }
         }
-          
       }
     } catch (error) {
       // Handle the error here
@@ -75,6 +95,11 @@ export class PineHoverFunction {
     }
   }
 
+  /**
+   * Updates the arguments map.
+   * @param argsMap The map of function arguments.
+   * @param arg The argument to update.
+   */
   private updateArgsMap(argsMap: Map<string, Record<string, any>>, arg: any) {
     try {
       if (argsMap.has(arg.name)) {

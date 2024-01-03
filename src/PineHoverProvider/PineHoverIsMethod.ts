@@ -1,13 +1,20 @@
-
 import { PineDocsManager } from '../PineDocsManager';
 import { Helpers } from '../PineHelpers';
 import { Class } from '../PineClass';
 
+/**
+ * Represents a PineHoverMethod.
+ */
 export class PineHoverMethod {
   private namespace: string = '';
   private functionName: string = '';
   private docs: PineDocsManager | undefined;
 
+  /**
+   * Creates an instance of PineHoverMethod.
+   * @param {PineDocsManager} docs - The PineDocsManager instance.
+   * @param {string} key - The key.
+   */
   constructor(docs: PineDocsManager, key: string) {
     this.docs = docs;
     let splitKey = this.splitNamespaceAndFunction(key);
@@ -15,6 +22,10 @@ export class PineHoverMethod {
     this.functionName = splitKey.functionName;
   }
 
+  /**
+   * Checks if the key represents a method.
+   * @returns {Promise<[PineDocsManager | undefined, string | undefined, string | undefined] | undefined>} The result.
+   */
   public async isMethod(): Promise<[PineDocsManager | undefined, string | undefined, string | undefined] | undefined> {
     try {
       if (!this.namespace && !this.functionName) {
@@ -35,6 +46,11 @@ export class PineHoverMethod {
     }
   }
 
+  /**
+   * Splits the key into namespace and function name.
+   * @param {string} key - The key.
+   * @returns {{ namespace: string; functionName: string }} The split result.
+   */
   private splitNamespaceAndFunction(key: string): { namespace: string; functionName: string } {
     try {
       const split: string[] = key.split('.');
@@ -51,6 +67,10 @@ export class PineHoverMethod {
     }
   }
 
+  /**
+   * Locates the user type method.
+   * @returns {Promise<[PineDocsManager | undefined, string | undefined] | undefined>} The result.
+   */
   private async locateUserTypeMethod(): Promise<[PineDocsManager | undefined, string | undefined] | undefined> {
     try {
       // Get the variables map
@@ -77,6 +97,10 @@ export class PineHoverMethod {
     }
   }
   
+  /**
+   * Generates possible method names.
+   * @returns {string[]} The method names.
+   */
   private generatePossibleMethodNames(): string[] {
     try {
       const methods = Class.PineDocsManager.getAliases.map((alias: string) => `${alias}.${this.functionName}`);
@@ -87,6 +111,11 @@ export class PineHoverMethod {
     }
   }
 
+  /**
+   * Finds documentation for methods.
+   * @param {string[]} methods - The methods.
+   * @returns {Promise<[PineDocsManager | undefined, string | undefined, string | undefined] | undefined>} The result.
+   */
   private async findDocumentationForMethods(methods: string[]): Promise<[PineDocsManager | undefined, string | undefined, string | undefined] | undefined> {
     try {
       let docsGet: PineDocsManager | undefined;
@@ -123,6 +152,13 @@ export class PineHoverMethod {
     }
   }
 
+  /**
+   * Gets documentation from the function map.
+   * @param {Map<string, any>} funcMap - The function map.
+   * @param {string} type - The type.
+   * @param {string} functionName - The function name.
+   * @returns {Promise<PineDocsManager | undefined>} The documentation.
+   */
   private async getDocumentationFromFunctionMap(funcMap: Map<string, any>, type: string, functionName: string): Promise<PineDocsManager | undefined> {
     try {
       let docsGet: PineDocsManager | undefined;
@@ -136,6 +172,12 @@ export class PineHoverMethod {
     }
   }
 
+  /**
+   * Gets documentation from the method map.
+   * @param {Map<string, any>} methodMap - The method map.
+   * @param {string} functionName - The function name.
+   * @returns {Promise<PineDocsManager | undefined>} The documentation.
+   */
   private async getDocumentationFromMethodMap(methodMap: Map<string, any>, functionName: string): Promise<PineDocsManager | undefined> {
     try {
       if (methodMap.has(`*.${functionName}`)) {

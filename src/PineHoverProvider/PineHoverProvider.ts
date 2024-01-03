@@ -15,13 +15,12 @@ export class PineHoverProvider implements vscode.HoverProvider {
   isFunction: boolean = false
   isParam: boolean = false
   isType: boolean = false
-  hoverCache: Map<[string, string], vscode.Hover | undefined> = new Map()
 
   constructor() {
     this.document = vscode.window.activeTextEditor?.document ?? vscode.workspace.textDocuments[0]
   }
 
-  /** 
+  /**
    * @param {vscode.TextDocument} document - The active TextDocument in which the hover was invoked.
    * @param {vscode.Position} position - The Position at which the hover was invoked.
    * @return {Promise<vscode.Hover | undefined>} - A promise that resolves to a Hover object providing the hover information, or undefined if no hover information is available.
@@ -58,7 +57,7 @@ export class PineHoverProvider implements vscode.HoverProvider {
     if (commentRegex.test(lineUntilPosition) || inlineCommentRegex.test(lineUntilPosition)) {
       return this.annotationHover()
     }
-    
+
     const hoverReturn = await this.getFirstTruthyHover()
     return hoverReturn
   }
@@ -122,16 +121,14 @@ export class PineHoverProvider implements vscode.HoverProvider {
       type,
       new RegExp(
         '(?<!(?:int|float|bool|string|color|line|label|box|table|linefill|map|matrix|array)\\s+)(?:\\b' +
-        hoverRegex +
-        ')(?!>)(?!\\s*\\.|\\w|\\()(?:\\[\\])?',
+          hoverRegex +
+          ')(?!>)(?!\\s*\\.|\\w|\\()(?:\\[\\])?',
         'g',
       ),
       'type',
       (key) => {
         this.mapArrayMatrix = key
-        return key
-          .replace(/map<[^,]+,[^>]+>/g, 'map<type,type>')
-          .replace(/(matrix|array)<[^>]+>/g, '$1<type>')
+        return key.replace(/map<[^,]+,[^>]+>/g, 'map<type,type>').replace(/(matrix|array)<[^>]+>/g, '$1<type>')
       },
     )
   }
@@ -182,12 +179,7 @@ export class PineHoverProvider implements vscode.HoverProvider {
       return
     }
     const [hoverRegex, UDT] = regexAndDocs
-    return this.processWordRange(
-      UDT,
-      new RegExp('\\b(?:' + hoverRegex + ')(?=\\s*\\.?)', 'g'),
-      'UDT',
-      (key) => key,
-    )
+    return this.processWordRange(UDT, new RegExp('\\b(?:' + hoverRegex + ')(?=\\s*\\.?)', 'g'), 'UDT', (key) => key)
   }
 
   /** This function provides hover information for controls. */
@@ -202,9 +194,7 @@ export class PineHoverProvider implements vscode.HoverProvider {
       new RegExp('(?:\\b|^)(?:' + hoverRegex + ')(?!\\.|\\w|\\(|\\[)\\b', 'g'),
       'control',
       (key) => {
-        return key
-          .replace(/\s*\(/g, '')
-          .replace(/for\s+\w+\s+in/, 'for...in')
+        return key.replace(/\s*\(/g, '').replace(/for\s+\w+\s+in/, 'for...in')
       },
     )
   }
@@ -250,7 +240,11 @@ export class PineHoverProvider implements vscode.HoverProvider {
     return this.processWordRange(
       variable,
       new RegExp(
-        '(?<=(?:' + hoverRegex + '|<)?)(?!\\[)(?:(?!,\\s*[\\w\\[\\]<>.]+\\s+)\\b(?:' + hoverRegex + ')\\b(?!\\s*[^)]+\\s+=>))(?!\\s*\\.|\\w|\\()\\b',
+        '(?<=(?:' +
+          hoverRegex +
+          '|<)?)(?!\\[)(?:(?!,\\s*[\\w\\[\\]<>.]+\\s+)\\b(?:' +
+          hoverRegex +
+          ')\\b(?!\\s*[^)]+\\s+=>))(?!\\s*\\.|\\w|\\()\\b',
         '',
       ),
       'variable',
@@ -266,9 +260,13 @@ export class PineHoverProvider implements vscode.HoverProvider {
       return this.processWordRange(null, regex, 'param', func)
     }
     let hover
-    hover = await paramHover(regex1, (key) => { return key?.split('=')[0].trim() ?? key })
+    hover = await paramHover(regex1, (key) => {
+      return key?.split('=')[0].trim() ?? key
+    })
     if (!hover) {
-      hover = await paramHover(regex2, (key) => { return key?.split('=')[0].trim() ?? key })
+      hover = await paramHover(regex2, (key) => {
+        return key?.split('=')[0].trim() ?? key
+      })
     }
     return hover
   }
@@ -280,12 +278,7 @@ export class PineHoverProvider implements vscode.HoverProvider {
       return
     }
     const [hoverRegex, annotation] = regexAndDocs
-    return this.processWordRange(
-      annotation,
-      new RegExp(`${hoverRegex}`, 'g'),
-      'annotation',
-      (key) => key,
-    )
+    return this.processWordRange(annotation, new RegExp(`${hoverRegex}`, 'g'), 'annotation', (key) => key)
   }
 
   /** Processes a range of words in the document.
@@ -300,15 +293,15 @@ export class PineHoverProvider implements vscode.HoverProvider {
     hoverRegex: RegExp | undefined,
     regexId: string,
     transformKey: (key: string) => string,
-  ): Promise < vscode.Hover | undefined > {
-  // Initialize the namespace
+  ): Promise<vscode.Hover | undefined> {
+    // Initialize the namespace
     console.log(regexId)
     console.log(JSON.stringify(docs), 'docs')
 
     // If the regexId is not 'param' and either docs or hoverRegex is not defined, return undefined
     if (regexId !== 'param') {
       if (!docs) {
-        return 
+        return
       }
     }
 
@@ -321,40 +314,31 @@ export class PineHoverProvider implements vscode.HoverProvider {
     // Get the position of the symbol in the document
     const position = this.position
     if (!position) {
-      return 
+      return
     }
 
     // Get the range of the word at the position
     let wordRange: vscode.Range | undefined = this.document.getWordRangeAtPosition(position, hoverRegex)
     if (!wordRange) {
-      return 
+      return
     }
 
     // Transform the key
     let key = transformKey(this.document.getText(wordRange))
 
-    // If the symbol is not a function or method, check the cache for a hover
-    // if (!this.isFunction || !this.isMethod) {
-    //   const cachedHover = PineHoverHelpers.checkCache(key, regexId, this.isMethod, this.hoverCache)
-    //   if (cachedHover) {
-    //     return cachedHover
-    //   }
-    // }
-
-    
     console.log(key, 'KEY')
     // Get the documentation for the symbol
     const originalKeyedDocs = docs?.get(key)
     // Determine whether the symbol is a parameter, method, or function
-    let resolvedValues = await this.paramMethodFunction( originalKeyedDocs, key, wordRange)
+    let resolvedValues = await this.paramMethodFunction(originalKeyedDocs, key, wordRange)
     if (!resolvedValues) {
-      return 
+      return
     }
 
     let [resolvedKeyedDocs, resolvedKey, resolvedNamespace] = resolvedValues
 
     if (!resolvedKeyedDocs || !resolvedKey) {
-      return 
+      return
     }
     const markdown = await this.createHoverMarkdown(resolvedKeyedDocs, resolvedKey, resolvedNamespace, regexId)
 
@@ -363,7 +347,6 @@ export class PineHoverProvider implements vscode.HoverProvider {
     // this.hoverCache.set([key, regexId], hover)
     return hover
   }
-
 
   /** Determines whether the documentation matches a parameter, method, or function.
    * @param docs - The PineDocsManager instance.
@@ -375,11 +358,10 @@ export class PineHoverProvider implements vscode.HoverProvider {
     docs: PineDocsManager,
     key: string,
     wordRange: vscode.Range,
-  ): Promise < [PineDocsManager | undefined, string | undefined, string | undefined] | undefined > {
-  // Depending on the type of the symbol, call the appropriate matching function
+  ): Promise<[PineDocsManager | undefined, string | undefined, string | undefined] | undefined> {
+    // Depending on the type of the symbol, call the appropriate matching function
     console.log('KEY@@@@', key)
     switch (true) {
-
       // If the symbol is a parameter, call isParamMatch
       case this.isParam:
         return new PineHoverParam(key, wordRange).isParam()
@@ -399,7 +381,6 @@ export class PineHoverProvider implements vscode.HoverProvider {
     return [docs, key, undefined]
   }
 
-
   /** Creates a Markdown string for hover information using data from a PineDocsManager.
    * @param keyedDocs - The PineDocsManager instance containing the documentation data.
    * @param key - The key identifying the symbol for which to create the hover information.
@@ -412,8 +393,8 @@ export class PineHoverProvider implements vscode.HoverProvider {
     key: string,
     namespace: string | undefined,
     regexId: string,
-  ): Promise < vscode.MarkdownString > {
-  // Assemble an array of promises to execute
+  ): Promise<vscode.MarkdownString> {
+    // Assemble an array of promises to execute
     const promises = [
       PineHoverBuildMarkdown.appendSyntax(keyedDocs, key, namespace, regexId, this.mapArrayMatrix),
       PineHoverBuildMarkdown.appendDescription(keyedDocs),
@@ -429,16 +410,12 @@ export class PineHoverProvider implements vscode.HoverProvider {
     // Create a MarkdownString object for the hover content
     const markdownString = new vscode.MarkdownString(markdownContent)
     // Allow command URIs, HTTP(S) links and markdown.render setting to be used
-    markdownString.isTrusted = true 
+    markdownString.isTrusted = true
     return markdownString
   }
 }
 
-
-
-
 // +++++++++++++++++++  UNUSED CODE  ++++++++++++++++++++++
-
 // private async appendKind(keyedDocs: PineDocsManager, regexId: string) {
 //   let build: string[] = []
 //   if (regexId === 'param') {

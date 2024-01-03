@@ -16402,7 +16402,7 @@
             {
               "name": "precision",
               "info": "Specifies the number of digits after the floating point of the script\\`s displayed values.  \nMust be a non-negative integer no greater than 16.  \nIf `format` is set to [format.inherit](#var_format.inherit) and `precision` is specified, the format will instead be set to [format.price](#var_format.price).  \nOptional. The default is inherited from the precision of the chart\\`s symbol.",
-              "default": "syminfo.pricescale",
+              "default": "na",
               "required": false,
               "displayType": "const int",
               "allowedTypeIDs": [
@@ -16452,7 +16452,7 @@
             {
               "name": "timeframe",
               "info": "Adds multi-timeframe functionality to simple scripts. When used, a \"Timeframe\" field will be added to the script\\`s \"Settings/Inputs\" tab.  \nThe field\\`s default value will be the argument supplied, whose format must conform to [timeframe string specifications](https://www.tradingview.com/pine-script-docs/en/v5/concepts/Timeframes.html#timeframe-string-specifications).  \nTo specify the chart\\`s timeframe, use an empty string or the [timeframe.period](#var_timeframe.period) variable.  \nThe parameter cannot be used with scripts using Pine Script™ drawings.  \nOptional. The default is [timeframe.period](#var_timeframe.period).",
-              "default": "timeframe.period",
+              "default": "\"\"",
               "required": false,
               "displayType": "const string",
               "allowedTypeIDs": [
@@ -16499,7 +16499,7 @@
             {
               "name": "max_lines_count",
               "info": "The number of last [line](#op_line) drawings displayed. \nPossible values: 1-500.  \nThe count is approximate; more drawings than the specified count may be displayed.  \nOptional. The default is 50.",
-              "default": 50,
+              "default": "50",
               "required": false,
               "displayType": "const int",
               "allowedTypeIDs": [
@@ -16515,7 +16515,7 @@
             {
               "name": "max_labels_count",
               "info": "The number of last [label](#op_label) drawings displayed. \nPossible values: 1-500.  \nThe count is approximate; more drawings than the specified count may be displayed.  \nOptional. The default is 50.",
-              "default": 50,
+              "default": "50",
               "required": false,
               "displayType": "const int",
               "allowedTypeIDs": [
@@ -16531,7 +16531,7 @@
             {
               "name": "max_boxes_count",
               "info": "The number of last [box](#op_box) drawings displayed. \nPossible values: 1-500.  \nThe count is approximate; more drawings than the specified count may be displayed.  \nOptional. The default is 50.",
-              "default": 50,
+              "default": "50",
               "required": false,
               "displayType": "const int",
               "allowedTypeIDs": [
@@ -16547,7 +16547,7 @@
             {
               "name": "max_polylines_count",
               "info": "The number of last [polyline](#op_polyline) drawings displayed.  \nPossible values: 1-100. The count is approximate; more drawings than the specified count may be displayed. Optional. The default is 50.",
-              "default": 50,
+              "default": "50",
               "required": false,
               "displayType": "const int",
               "allowedTypeIDs": [
@@ -21612,7 +21612,7 @@
             {
               "name": "max",
               "info": "The upper bound of the range of random values. The value is not included in the range.  \nThe default is 1.",
-              "default": 1,
+              "default": "1",
               "required": false,
               "displayType": "series int|float",
               "allowedTypeIDs": [
@@ -27704,7 +27704,7 @@
             {
               "name": "default_qty_value",
               "info": "The default quantity to trade, in units determined by the argument used with the `default_qty_type` parameter.  \nThis setting can also be changed in the strategy\\`s \"Settings/Properties\" tab.  \nOptional. The default is 1.",
-              "default": 1,
+              "default": "1",
               "required": false,
               "displayType": "const int|float",
               "allowedTypeIDs": [
@@ -27873,7 +27873,7 @@
             {
               "name": "max_lines_count",
               "info": "The number of last [line](#op_line) drawings displayed. \nPossible values: 1-500.  \nOptional. The default is 50.",
-              "default": 50,
+              "default": "50",
               "required": false,
               "displayType": "const int",
               "allowedTypeIDs": [
@@ -27889,7 +27889,7 @@
             {
               "name": "max_labels_count",
               "info": "The number of last [label](#op_label) drawings displayed. \nPossible values: 1-500.  \nOptional. The default is 50.",
-              "default": 50,
+              "default": "50",
               "required": false,
               "displayType": "const int",
               "allowedTypeIDs": [
@@ -27905,7 +27905,7 @@
             {
               "name": "max_boxes_count",
               "info": "The number of last [box](#op_box) drawings displayed. \nPossible values: 1-500.  \nOptional. The default is 50.",
-              "default": 50,
+              "default": "50",
               "required": false,
               "displayType": "const int",
               "allowedTypeIDs": [
@@ -27921,7 +27921,7 @@
             {
               "name": "risk_free_rate",
               "info": "The risk-free rate of return is the annual percentage change in the value of an investment with minimal or zero risk.  \nIt is used to calculate the [Sharpe and Sortino ratios](https://www.tradingview.com/chart/?solution=43000561856).  \nOptional. The default is 2.",
-              "default": 2,
+              "default": "2",
               "required": false,
               "displayType": "const int|float",
               "allowedTypeIDs": [
@@ -27957,7 +27957,7 @@
             {
               "name": "max_polylines_count",
               "info": "The number of last [polyline](#op_polyline) drawings displayed.  \nPossible values: 1-100. The count is approximate; more drawings than the specified count may be displayed. Optional. The default is 50.",
-              "default": 50,
+              "default": "50",
               "required": false,
               "displayType": "const int",
               "allowedTypeIDs": [
@@ -28038,7 +28038,7 @@
             {
               "name": "limit",
               "info": "An optional parameter. Limit price of the order. If it is specified, the order type is either 'limit', or 'stop-limit'. 'NaN' should be specified for any other order type.",
-              "default": 1,
+              "default": "1",
               "required": false,
               "displayType": "series int|float",
               "allowedTypeIDs": [
@@ -28195,7 +28195,7 @@
             {
               "name": "qty",
               "info": "An optional parameter. Number of contracts/shares/lots/units to trade. The default value is 'NaN'.",
-              "default": 1,
+              "default": "1",
               "required": false,
               "displayType": "series int|float",
               "allowedTypeIDs": [
@@ -28388,7 +28388,7 @@
             {
               "name": "qty_percent",
               "info": "Defines the percentage of (0-100) the position to close. Its priority is lower than that of the 'qty' parameter.  \nOptional. The default is 100.",
-              "default": 100,
+              "default": "100",
               "required": false,
               "displayType": "series int|float",
               "allowedTypeIDs": [
@@ -29549,7 +29549,7 @@
             {
               "name": "border_width",
               "info": "Width of the four borders, in pixels. Optional. The default is 1 pixel.",
-              "default": 1,
+              "default": "1",
               "required": false,
               "displayType": "series int",
               "allowedTypeIDs": [
@@ -30992,7 +30992,7 @@
             {
               "name": "width",
               "info": "Line width in pixels.",
-              "default": 1,
+              "default": "1",
               "required": false,
               "displayType": "series int",
               "allowedTypeIDs": [

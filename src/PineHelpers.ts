@@ -3,8 +3,6 @@ import { Class } from './PineClass'
 
 
 export class Helpers {
-  
-
   /**
    * Checks if the description exists and appends a new line
    * @param desc - The description to check
@@ -14,6 +12,9 @@ export class Helpers {
     return (desc ?? '') + '\n***\n'
   }
 
+  /**
+    * @property {RegExp[]} regexToReplace - An array of regexes to replace for formatting the syntax
+    */
   static regexToReplace: [RegExp, string][] = [
     [/undetermined type/g, '<?>'],
     [/(\w+)\[\]/g, 'array<$1>'],
@@ -30,7 +31,6 @@ export class Helpers {
   /**
    * Handles individual replacements in a string
    * @param str - The string to replace in
-   * @param replacements - An array of replacements, each represented as a tuple of a RegExp and a string
    * @returns The string with the replacements made
    */
   static replaceSyntax(str: string) {
@@ -116,9 +116,7 @@ export class Helpers {
 
   /**
     * Checks if the expression is a variable
-    * @param returns - The type of the expression
     * @param keyedDocs - The documentation object to check
-    * @param key - The key to check against
     * @returns The type of the expression if it is a variable, null otherwise
    */
   static returnTypeArrayCheck(keyedDocs: any) {
@@ -135,9 +133,7 @@ export class Helpers {
 
   /**
     * Checks if the expression is a variable
-    * @param returns - The type of the expression
     * @param keyedDocs - The documentation object to check
-    * @param key - The key to check against
     * @returns The type of the expression if it is a variable, null otherwise
    */
   static getThisTypes(keyedDocs: any) {
@@ -265,10 +261,12 @@ export class Helpers {
     return input.replace(regex, ` $1${Helpers.url}$2$3`)
   }
 
+  /** boldens the item in a markdown string */
   static boldWrap(item: string) {
     return `**${item}**`
   }
   
+  /** wraps the item in a codeblock in a markdown string */
   static cbWrap(item: string) {
     return `\n\`\`\`pine\n${item.trim()}\n\`\`\`\n`
   }

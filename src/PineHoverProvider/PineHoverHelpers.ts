@@ -1,8 +1,11 @@
-
 import { Class } from '../PineClass'
 
 export class PineHoverHelpers {
-  
+  /**
+   * Replaces special characters in a string with their escaped counterparts.
+   * @param input - The input string.
+   * @returns The string with escaped characters.
+   */
   static regexReplace(input: string): string {
     try {
       if (!input) {
@@ -21,6 +24,11 @@ export class PineHoverHelpers {
     }
   }
 
+  /**
+   * Replaces alias characters in a string.
+   * @param input - The input string.
+   * @returns The string with replaced aliases.
+   */
   static replaceAlias(input: string): string {
     try {
       if (!input) {
@@ -33,6 +41,11 @@ export class PineHoverHelpers {
     }
   }
 
+  /**
+   * Forms a regular expression and retrieves documentation based on the provided regex IDs.
+   * @param regexId - The regex IDs.
+   * @returns A promise that resolves to an array containing the hover regex and the documentation map.
+   */
   static async formRegexGetDocs(...regexId: string[]): Promise<[string | undefined, any] | undefined> {
     try {
       const map = await Class.PineDocsManager.getMap(...regexId)
@@ -48,6 +61,12 @@ export class PineHoverHelpers {
     }
   }
 
+  /**
+   * Replaces the namespace in a syntax string.
+   * @param syntax - The syntax string.
+   * @param namespace - The namespace to replace.
+   * @returns The syntax string with replaced namespace.
+   */
   static replaceNamespace(syntax: string, namespace: string | undefined) {
     try {
       if (!namespace || namespace === '') {
@@ -75,6 +94,14 @@ export class PineHoverHelpers {
     }
   }
 
+  /**
+   * Checks the cache for a specific key.
+   * @param key - The cache key.
+   * @param regexId - The regex ID.
+   * @param isMethod - Indicates if the key is a method.
+   * @param hoverCache - The hover cache.
+   * @returns The cached value if found, otherwise undefined.
+   */
   static checkCache(key: string, regexId: string, isMethod: boolean, hoverCache: Map<[string, string], any | undefined>) {
     try {
       const cacheHas = hoverCache.has([key, regexId])
@@ -89,6 +116,13 @@ export class PineHoverHelpers {
 
   static mapArrayMatrixType = /map<type,type>|matrix<type>|array<type>/g
   static mapArrayMatrixNew = /map\.new<type,type>|matrix\.new<type>|array\.new<type>/g
+
+  /**
+   * Replaces map, array, and matrix types in a syntax content key.
+   * @param syntaxContentKey - The syntax content key.
+   * @param mapArrayMatrix - The replacement string for map, array, and matrix.
+   * @returns The syntax content key with replaced map, array, and matrix types.
+   */
   static replaceMapArrayMatrix(syntaxContentKey: string, mapArrayMatrix: string): string {
     try {
       const reducedArrayMatrix = mapArrayMatrix.replace(/\.new|\s*/g, '')
@@ -103,6 +137,3 @@ export class PineHoverHelpers {
     }
   }
 }
-
-
-

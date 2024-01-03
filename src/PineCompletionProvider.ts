@@ -1,4 +1,4 @@
-import { Helpers, PineSharedCompletionState, print } from './index'
+import { Helpers, PineSharedCompletionState } from './index'
 import { Class } from './PineClass'
 import * as vscode from 'vscode'
 
@@ -15,6 +15,8 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
   noSort: boolean = false
   sigCompletions: Record<string, any> = {}
 
+
+  /** Checks if there are any completions in the shared state and returns them.  */
   checkCompletions(): Record<string, any>[] {
     try {
       const activeArg = PineSharedCompletionState.getActiveArg
@@ -53,10 +55,8 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
       }
 
       if (completionsFromState.length > 0) {
-        print('signature completions')
         return await this.signatureCompletions(document, position, completionsFromState)
       } else {
-        print('normal completions')
         return await this.mainCompletions(document, position)
       }
     } catch (error) {
@@ -215,7 +215,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
     }
   }
 
-  // moves cursor inside of () without using the TextEdits, then fires the signatureHelp
+  /** Handles the completion accepted event. */  
   async completionAccepted() {
     try {
       vscode.commands.executeCommand('cursorLeft')
@@ -225,6 +225,13 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
     }
   }
 
+  /**
+   * Provides completions for method names based on the current position and match.
+   * @param document - The current document.
+   * @param position - The current position within the document.
+   * @param match - The text used to filter method completions.
+   * @returns A promise that resolves to an array of completion items or an empty array if no matches are found.
+   */
   async methodCompletions(document: vscode.TextDocument, position: vscode.Position, match: string) {
     try {
       // Get the documentation map
@@ -298,6 +305,13 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
     }
   }
 
+  /**
+   * Provides completions for function names based on the current position and match.
+   * @param document - The current document.
+   * @param position - The current position within the document.
+   * @param match - The text used to filter function completions.
+   * @returns A promise that resolves to an array of completion items or an empty array if no matches are found.
+   */
   async functionCompletions(document: vscode.TextDocument, position: vscode.Position, match: string) {
     try {
       // Get the documentation map
@@ -343,6 +357,12 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
     }
   }
 
+  /**
+   * Gathers and sorts the main completions for the current position in the document.
+   * @param document - The current document.
+   * @param position - The current position within the document.
+   * @returns A promise that resolves to a CompletionList object containing the sorted completion items or an empty array if none are found.
+   */
   async mainCompletions(document: vscode.TextDocument, position: vscode.Position) {
     try {
       // Get the text on the current line up to the cursor position
@@ -353,13 +373,11 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
 
       const linePrefix = line.text.substring(0, position.character)
       // If there's no text before the cursor, return an empty array
-      print('linePrefix', linePrefix)
       if (!linePrefix) {
         return []
       }
       // If there are no completions in the shared state, match the text before the cursor
       const match = linePrefix.match(/[\w.]+$/)?.[0].trim()
-      print('match', match)
       if (!match) {
         return []
       }
@@ -386,6 +404,13 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
     }
   }
 
+  /**
+   * Provides signature completions based on the provided documentation records.
+   * @param document - The current document.
+   * @param position - The current position within the document.
+   * @param docs - An array of documentation records used to generate completion items.
+   * @returns A promise that resolves to a CompletionList object containing the completion items or an empty array if none are found.
+   */
   async signatureCompletions(document: vscode.TextDocument, position: vscode.Position, docs: Record<string, any>[]) {
     try {
       if (!docs || docs.length === 0) {

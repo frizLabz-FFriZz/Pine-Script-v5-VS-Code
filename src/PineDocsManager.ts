@@ -1,9 +1,12 @@
 import { path, fs } from './index'
+
+
 /**
  * PineDocsManager handles the management of Pine documentation.
  * It loads, retrieves, and sets various types of documentation-related data.
  */
 export class PineDocsManager {
+  /** index signature */
   [key: string]: any
 
   docAliases: string[] = [
@@ -63,68 +66,132 @@ export class PineDocsManager {
     this.annotationsDocs = this.Docs.annotations[0].docs
   }
 
-  async getTypes() {
-    return this.typesDocs
+  /**
+   * Retrieves the types documentation.
+   * @returns The types documentation.
+   */
+  async getTypes(): Promise<Record<string, any>[]> {
+    return this.typesDocs;
   }
 
-  async getImports() {
-    return this.importsDocs
+  /**
+   * Retrieves the imports documentation.
+   * @returns The imports documentation.
+   */
+  async getImports(): Promise<Record<string, any>[]> {
+    return this.importsDocs;
   }
 
-  async getMethods() {
-    return this.methodsDocs
+  /**
+   * Retrieves the methods documentation.
+   * @returns The methods documentation.
+   */
+  async getMethods(): Promise<Record<string, any>[]> {
+    return this.methodsDocs;
   }
 
-  async getMethods2() {
-    return this.methods2Docs
+  /**
+   * Retrieves the second set of methods documentation.
+   * @returns The second set of methods documentation.
+   */
+  async getMethods2(): Promise<Record<string, any>[]> {
+    return this.methods2Docs;
   }
 
-  async getControls() {
-    return this.controlsDocs
+  /**
+   * Retrieves the controls documentation.
+   * @returns The controls documentation.
+   */
+  async getControls(): Promise<Record<string, any>[]> {
+    return this.controlsDocs;
   }
 
-  async getVariables() {
-    return this.variablesDocs
+  /**
+   * Retrieves the variables documentation.
+   * @returns The variables documentation.
+   */
+  async getVariables(): Promise<Record<string, any>[]> {
+    return this.variablesDocs;
   }
 
-  async getVariables2() {
-    return this.variables2Docs
+  /**
+   * Retrieves the second set of variables documentation.
+   * @returns The second set of variables documentation.
+   */
+  async getVariables2(): Promise<Record<string, any>[]> {
+    return this.variables2Docs;
   }
 
-  async getConstants() {
-    return this.constantsDocs
+  /**
+   * Retrieves the constants documentation.
+   * @returns The constants documentation.
+   */
+  async getConstants(): Promise<Record<string, any>[]> {
+    return this.constantsDocs;
   }
 
-  async getFunctions() {
-    return this.functionsDocs
+  /**
+   * Retrieves the functions documentation.
+   * @returns The functions documentation.
+   */
+  async getFunctions(): Promise<Record<string, any>[]> {
+    return this.functionsDocs;
   }
 
-  async getFunctions2() {
-    return this.functions2Docs
+  /**
+   * Retrieves the second set of functions documentation.
+   * @returns The second set of functions documentation.
+   */
+  async getFunctions2(): Promise<Record<string, any>[]> {
+    return this.functions2Docs;
   }
 
-  async getCompletionFunctions() {
-    return this.completionFunctionsDocs
+  /**
+   * Retrieves the completion functions documentation.
+   * @returns The completion functions documentation.
+   */
+  async getCompletionFunctions(): Promise<Record<string, any>[]> {
+    return this.completionFunctionsDocs;
   }
 
-  async getAnnotations() {
-    return this.annotationsDocs
+  /**
+   * Retrieves the annotations documentation.
+   * @returns The annotations documentation.
+   */
+  async getAnnotations(): Promise<Record<string, any>[]> {
+    return this.annotationsDocs;
   }
 
-  async getUDT() {
-    return this.UDTDocs
+  /**
+   * Retrieves the UDT (User-Defined Types) documentation.
+   * @returns The UDT documentation.
+   */
+  async getUDT(): Promise<Record<string, any>[]> {
+    return this.UDTDocs;
   }
 
-  async getFields() {
-    return this.fieldsDocs
+  /**
+   * Retrieves the fields documentation.
+   * @returns The fields documentation.
+   */
+  async getFields(): Promise<Record<string, any>[]> {
+    return this.fieldsDocs;
   }
 
-  async getFields2() {
-    return this.fields2Docs
+  /**
+   * Retrieves the second set of fields documentation.
+   * @returns The second set of fields documentation.
+   */
+  async getFields2(): Promise<Record<string, any>[]> {
+    return this.fields2Docs;
   }
   
 
-
+  /**
+   * Retrieves the typedocs for the getSwitch function.
+   * @param key - The key to switch on.
+   * @returns The typedocs for the getSwitch function.
+   */
   async getSwitch(key: string) {
     switch (key) {
       case 'types':
@@ -162,6 +229,12 @@ export class PineDocsManager {
     }
   }
 
+  /**
+   * Sets the typedocs for the setSwitch function.
+   * @param key - The key to switch on.
+   * @param docs - The docs to set.
+   * @returns The typedocs for the setSwitch function.
+   */
   async setSwitch(key: string, docs: any) {
     switch (key) {
       case 'types':
@@ -212,12 +285,15 @@ export class PineDocsManager {
     }
   }
 
-
-  // Returns a Map where the key is the 'name' property from the docs and the value is the doc object
+  /** 
+   * Returns a Map where the key is the 'name' property from the docs and the value is the doc object
+   * @param keys - The keys to get the map for.
+   * @returns The map.
+   */
   async getMap(...keys: string[]): Promise<Map<string, PineDocsManager>> {
     try {
       const docs = await this.getDocs(...keys)
-      const outMap: Map<string, PineDocsManager> = await this.makeMap(docs, keys)
+      const outMap: Map<string, PineDocsManager> = await this.makeMap(docs)
       return outMap ?? []
     } catch (error) {
       console.error(error)
@@ -225,11 +301,17 @@ export class PineDocsManager {
     }
   }
 
-  async makeMap(docs: any[], docKeys: string[], key: string = 'name'): Promise<Map<string, PineDocsManager>> {
+
+  /**
+   * the makeMap function is used to make a map for a given key
+   * @param docs - The docs to make the map for.
+   * @returns The map.
+   */
+  async makeMap(docs: any[]): Promise<Map<string, PineDocsManager>> {
     try {
       const entries: [string, PineDocsManager][] = docs.flatMap((doc: any) => {
-        if (doc?.[key]) {
-          return [[doc[key], doc] as [string, PineDocsManager]]
+        if (doc?.name) {
+          return [[doc.name, doc] as [string, PineDocsManager]]
         } else {
           return []
         }
@@ -242,6 +324,11 @@ export class PineDocsManager {
     }
   }
 
+  /**
+   * the getDocs function is used to get the docs for a given key
+   * @param keys - The keys to get the docs for.
+   * @returns The docs.
+   */
   async getDocs(...keys: string[]) {
     try {
       let result: any = []
@@ -269,13 +356,22 @@ export class PineDocsManager {
     }
   }
 
-  // the setImportsDocs function is used to sed the imports key of the response object
+  /** 
+   * the setImportsDocs function is used to sed the imports key of the response object
+   * @param docs - The docs to set.
+   * @returns The key.
+  */
   setImportDocs(docs: any): string {
     this.importsDocs = docs
     return 'imports'
   }
 
-  // the setDocs function is used to set the docs for a given key
+  /** 
+   * the setDocs function is used to set the docs for a given key
+   * @param newDocs - The new docs to set.
+   * @param key - The key to set the docs for.
+   * @returns The key.
+  */
   async setDocs(newDocs: any, key: string) {
     try {
       const currentDocs: any[] = await this.getSwitch(key)
@@ -288,7 +384,13 @@ export class PineDocsManager {
     }
   }
 
-  // Helper function to merge new docs into current docs
+
+  /** 
+   * Helper function to merge new docs into current docs
+   * @param currentDocs - The current docs.
+   * @param newDocs - The new docs.
+   * @returns The merged docs.
+  */
   private async mergeDocs(currentDocs: any[], newDocs: any[]): Promise<any[]> {
     try {
       if (!newDocs) {
@@ -311,17 +413,27 @@ export class PineDocsManager {
     }
   }
 
-  // the setImportAliases function is used to set the imported namespace aliases
+  /**  
+   * the setImportAliases function is used to set the imported namespace aliases
+   * @param aliases - The aliases to set.
+  */
   set setImportAliases(aliases: string[]) {
     this.importAliases = aliases
   }
 
-  // the getAliases function is used to get the aliases for the current document
+  /** 
+   * the getAliases function is used to get the aliases for the current document
+   * @returns The aliases.
+  */
   get getAliases() {
     return [...this.docAliases, ...this.importAliases]
   }
 
-  // the cleanDocs function is used to clean the docs
+
+  /** 
+   * the cleanDocs function is used to clean the docs
+   * @returns The cleaned docs.
+  */
   async cleanDocs() {
     const docs = ['methods2', 'variables2', 'completionFunctions', 'functions2', 'UDT', 'fields']
     for (const doc of docs) {

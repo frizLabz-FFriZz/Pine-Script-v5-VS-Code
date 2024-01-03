@@ -76,7 +76,6 @@ export class PineFormatResponse {
     let funcs: any[] = [{ docs: [] }]
     let funcsCompletions: any[] = [{ docs: [] }]
 
-   
     for (const doc of functions) { // Iterate over each doc in functions
       for (let func of doc.docs) {  // Iterate over each function in doc.docs
         // Match the function syntax to extract the returned type

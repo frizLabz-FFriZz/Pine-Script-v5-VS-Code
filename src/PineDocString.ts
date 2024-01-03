@@ -2,13 +2,12 @@ import { VSCode, Helpers } from './index'
 import { Class } from './PineClass'
 import * as vscode from 'vscode'
 
+
 export class PineDocString {
   // Regex pattern to match function signatures
   functionPattern = /(?:export\s+)?(?:method\s+)?([\w.]+)\s*\(.*\)\s*=>/g
-
   // Regex pattern to match type declarations
   typePattern = /(?:export\s+)?(?:type)\s+([\w.]+)/g
-
   Editor: vscode.TextEditor | undefined
 
   /**

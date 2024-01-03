@@ -28,7 +28,6 @@ export class PineRequest {
 
   /**
    * Get request headers with optional session ID.
-   * @param {boolean} includeSessionId - Whether to include session ID in headers.
    * @returns {Promise<any>} - Object containing request headers.
    */
   private async getHeaders(): Promise<any> {
@@ -48,7 +47,6 @@ export class PineRequest {
    * Makes a request to the specified URL using the specified method.
    * @param {string} method - The HTTP method to use for the request.
    * @param {string} url - The URL to make the request to.
-   * @param {boolean} includeSessionId - Whether to include the session ID in the request headers.
    * @returns {Promise<any>} A promise that resolves to the response from the request.
    */
   async request(method: string, url: string): Promise<any> {

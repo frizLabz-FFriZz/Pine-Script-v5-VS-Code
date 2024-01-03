@@ -1,7 +1,20 @@
 
-# Pine Script v5 Language Server for Visual Studio Code
+<h1 align="center">Pine Script v5 Language Server for VS Code</h1>
+
+<p align="center">
+  <a><img src="https://img.shields.io/github/package-json/v/FFriZ/Pine-Script-v5-VS-Code?color=green&style=flat-square" alt="Version"></a>
+  <a><img src="https://img.shields.io/github/issues/FFriZ/Pine-Script-v5-VS-Code?style=flat-square" alt="Issues"></a>
+  <a><img src="https://img.shields.io/visual-studio-marketplace/i/frizlabz.pinescript?color=red&style=flat-square" alt="Downloads"></a>
+  <a><img src="https://img.shields.io/github/stars/FFriZ/Pine-Script-v5-VS-Code?color=red&style=flat-square" alt="Stars"></a>
+  <a><img src="https://img.shields.io/github/contributors/FFriZ/Pine-Script-v5-VS-Code?color=green&style=flat-square" alt="Contributors"></a>
+  <a><img src="https://img.shields.io/github/license/FFriZ/Pine-Script-v5-VS-Code?style=flat-square" alt="Licance"></a>
+</p>
 
 > Disclaimer: Pine Script™ is a trademark of TradingView. This project is not affiliated with, endorsed by, or connected to TradingView.
+
+
+
+
 
 
 The Pine Script v5 Language Server Extension is a powerful addition to your VS Code setup, designed specifically to enhance the development experience for Pine Script v5. It brings a suite of advanced features to your fingertips, including robust syntax highlighting and intelligent code completion, which greatly facilitate the coding process. While TradingView offers an excellent domain-specific text editor, it lacks the level of customization that some users may desire. The advent of AI technology presents an opportunity to harness these tools to accelerate the production speed. This potential was one of my motivations for developing this extension. Furthermore, VS Code is on the cusp of releasing API features that will allow the creation of custom copilot agents, a capability already available in the insiders edition, which could provide additional impetus for using this extension. My aspiration is that the Pine Script community finds great value and utility in this tool, as its development has been a significant endeavor.
@@ -138,4 +151,7 @@ Skilled in Full Stack Development and Node.js, and an expert in Pine Script.
 
 For inquires: frizlabz@gmail.com
 
-Support my work: [Buy me a coffee](https://www.buymeacoffee.com/frizlabz)
+[![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/FrizLabz)](https://twitter.com/FrizLabz)
+
+Support my work:  
+[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/default-orange.png)](https://www.buymeacoffee.com/frizlabz)

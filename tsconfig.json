@@ -17,15 +17,11 @@
     "strict": true
   },
   "include": [
-    "src/**/**.ts",
+    "src/**/*.ts",
     "types/**/*",
-    "ExtensionExtras/.vscode-test.js",
     "webpack.config.js"
  ],
   "exclude": [
     "node_modules",
-    "**/*.d.ts",
-    "./other",
-    ".vscode-test"
   ]
 }

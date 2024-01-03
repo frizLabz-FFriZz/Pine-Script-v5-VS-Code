@@ -6,6 +6,9 @@ import { Helpers } from '../PineHelpers';
 import { Class } from '../PineClass';
 
 
+/**
+ * Represents a hover parameter with documentation and parsing capabilities.
+ */
 export class PineHoverParam {
   private argDocs: PineDocsManager | undefined;
   private mapDocs: PineDocsManager | undefined;
@@ -23,11 +26,21 @@ export class PineHoverParam {
   private def: string = ''
   private qm: string = ''
 
+
+  /**
+   * Constructs an instance of the PineHoverParam class.
+   * @param argument The argument to be processed.
+   * @param wordRange The range within the document where the word is located.
+   */
   constructor(argument: string, wordRange: vscode.Range) {
     this.argument = argument;
     this.wordRange = wordRange;
   }
 
+  /**
+   * Determines if the current context represents a parameter and processes its documentation.
+   * @returns A tuple containing the documentation manager, the argument, and undefined, or undefined if processing fails.
+   */
   public async isParam(): Promise<[PineDocsManager | undefined, string | undefined, undefined] | undefined> {
     try {
       console.log('Starting isParam() function');
@@ -40,14 +53,13 @@ export class PineHoverParam {
         return;
       }
 
+
+      // TODO: Implement this check (checks if the argument is inside a string)
       // const stringCheck = this.checkIfNotInsideString(this.argument);
       // console.log('Line after checkIfNotInsideString:', this.line);
 
-      // const commentCheck = this.checkIfNotInsideComment(this.argument);
-      // console.log('Line after checkIfNotInsideComment:', this.line);  
-
-      // if (!stringCheck || !commentCheck) {
-      //   console.log('check fail', stringCheck, commentCheck);
+      // if (!stringCheck) {
+      //   console.log('check fail', stringCheck);
       //   return;
       // }
 
@@ -90,6 +102,11 @@ export class PineHoverParam {
     }
   }
 
+  /**
+   * Checks if the provided argument is not inside a string.
+   * @param argument The argument to check.
+   * @returns True if the argument is not inside a string, false otherwise.
+   */
   private checkIfNotInsideString(argument: string) {
     try {
       if (!(this.line?.includes('"') && this.line?.includes("'"))) {
@@ -113,37 +130,16 @@ export class PineHoverParam {
     }
   }
 
-  private checkIfNotInsideComment(argument: string) {
-    try {
-      if (!this.line?.includes('//')) {
-        return;
-      }
-      const commentMatch = new RegExp(`\\/\\/.*?\\b${argument}\\b`).test(this.line ?? '');
-      if (commentMatch) {
-        return false;
-      }
-      return true;
-    } catch (error) {
-      console.error(error);
-    }
-  }
 
+  /**
+   * Matches the argument within the given line of text.
+   * @param line The line of text to search within.
+   * @returns The match result or null if no match is found.
+   */
   private matchArgument(line: string) {
     try {
       const paramRegex = new RegExp(`([\\w.<>]+)\\s*\\(.*?(?:([\\w.<>\\[\\]]*?)?\\s*)?\\b(${this.argument})\\b(?:\\s*(?:(=)|(,)|(\\)))\\s*([^,()]*?))?.*?(\\))\\s*(?=(\\)\\s*=>|=>)?)`);
-      // const paramRegex = new RegExp(`([\\w.<>]+)\\s*\\(.*?(?:([\\w.<>\\[\\]]*?)?\\s*)?\\b(${this.argument})\\b(?:\\s*(?:(=)|(,\\s*)|(\\)))\\s*([^,()]*?))?.*?(\\))\\s*(?=(\\)\\s*=>|=>)?)`);
-
-      // const regex = /([\w.<>]+)\s*\(.*\)/g;
       line = line.replace(/\[\]/g, '');
-      // let lines = []
-      // const matches = Array.from(line.matchAll(regex));
-      // if (matches && matches.length > 0) {
-      //   for (const m of matches) {
-      //     line = line.replace(m[1], '')
-      //     lines.push(line)
-      //     this.matchArgument(line)
-      //   }
-      // }
       const match = line.match(paramRegex);
       console.log('matches:', match);
       return match;
@@ -153,6 +149,11 @@ export class PineHoverParam {
     }
   }
 
+  /**
+   * Processes the matched argument to retrieve its documentation.
+   * @param match The regular expression match array.
+   * @returns The documentation manager for the matched argument or undefined if not found.
+   */
   private async processMatch(match: RegExpMatchArray): Promise<PineDocsManager | undefined> {
     try {
       this.functionName = match[1];
@@ -178,7 +179,6 @@ export class PineHoverParam {
       this.mapDocs = map.get(this.functionName);
 
       const argDocs = this.mapDocs?.args.find((i: PineDocsManager) => i.name === this.argument) ?? undefined;
-      console.log(argDocs)
       return argDocs;
     } catch (error) {
       console.error(error);
@@ -186,6 +186,9 @@ export class PineHoverParam {
     }
   }
 
+  /**
+   * Sets various properties based on the argument documentation.
+   */
   private setProperties() {
     try {
       this.displayType = this.argDocs?.displayType ?? this.argDocs?.type ?? '';
@@ -196,10 +199,11 @@ export class PineHoverParam {
     }
   }
      
-     
-  //  return [docs, this.argument, undefined];
+  /**
+   * Processes the argument documentation to determine its display type and updates related properties.
+   * @returns A tuple containing the documentation manager, the argument, and undefined, or undefined if processing fails.
+   */
   private async processArgumentDocumentation(): Promise<[PineDocsManager | undefined, string | undefined, undefined] | undefined> {
-
     // If the display type is undetermined, extract the type from the argument value
     if (this.displayType.includes('<?>') || this.displayType.includes('undetermined')) {
       // If the match has a second group, use it as the display type
@@ -258,8 +262,8 @@ export class PineHoverParam {
     if (this.argDocs) {
       this.argDocs.syntax = `${this.argument}${this.qm}${this.displayType !== '' ? ': ' : ' '}${this.displayType}${this.def}`
     } 
+
     return [this.argDocs, this.argument, undefined]
-    
   }
 }
    

@@ -109,6 +109,10 @@ export class PineScriptList {
   }
 
 
+  /**
+   * Populates the script list with the user's saved scripts.
+   * @param {vscode.QuickPickItem[]} scriptList - The list of scripts.
+   */
   async builtInScriptList(scriptList: vscode.QuickPickItem[]) {
     this.scriptList = await Class.PineRequest.getStandardList()
     this.scriptList.sort((a, b) => b.modified - a.modified)
@@ -121,7 +125,12 @@ export class PineScriptList {
     }
   }
 
-  async loadScriptList(toFetch: string) {
+  /**
+   * Loads the script list.
+   * @param {string} toFetch - The type of scripts to fetch ('saved' or 'built-in').
+   * @returns {Promise<vscode.QuickPick>} A promise that resolves to the Quick Pick menu.
+   */
+  async loadScriptList(toFetch: string): Promise<vscode.QuickPick<vscode.QuickPickItem>> {
     const quickPick = vscode.window.createQuickPick() // Create a Quick Pick menu
     let scripts: vscode.QuickPickItem[] = [] // Initialize an empty array to hold the scripts
 
@@ -144,9 +153,9 @@ export class PineScriptList {
 
   /**
    * Opens a script with the given name, script ID part, and version.
-   * @param {string} name - The name of the script to open.
    * @param {string} scriptIdPart - The script ID part of the script to open.
    * @param {string} version - The version of the script to open.
+   * @param {string} toFetch - The type of scripts to fetch ('saved' or 'built-in').
    */
   async openScript(scriptIdPart: string, version: string, toFetch: string = 'saved') {
     // send the request to get the script text

@@ -8,33 +8,33 @@ import { PineDocsManager } from './PineDocsManager'
  */
 export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
   activeSignature: number = 0
-
   activeFunction: string | null = null
-
   activeParameter: number | null = null
-
   activeArg: string | null = null
-
   offset: number = 0
-
   newFunction: boolean = false
-
   docsToMatchSignatureCompletions?: Map<string | number, PineDocsManager>
 
+  /**
+ * Initializes the completion provider by loading the documentation map.
+ */
   init() {
     new Promise(async () => {
-      await this.getDocsMap()
-    })
+      await this.getDocsMap();
+    });
   }
 
+  /**
+ * Retrieves the documentation map for various Pine script entities such as variables, constants, controls, types, and integers.
+ * The retrieved map is then stored in the `docsToMatchSignatureCompletions` property.
+ */
   async getDocsMap() {
     this.docsToMatchSignatureCompletions = await Class.PineDocsManager.getMap(
       'variables',
       'constants',
       'controls',
       'types',
-      'integers',
-    )
+    );
   }
 
   /**

@@ -12,11 +12,9 @@ import { PineFormatResponse } from './PineFormatResponse'
 import { PineScriptList } from './PineScriptList'
 import { PineTemplates } from './PineTemplates'
 import { PineDocsManager } from './PineDocsManager'
-// import { PineHoverBuildMarkdown } from './PineHoverProvider/PineHoverBuildMarkdown'
 import { PineHoverParam } from './PineHoverProvider/PineHoverIsParam'
 import { PineHoverFunction } from './PineHoverProvider/PineHoverIsFunction'
 import { PineHoverMethod } from './PineHoverProvider/PineHoverIsMethod'
-import { PineSaveToTradingView } from './PineSaveToTradingView'
 
 export class Class {
   public static context: vscode.ExtensionContext | undefined
@@ -234,14 +232,6 @@ export class Class {
   }
 
   /**
-   * Saves to TradingView.
-   */
-  static async PineSaveToTradingView() {
-    await PineSaveToTradingView.pasteToTv()
-    return
-  }
-
-  /**
    * Disposes the specified class.
    * @param {any} ClassToDisposeOf - The class to dispose of.
    */
@@ -251,3 +241,12 @@ export class Class {
     }
   }
 }
+
+
+// /**
+//  * Saves to TradingView.
+//  */
+// static async PineSaveToTradingView() {
+//   await PineSaveToTradingView.pasteToTv()
+//   return
+// }
