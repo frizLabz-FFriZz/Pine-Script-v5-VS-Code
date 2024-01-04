@@ -8,9 +8,9 @@ export class PineSharedCompletionState {
   /** Holds the active argument for code completion */
   private static activeArg: string | number | null = null
   /** Holds the active parameter index for code completion */
-  private static activeParameter: number | null = null
+  static activeParameter: number | null = null
   /** Holds the last argument index for code completion */
-  private static lastArg: number | null = null
+  static lastArg: number | null = null
   /** A flag indicating whether signature completions are active */
   private static sigCompletionsFlag: boolean = false
   /** Holds the signature completions */
@@ -50,16 +50,15 @@ export class PineSharedCompletionState {
    * @returns The current active argument.
     */
   static get getIsLastArg() {
-    if (PineSharedCompletionState.activeParameter === PineSharedCompletionState.lastArg) {
+    if (PineSharedCompletionState.lastArg !== null && (PineSharedCompletionState.lastArg < 0 || PineSharedCompletionState.lastArg === PineSharedCompletionState.activeParameter)) {
       return true
     }
+    return false
   }
-
-  /** Gets the current active argument.
-   * @returns The current active argument.
-    */
-  static setIsLastArg() {
-    PineSharedCompletionState.lastArg = 0
+  
+  /** sets the last argument to 0. */
+  static setIsLastArg(toSet: number = 0) {
+    PineSharedCompletionState.lastArg = toSet
   }
 
   /** Sets the active argument.
@@ -79,9 +78,9 @@ export class PineSharedCompletionState {
     return PineSharedCompletionState.activeArg
   }
 
-  /** Sets the last argument.
-   * @param lastArgument - The new last argument.
-   */
+  // /** Sets the last argument.
+  //  * @param lastArgument - The new last argument.
+  //  */
   static setLastArgNumber(lastArgument: number) {
     PineSharedCompletionState.lastArg = lastArgument
   }

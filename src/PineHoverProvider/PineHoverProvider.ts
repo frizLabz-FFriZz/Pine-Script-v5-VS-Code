@@ -66,31 +66,31 @@ export class PineHoverProvider implements vscode.HoverProvider {
   provideHoverFunctions(num: number = 0) {
     switch (num) {
       case 0:
-        console.log('functionsHover ProvideHoverFunctions')
+        // console.log('functionsHover ProvideHoverFunctions')
         return this.functionsHover()
       case 1:
-        console.log('UDTHover ProvideHoverFunctions')
+        // console.log('UDTHover ProvideHoverFunctions')
         return this.UDTHover()
       case 2:
-        console.log('controlsHover ProvideHoverFunctions')
+        // console.log('controlsHover ProvideHoverFunctions')
         return this.controlsHover()
       case 3:
-        console.log('fieldsHover ProvideHoverFunctions')
+        // console.log('fieldsHover ProvideHoverFunctions')
         return this.fieldsHover()
       case 4:
-        console.log('paramsHover ProvideHoverFunctions')
+        // console.log('paramsHover ProvideHoverFunctions')
         return this.paramsHover()
       case 5:
-        console.log('variablesHover ProvideHoverFunctions')
+        // console.log('variablesHover ProvideHoverFunctions')
         return this.variablesHover()
       case 6:
-        console.log('typesHover ProvideHoverFunctions')
+        // console.log('typesHover ProvideHoverFunctions')
         return this.typesHover()
       case 7:
-        console.log('constantsHover ProvideHoverFunctions')
+        // console.log('constantsHover ProvideHoverFunctions')
         return this.constantsHover()
       case 8:
-        console.log('methodsHover ProvideHoverFunctions')
+        // console.log('methodsHover ProvideHoverFunctions')
         return this.methodsHover()
       default:
         return
@@ -164,7 +164,6 @@ export class PineHoverProvider implements vscode.HoverProvider {
       'function',
       (key) => {
         this.mapArrayMatrix = key
-        console.log(this.mapArrayMatrix, 'mapArrayMatrix')
         return key
           .replace(/map\.new<[^,]+,[^>]+>/g, 'map.new<type,type>')
           .replace(/(matrix\.new|array\.new)<[^>]+>/g, '$1<type>')
@@ -221,7 +220,6 @@ export class PineHoverProvider implements vscode.HoverProvider {
       return
     }
     const [hoverRegex, field] = regexAndDocs
-    console.log(hoverRegex, 'hoverRegex')
     return this.processWordRange(
       field,
       new RegExp('(?<=\\.\\s*|(?:[\\w.<>\\[\\](]*?)\\s*)\\b(?:' + hoverRegex + ')\\b(?!\\s*?\\()', 'g'),
@@ -294,9 +292,6 @@ export class PineHoverProvider implements vscode.HoverProvider {
     regexId: string,
     transformKey: (key: string) => string,
   ): Promise<vscode.Hover | undefined> {
-    // Initialize the namespace
-    console.log(regexId)
-    console.log(JSON.stringify(docs), 'docs')
 
     // If the regexId is not 'param' and either docs or hoverRegex is not defined, return undefined
     if (regexId !== 'param') {
@@ -326,7 +321,6 @@ export class PineHoverProvider implements vscode.HoverProvider {
     // Transform the key
     let key = transformKey(this.document.getText(wordRange))
 
-    console.log(key, 'KEY')
     // Get the documentation for the symbol
     const originalKeyedDocs = docs?.get(key)
     // Determine whether the symbol is a parameter, method, or function
@@ -360,7 +354,6 @@ export class PineHoverProvider implements vscode.HoverProvider {
     wordRange: vscode.Range,
   ): Promise<[PineDocsManager | undefined, string | undefined, string | undefined] | undefined> {
     // Depending on the type of the symbol, call the appropriate matching function
-    console.log('KEY@@@@', key)
     switch (true) {
       // If the symbol is a parameter, call isParamMatch
       case this.isParam:
@@ -377,7 +370,6 @@ export class PineHoverProvider implements vscode.HoverProvider {
       docs = docs[0]
     }
     // Return the documentation, key, and namespace
-    console.log('paramMethodFunction', key)
     return [docs, key, undefined]
   }
 

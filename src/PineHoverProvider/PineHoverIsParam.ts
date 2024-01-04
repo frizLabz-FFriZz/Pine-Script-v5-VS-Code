@@ -43,16 +43,11 @@ export class PineHoverParam {
    */
   public async isParam(): Promise<[PineDocsManager | undefined, string | undefined, undefined] | undefined> {
     try {
-      console.log('Starting isParam() function');
 
       this.line = VSCode.LineText(this.wordRange.start.line);
-      console.log('Line:', this.line);
-
       if (!this.line) {
-        console.log('Line is empty');
         return;
       }
-
 
       // TODO: Implement this check (checks if the argument is inside a string)
       // const stringCheck = this.checkIfNotInsideString(this.argument);
@@ -64,37 +59,19 @@ export class PineHoverParam {
       // }
 
       const match = this.matchArgument(this.line);
-      console.log('Match:', match);
 
       if (!match) {
-        console.log('No match found');
         return;
       }
 
       this.argDocs = await this.processMatch(match);
-      console.log('argDocs:', this.argDocs);
 
       if (!this.argDocs) {
-        console.log('argDocs is empty');
         return;
       }
 
       this.setProperties();
-      console.log('Properties set:', {
-        functionName: this.functionName,
-        argType: this.argType,
-        argument: this.argument,
-        eqSign: this.eqSign,
-        comma: this.comma,
-        argVal: this.argVal,
-        closingParen: this.closingParen,
-        arrow: this.arrow,
-      });
-
       const result = await this.processArgumentDocumentation();
-      console.log('Result:', result);
-
-      console.log('isParam() function completed');
       return result;
     } catch (e) {
       console.error('Error in isParam() function:', e);
@@ -141,7 +118,6 @@ export class PineHoverParam {
       const paramRegex = new RegExp(`([\\w.<>]+)\\s*\\(.*?(?:([\\w.<>\\[\\]]*?)?\\s*)?\\b(${this.argument})\\b(?:\\s*(?:(=)|(,)|(\\)))\\s*([^,()]*?))?.*?(\\))\\s*(?=(\\)\\s*=>|=>)?)`);
       line = line.replace(/\[\]/g, '');
       const match = line.match(paramRegex);
-      console.log('matches:', match);
       return match;
     } catch (error) {
       console.error(error);
