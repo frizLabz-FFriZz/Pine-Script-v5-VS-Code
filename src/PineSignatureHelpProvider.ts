@@ -121,6 +121,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       )
       const parameters = buildSignatures[signatureHelp.activeSignature].parameters
       PineSharedCompletionState.setActiveParameterNumber(signatureHelp.activeParameter)
+      console.log(parameters.length - 1, signatureHelp.activeParameter)
       PineSharedCompletionState.setLastArgNumber(parameters.length - 1)
       await this.sendCompletions(docs, activeSignatureHelp[signatureHelp.activeSignature])
       await this.setActiveArg(signatureHelp)
