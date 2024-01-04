@@ -1,5 +1,5 @@
 {
-  "name": "pinescript",
+  "name": "pinescript-v5-vscode",
   "publisher": "frizLabz",
   "displayName": "Pine Script v5",
   "description": "Pine Script Language Server",
@@ -46,7 +46,7 @@
     "lint": "eslint src --ext ts",
     "tests": "node ./out/test/runTest.js",
     "runTest": "npm run pretest && npm run tests",
-    "vsce-package": "vsce package -o pinescript.vsix"
+    "vsce-package": "vsce package -o pinescriptv5.vsix"
   },
   "main": "./dist/extension.js",
   "contributes": {

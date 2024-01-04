@@ -4,7 +4,7 @@
 <p align="center">
   <a><img src="https://img.shields.io/github/package-json/v/FFriZ/Pine-Script-v5-VS-Code?color=green&style=flat-square" alt="Version"></a>
   <a><img src="https://img.shields.io/github/issues/FFriZ/Pine-Script-v5-VS-Code?style=flat-square" alt="Issues"></a>
-  <a><img src="https://img.shields.io/visual-studio-marketplace/i/frizlabz.pinescript?color=red&style=flat-square" alt="Downloads"></a>
+  <a><img src="https://img.shields.io/visual-studio-marketplace/i/frizlabz.pinescript-v5-vscode?color=red&style=flat-square" alt="Downloads"></a>
   <a><img src="https://img.shields.io/github/stars/FFriZ/Pine-Script-v5-VS-Code?color=red&style=flat-square" alt="Stars"></a>
   <a><img src="https://img.shields.io/github/contributors/FFriZ/Pine-Script-v5-VS-Code?color=green&style=flat-square" alt="Contributors"></a>
   <a><img src="https://img.shields.io/github/license/FFriZ/Pine-Script-v5-VS-Code?style=flat-square" alt="Licance"></a>
@@ -80,7 +80,7 @@ Automatically generate and insert types for untyped variables in your scripts.
 
 You can also install the extension directly from the command line:
     
-`code --install-extension frizLabz.pinescript`
+`code --install-extension frizLabz.pinescript-v5-vscode`
 
 **Building from Source**
 
