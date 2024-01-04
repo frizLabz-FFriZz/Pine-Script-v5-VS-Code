@@ -23,7 +23,7 @@ export class PineLint {
   static get DiagnosticCollection() {
     if (!PineLint.diagnosticCollection) {
       PineLint.diagnosticCollection = vscode.languages.createDiagnosticCollection('pine')
-      console.log('DiagnosticCollection initializing')
+      // console.log('DiagnosticCollection initializing')
     }
     return PineLint.diagnosticCollection
   }
@@ -75,7 +75,7 @@ export class PineLint {
   /** Lints the active document if it exists and the version is correct. */
   public static async lintDocument() {
     if (VSCode.ActivePineFile && !PineLint.initialFlag && await PineLint.checkVersion()) {
-      console.log('linting')
+      // console.log('linting')
       const response = await Class.PineRequest.lint()
       if (response) {
         PineLint.handleResponse(response)

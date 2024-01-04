@@ -3,6 +3,10 @@
   "publisher": "frizLabz",
   "displayName": "Pine Script v5",
   "description": "Pine Script Language Server",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FFriZ/Pine-Script-v5-VS-Code"
+  },
   "version": "0.0.1",
   "type": "commonjs",
   "engines": {
@@ -42,7 +46,7 @@
     "lint": "eslint src --ext ts",
     "tests": "node ./out/test/runTest.js",
     "runTest": "npm run pretest && npm run tests",
-    "vsce-package": "vsce package -o pinescriptv5.vsix"
+    "vsce-package": "vsce package -o pinescript.vsix"
   },
   "main": "./dist/extension.js",
   "contributes": {

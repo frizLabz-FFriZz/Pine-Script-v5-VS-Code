@@ -53,40 +53,48 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
   ): Promise<vscode.SignatureHelp | null> {
     try {
       // Get the current line of text
-      const line = document.lineAt(position).text
+      const line = document.lineAt(position).text;
       // Create a new SignatureHelp object
-      const signatureHelp = new vscode.SignatureHelp()
+      const signatureHelp = new vscode.SignatureHelp();
       // Find the last opening and closing parentheses before the current position
-      const lastOpeningParenIndex = line.lastIndexOf('(', position.character)
-      let lastCloseParenIndex = line.lastIndexOf(')', position.character)
+      const lastOpeningParenIndex = line.lastIndexOf('(', position.character);
+      let lastCloseParenIndex = line.lastIndexOf(')', position.character);
       if (lastCloseParenIndex < 0) {
-        lastCloseParenIndex = 0
+        lastCloseParenIndex = 0;
       }
-      // If the current position is after the last closing parenthesis, return null
-      if (position.isAfter(new vscode.Position(position.line, lastCloseParenIndex))) {
-        this.activeFunction = null
-        this.activeSignature = 0
-        this.activeParameter = 0
-        this.offset = 0
-        this.activeArg = null
-        this.newFunction = true
-        PineSharedCompletionState.clearCompletions()
-        return null
+      
+      // Check if the current position is on a new line
+      const isNewLine = position.character === 0;
+      
+      // Check if the current position is after the last closing parenthesis
+      const isAfterLastCloseParen = position.isAfter(new vscode.Position(position.line, lastCloseParenIndex));
+      
+      if (isNewLine || isAfterLastCloseParen) {
+        this.activeFunction = null;
+        this.activeSignature = 0;
+        this.activeParameter = 0;
+        this.offset = 0;
+        this.activeArg = null;
+        this.newFunction = true;
+        PineSharedCompletionState.clearCompletions();
+        return null;
       }
+      
       // Extract the function name from the line
-      const trim = line.slice(0, lastOpeningParenIndex)
-      const trimMatch = trim.match(/([\w.]+)$/g)
-      const functionMatch = /.*?([\w.]+)\s*\(/.exec(line)
-
+      const trim = line.slice(0, lastOpeningParenIndex);
+      const trimMatch = trim.match(/([\w.]+)$/g);
+      const functionMatch = /.*?([\w.]+)\s*\(/.exec(line);
+      
       // If new function detected, reset active signature and parameter
       if (functionMatch && functionMatch?.[1] !== this.activeFunction) {
-        this.activeFunction = functionMatch?.[1] ?? null
-        this.activeSignature = 0
-        this.activeParameter = 0
-        this.offset = 0
-        this.activeArg = null
-        this.newFunction = true
+        this.activeFunction = functionMatch?.[1] ?? null;
+        this.activeSignature = 0;
+        this.activeParameter = 0;
+        this.offset = 0;
+        this.activeArg = null;
+        this.newFunction = true;
       }
+      
       // Get the function documentation
       const map = await Class.PineDocsManager.getMap('functions', 'functions2')
       if (!trimMatch || !map.has(trimMatch[0])) {
@@ -113,6 +121,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       )
       const parameters = buildSignatures[signatureHelp.activeSignature].parameters
       PineSharedCompletionState.setActiveParameterNumber(signatureHelp.activeParameter)
+      console.log(parameters.length - 1, signatureHelp.activeParameter)
       PineSharedCompletionState.setLastArgNumber(parameters.length - 1)
       await this.sendCompletions(docs, activeSignatureHelp[signatureHelp.activeSignature])
       await this.setActiveArg(signatureHelp)
@@ -122,7 +131,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
 
     } catch (e) {
       // If an error occurs, reset the active signature and return null
-      console.log('signatureProvider error', e, '')
+      console.error('signatureProvider error', e, '')
       this.activeSignature = 0
       return null
     }
@@ -239,7 +248,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       }
       return [parameters, activeSignatureHelp, syn]
     } catch (e) {
-      console.log('buildParameters error', e)
+      console.error('buildParameters error', e)
       return [[], [], syn]
     }
   }
@@ -310,7 +319,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
 
       return activeParameter === signatures[this.activeSignature].parameters.length ? -1 : activeParameter
     } catch (e) {
-      console.log('calculateActiveParameter error', e)
+      console.error('calculateActiveParameter error', e)
       return 0
     }
   }
@@ -433,7 +442,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       }
       return type
     } catch (e) {
-      console.log('getArgTypes error', e)
+      console.error('getArgTypes error', e)
       return null
     }
   }
@@ -482,7 +491,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       PineSharedCompletionState.setCompletions(buildCompletions)
       PineSharedCompletionState.setArgs(args)
     } catch (e) {
-      console.log('sendCompletions error', e)
+      console.error('sendCompletions error', e)
     }
   }
 
@@ -578,7 +587,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       completions = [...completions, ...buildStr]
       return completions
     } catch (e) {
-      console.log('extractCompletions error', e)
+      console.error('extractCompletions error', e)
       return []
     }
   }
@@ -599,7 +608,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       }
       return null
     } catch (e) {
-      console.log('getCompletionDocs error', e)
+      console.error('getCompletionDocs error', e)
       return null
     }
   }
@@ -631,7 +640,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       }
       PineSharedCompletionState.setActiveArg(activeArg)
     } catch (e) {
-      console.log('setActiveArg error', e)
+      console.error('setActiveArg error', e)
     }
   }
 
@@ -653,7 +662,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       // No match found
       return arg
     } catch (e) {
-      console.log('findRegexMatchPosition error', e)
+      console.error('findRegexMatchPosition error', e)
       return arg
     }
   }

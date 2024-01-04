@@ -55,9 +55,7 @@ export class PineSharedCompletionState {
     }
   }
 
-  /** Gets the current active argument.
-   * @returns The current active argument.
-    */
+  /** sets the last argument to 0. */
   static setIsLastArg() {
     PineSharedCompletionState.lastArg = 0
   }

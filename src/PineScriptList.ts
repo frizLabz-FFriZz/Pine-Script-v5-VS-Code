@@ -2,6 +2,8 @@ import { path } from './index'
 import * as vscode from 'vscode'
 import { Class } from './PineClass'
 import * as fs from 'fs'
+import * as os from 'os';
+
 
 /** PineScriptList class is responsible for managing a list of Pine Scripts. */
 export class PineScriptList {
@@ -39,7 +41,6 @@ export class PineScriptList {
       quickPick.onDidAccept(async () => {
         // Get the selected item
         const selected = quickPick.selectedItems[0]
-        console.log(selected)
         // If the selected item exists and its description includes 'Version:'
         if (selected && selected.label) {
           // Get the detail and label of the selected item
@@ -172,30 +173,42 @@ export class PineScriptList {
 
 
   /**
-   * Handles the Pine script response.
-   * @param {any} response - The response object containing the script details.
-   */
+ * Handles the Pine script response.
+ * @param {any} response - The response object containing the script details.
+ */
   async handlePineScript(response: any): Promise<void> {
-    const workspaceFolder = vscode.workspace.workspaceFolders![0].uri.fsPath
-    const scriptDir = path.join(workspaceFolder, 'PineScripts')
-    const scriptPrevDir = path.join(scriptDir, 'PreviousPineScripts')
+  // Check if there is at least one workspace folder
+    if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+      const workspaceFolder = vscode.workspace.workspaceFolders[0].uri.fsPath;
+      const scriptDir = path.join(workspaceFolder, 'PineScripts');
+      const scriptPrevDir = path.join(scriptDir, 'PreviousPineScripts');
 
-    await this.createDirectoryIfNotExists(scriptDir)
-    await this.createDirectoryIfNotExists(scriptPrevDir)
+      await this.createDirectoryIfNotExists(scriptDir);
+      await this.createDirectoryIfNotExists(scriptPrevDir);
 
-    const existingFilePath = path.join(scriptDir, `${response.scriptName}.pine`)
-    const existingFileUri = vscode.Uri.file(existingFilePath)
+      const existingFilePath = path.join(scriptDir, `${response.scriptName}.pine`);
+      const existingFileUri = vscode.Uri.file(existingFilePath);
 
-    try {
-      const existingFileStat = await vscode.workspace.fs.stat(existingFileUri)
-      if (existingFileStat) {
-        await this.processExistingFile(existingFileUri, scriptDir, response.scriptName, response.source)
+      try {
+        const existingFileStat = await vscode.workspace.fs.stat(existingFileUri);
+        if (existingFileStat) {
+          await this.processExistingFile(existingFileUri, scriptDir, response.scriptName, response.source);
+        }
+      } catch (err) {
+        await vscode.workspace.fs.writeFile(existingFileUri, Buffer.from(response.source));
+        await this.openDocument(existingFileUri);
       }
-    } catch (err) {
-      await vscode.workspace.fs.writeFile(existingFileUri, Buffer.from(response.source))
-      await this.openDocument(existingFileUri)
+    } else {
+    // No workspace folder is open, so we'll save the file in a temporary location
+      const tempFolderPath = os.tmpdir();
+      const tempFilePath = path.join(tempFolderPath, `${response.scriptName}.pine`);
+      const tempFileUri = vscode.Uri.file(tempFilePath);
+
+      await vscode.workspace.fs.writeFile(tempFileUri, Buffer.from(response.source));
+      await this.openDocument(tempFileUri);
     }
   }
+
 
   /**
    * Creates a directory if it does not exist.

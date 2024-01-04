@@ -58,3 +58,16 @@ examples/
 
 # If you have any graphic assets that are not used directly by the extension
 assets/images/design/
+
+# Docs folder
+docs/
+typedoc.json
+
+# prettier
+.prettierrc
+.prettierignore
+
+# eslint
+.eslintrc
+
+# 

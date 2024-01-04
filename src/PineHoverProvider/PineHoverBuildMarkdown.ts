@@ -71,7 +71,6 @@ export class PineHoverBuildMarkdown {
         syntax = keyedDocs?.name ?? key
       }
 
-      console.log(regexId, 'REGEX ID')
       if (!syntax || syntax === '') {
         return [key]
       }
@@ -147,7 +146,6 @@ export class PineHoverBuildMarkdown {
       if (mapArrayMatrix && /(map|array|matrix)(\.new)?<[^>]+>/.test(syntax)) {
         return PineHoverHelpers.replaceMapArrayMatrix(syntax, mapArrayMatrix)
       }
-      console.log('SYNTAX', syntax)
       return syntax
     } catch (error) {
       console.error(error)
@@ -163,7 +161,6 @@ export class PineHoverBuildMarkdown {
    */
   static async checkSyntaxContent(syntaxContent: string, isMethod: boolean = false) {
     try {
-      console.log('syntaxContent', syntaxContent)
       return Helpers.checkSyntax(syntaxContent, isMethod)
     } catch (error) {
       console.error(error)
@@ -179,7 +176,6 @@ export class PineHoverBuildMarkdown {
    */
   static async buildKeyBasedContent(keyedDocs: PineDocsManager, key: string) {
     try {
-      console.log(JSON.stringify(keyedDocs), 'KEYED DOCS')
       if (keyedDocs?.type || keyedDocs?.returnedType || keyedDocs?.returnedTypes || keyedDocs?.returnType) {
         const syntax = `${keyedDocs?.name ?? key}: ${
           (keyedDocs?.type ?? keyedDocs?.returnedType ?? keyedDocs?.returnedTypes[0]) || '<?>'

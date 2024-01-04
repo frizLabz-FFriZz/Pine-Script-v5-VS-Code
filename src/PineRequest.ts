@@ -12,8 +12,6 @@ export class PineRequest {
   private savedList: any[] = []
   /** Holds the fetch function for making requests */
   private fetch: any = undefined
-  /** Holds the mock request for testing purposes */
-  mockRequest: string | undefined = undefined
 
   /**
    * Dynamically imports node-fetch and assigns it to this.fetch.
@@ -50,10 +48,7 @@ export class PineRequest {
    * @returns {Promise<any>} A promise that resolves to the response from the request.
    */
   async request(method: string, url: string): Promise<any> {
-    // If a mock request is defined, return it
-    if (this.mockRequest) {
-      return JSON.parse(this.mockRequest)
-    }
+
     // Ensure node-fetch is loaded
     await this.loadFetchModule()
     // Initialize a new URLSearchParams object

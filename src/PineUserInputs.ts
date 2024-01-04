@@ -53,7 +53,7 @@ export class PineUserInputs {
     if (username) {
       return username
     } else {
-      console.log('Pine: No Username')
+      console.error('Pine: No Username')
       return ''
     }
   }

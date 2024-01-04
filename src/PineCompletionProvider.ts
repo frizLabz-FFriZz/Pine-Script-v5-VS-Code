@@ -23,7 +23,6 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
       if (PineSharedCompletionState.getSignatureCompletionsFlag && activeArg) {
         PineSharedCompletionState.setSignatureCompletionsFlag(false)
         this.noSort = true
-        console.log('activeArg', activeArg)
         return PineSharedCompletionState.getCompletions[activeArg] ?? []
       }
       return []
@@ -149,7 +148,6 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         // Set the replacement range and insert text of the completion item
         completionItem.insertText = insertText
         completionItem.preselect = def ? true : false
-        console.log('insert Text', insertText)
         completionItem.range = new vscode.Range(new vscode.Position(position.line, wordStart), position)
       }
 
@@ -163,7 +161,6 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         PineSharedCompletionState.setIsLastArg()
       }
 
-      console.log('completionItem', completionItem)
       return completionItem
     } catch (error) {
       console.error(error)
