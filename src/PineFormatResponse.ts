@@ -86,7 +86,10 @@ export class PineFormatResponse {
         }
         // If the function does not have a thisType property, add it to funcsCompletions
         if (!func?.thisType) {
-          funcsCompletions[0].docs.push(func)
+          const funcCopy = { ...func }
+          funcCopy.isCompletion = true // Set the isCompletion property of the function
+          funcCopy.kind = doc.title.substring(0, doc.title.length - 1) // Set the kind property of the function
+          funcsCompletions[0].docs.push(funcCopy)
         } else {
           if (match) { // If the function has a thisType property, it is a method
             func.methodName = match[1] // Set the methodName property of the function

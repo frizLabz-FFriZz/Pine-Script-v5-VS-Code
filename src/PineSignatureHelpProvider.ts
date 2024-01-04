@@ -96,7 +96,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       }
       
       // Get the function documentation
-      const map = await Class.PineDocsManager.getMap('functions', 'functions2')
+      const map = await Class.PineDocsManager.getMap('functions', 'completionFunctions')
       if (!trimMatch || !map.has(trimMatch[0])) {
         return null
       }
@@ -155,6 +155,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       syntax = func.syntax.split('\n')
     }
 
+    console.log(syntax, func.syntax)
     // For each line of syntax...
     for (const syn of syntax) {
       // Build the parameters for the function
@@ -190,7 +191,10 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       // Initialize an array to hold the argument names
       const args = []
       // Extract the argument list from the function syntax
-      const syntax = syn.replace(/[\w.]+\s*\(/g, '').replace(/\)\s*(=>|\u2192).*/g, '')
+      let syntax = syn
+      if (syn === typeof 'string') {
+        syntax = syn.replace(/[\w.]+\s*\(/g, '').replace(/\)\s*(=>|\u2192).*/g, '')
+      }
       // Split the argument list into individual arguments
       const split = syntax.split(',')
       // For each argument...
@@ -202,6 +206,10 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
         }
         args.push(arg.trim())
       }
+
+      // check for isCompletion key in docs
+      const isCompletion = func?.isCompletion ?? false
+
       // For each argument...
       for (const arg of args) {
         // Find the argument in the function's argument list
@@ -213,31 +221,38 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
         // Extract the argument name, description, and type
         const argName = argDocs.name
         const argDesc = argDocs?.info ?? argDocs?.desc ?? ''
-        const argType = argDocs.displayType.replace(/(series|simple|input|literal|const)\s*/g, '') ?? ''
+        let argType = argDocs.displayType ?? argDocs.type ?? ''
+        argType = argType.replace(/(series|simple|input|literal|const)\s*/g, '') ?? ''
 
-        // Build the parameter label
-        const paramLabel = `${argType !== '' ? ' ' : ''}${argName}`
+        let paramDocumentation
+        if (isCompletion) {
+          paramDocumentation = new vscode.MarkdownString(`**\n\`\`\`pine\n  ${argName}: ${argType}\n\`\`\`\n${argDesc.trim()}`)
+       
+        } else {
+          // Build the parameter label
+          const paramLabel = `${argType !== '' ? ' ' : ''}${argName}`
 
-        const defaultValue =
+          const defaultValue =
           !argDocs?.required || argDocs?.default !== null
             ? `${argDocs?.default === null ? ' = na' : ' = ' + argDocs.default}`
             : ''
-        let optionalMark = ''
+          let optionalMark = ''
 
-        if (!argDocs?.required) {
-          if (argDocs.default === null) {
+          if (!argDocs?.required) {
+            if (argDocs.default === null) {
+              optionalMark = '?'
+            }
             optionalMark = '?'
+            syn = syn.replace(RegExp(`\\b${argName}\\b`), `${argName}?`)
           }
-          optionalMark = '?'
-          syn = syn.replace(RegExp(`\\b${argName}\\b`), `${argName}?`)
-        }
 
-        // Build the parameter documentation
-        const paramDocumentation = new vscode.MarkdownString(
-          `**${
-            argDocs.required ? 'Required' : 'Optional'
-          }**\n\`\`\`pine\n${paramLabel}${optionalMark}: ${argType}${defaultValue}\n\`\`\`\n${argDesc.trim()}`,
-        )
+          // Build the parameter documentation
+          paramDocumentation = new vscode.MarkdownString(
+            `**${
+              argDocs.required ? 'Required' : 'Optional'
+            }**\n\`\`\`pine\n${paramLabel}${optionalMark}: ${argType}${defaultValue}\n\`\`\`\n${argDesc.trim()}`,
+          )
+        }
         // Add the argument to the active signature help
         activeSignatureHelp.push({ arg: argName, type: argType })
         // find match position (doing it this way prevents matching the namespace or function if the argument name is the same)
