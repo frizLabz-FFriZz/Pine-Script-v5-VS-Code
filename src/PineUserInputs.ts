@@ -25,7 +25,7 @@ export class PineUserInputs {
    * @param username - The username to set.
    */
   async setUsername(username: string | undefined = undefined) {
-    if (username) {
+    if (await this.getUsername()) {
       await this.secrets.delete(this.USERNAME_KEY)
       VSCode.Window.showInformationMessage('Pine: Username cleared')
       return

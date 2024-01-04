@@ -31,8 +31,6 @@ export class PineTemplates {
     } else {
       // Create the file since it doesn't exist
       const uri = vscode.Uri.file(filePath);
-      // Replace placeholder in template content with the script name
-      templateContent = templateContent.replace(/{{SCRIPT_NAME}}/g, scriptName);
       // Convert the string content to a Uint8Array
       const encoder = new TextEncoder(); // TextEncoder encodes into utf-8 by default
       const uint8Array = encoder.encode(templateContent);
@@ -67,7 +65,7 @@ export class PineTemplates {
    */
   async getIndicatorTemplate() {
     const scriptName = await this.getNameInputBox()
-    const name = scriptName ? (await Class.PineUserInputs?.getUsername()) ?? 'Guest' : 'Add_Username_in_Settings'
+    const name = await Class.PineUserInputs?.getUsername() ?? ''
     const template = 
 `// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © ${name}
@@ -86,7 +84,7 @@ plot(close)`
    */
   async getStrategyTemplate() {
     const scriptName = await this.getNameInputBox()
-    const name = scriptName ? (await Class.PineUserInputs?.getUsername()) ?? 'Guest' : 'Add_Username_in_Settings'
+    const name = await Class.PineUserInputs?.getUsername() ?? ''
     const template = 
 `// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © ${name}
@@ -111,13 +109,12 @@ if (shortCondition)
    */
   async getLibraryTemplate() {
     const scriptName = await this.getNameInputBox()
-    const name = scriptName ? (await Class.PineUserInputs?.getUsername()) ?? 'Guest' : 'Add_Username_in_Settings'
+    const name = await Class.PineUserInputs?.getUsername() ?? ''
     const template = 
 `// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © ${name}
 
 //@version=5
-
 // @description - add library description here
 library("${scriptName}", overlay = true)
 
@@ -128,7 +125,6 @@ export fun(float x) =>
     //TODO : add function body and return value here
     x`
     
-
     this.saveAndOpenNewScript(template, scriptName)
     return template
   }
