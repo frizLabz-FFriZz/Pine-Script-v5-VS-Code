@@ -153,7 +153,7 @@ export class PineHoverProvider implements vscode.HoverProvider {
 
   /** This function provides hover information for functions. */
   async functionsHover() {
-    const regexAndDocs = await PineHoverHelpers.formRegexGetDocs('functions', 'functions2')
+    const regexAndDocs = await PineHoverHelpers.formRegexGetDocs('functions', 'completionFunctions')
     if (!regexAndDocs) {
       return
     }

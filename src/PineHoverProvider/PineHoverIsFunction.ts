@@ -31,7 +31,7 @@ export class PineHoverFunction {
       let syntax: string[] = [];
       let returnTypes: string[] = [];
 
-      const getDocs: any = await Class.PineDocsManager.getDocs('functions', 'functions2');
+      const getDocs: any = await Class.PineDocsManager.getDocs('functions', 'completionFunctions');
       const argsMap = this.createArgsMap();
 
       if (!argsMap) {
