@@ -269,11 +269,15 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
           // Build the parameter label
           const paramLabel = `${argType !== '' ? ' ' : ''}${argName}`
 
-          const defaultValue =
-            !argDocs?.required || argDocs?.default !== null
-              ? `${argDocs?.default === null ? ' = na' : ' = ' + argDocs.default}`
-              : ''
+          let defaultValue =
+            !argDocs?.required || argDocs?.default !== null || argDocs?.default !== undefined
+              ? argDocs?.default ? ' = ' + `${argDocs.default}`
+                : '' : ''
           let optionalMark = ''
+
+          if (defaultValue.includes('undefined') || defaultValue.includes('null')) {
+            defaultValue = ''
+          }
 
           if (!argDocs?.required) {
             if (argDocs.default === null) {
@@ -370,7 +374,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
         : furthestIndex + (furthestIndex > 0 ? commasCountAfterEqual : commasAll)
 
       if (activeParameter === signatures[this.activeSignature].parameters.length) {
-        PineSharedCompletionState.setIsLastArg(activeParameter)
+        PineSharedCompletionState.setIsLastArg(-1)
         return -1
       } else {
         PineSharedCompletionState.setIsLastArg(activeParameter)
