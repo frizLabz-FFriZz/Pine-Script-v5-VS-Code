@@ -82,7 +82,7 @@ export class PineHoverMethod {
         // Construct the key from the type or return type of the variable and the second part of the split key
         const key: string = (varDocs?.type ?? varDocs?.returnType) + '.' + this.functionName
         // Get the functions map
-        const funcMap = await Class.PineDocsManager.getMap('functions', 'functions2')
+        const funcMap = await Class.PineDocsManager.getMap('functions', 'completionFunctions')
         // Get the documentation for the key
         const funcDocs: PineDocsManager | undefined = funcMap.get(key)
         // If documentation is found, return the key and documentation
@@ -119,8 +119,8 @@ export class PineHoverMethod {
   private async findDocumentationForMethods(methods: string[]): Promise<[PineDocsManager | undefined, string | undefined, string | undefined] | undefined> {
     try {
       let docsGet: PineDocsManager | undefined;
-      const funcMap = await Class.PineDocsManager.getMap('functions', 'functions2');
-      const methodMap = await Class.PineDocsManager.getMap('methods');
+      const funcMap = await Class.PineDocsManager.getMap('functions', 'completionFunctions');
+      const methodMap = await Class.PineDocsManager.getMap('completionFunctions');
       let type = await Helpers.identifyType(this.namespace);
 
       if (type && typeof type === 'string') {
