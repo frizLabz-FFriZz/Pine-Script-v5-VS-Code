@@ -1,5 +1,6 @@
 import { PineDocsManager } from '../PineDocsManager';
 import { Class } from '../PineClass';
+import { Helpers } from '../PineHelpers';
 
 /**
  * Represents a PineHoverFunction.
@@ -28,25 +29,24 @@ export class PineHoverFunction {
         return;
       }
 
-      let syntax: string[] = [];
-      let returnTypes: string[] = [];
+      const getDocs: any = await Class.PineDocsManager.getDocs('functions', 'completionFunctions');
 
-      const getDocs: any = await Class.PineDocsManager.getDocs('functions', 'functions2');
-      const argsMap = this.createArgsMap();
 
-      if (!argsMap) {
-        return [this.keyedDocs, this.key, undefined];
-      }
+      this.processFunctionDocs(getDocs);
+      return [this.keyedDocs, this.key, undefined];
 
-      this.processFunctionDocs(getDocs, argsMap, returnTypes, syntax);
+      // const argsMap = this.createArgsMap();
 
-      if (syntax.length <= 1) {
-        return [this.keyedDocs, this.key, undefined];
-      } else {
-        this.keyedDocs.returnTypes = [...new Set(returnTypes)].join(', ');
-        this.keyedDocs.syntax = [...new Set(syntax)].join('\n');
-        return [this.keyedDocs, this.key, undefined];
-      }
+      // if (!argsMap) {
+      //   return [this.keyedDocs, this.key, undefined];
+      // }
+
+      // this.keyedDocs.returnTypes = returnTypes
+      // if (syntax.length <= 1) {
+      // } else {
+      //   this.keyedDocs.syntax = [...new Set(syntax.split('\n'))].join('\n');
+      //   return [this.keyedDocs, this.key, undefined];
+      
     } catch (error) {
       // Handle the error here
       console.error(error);
@@ -54,22 +54,22 @@ export class PineHoverFunction {
     }
   }
 
-  /**
-   * Creates a map of function arguments.
-   * @returns A Map containing the function arguments.
-   */
-  private createArgsMap(): Map<string, Record<string, any>> | undefined {
-    try {
-      if (this.keyedDocs.args && this.keyedDocs.args.length > 0) {
-        return new Map(this.keyedDocs.args.map((doc: any) => [doc.name, doc]));
-      }
-      return;
-    } catch (error) {
-      // Handle the error here
-      console.error(error);
-      return undefined;
-    }
-  }
+  // /**
+  //  * Creates a map of function arguments.
+  //  * @returns A Map containing the function arguments.
+  //  */
+  // private createArgsMap(): Map<string, Record<string, any>> | undefined {
+  //   try {
+  //     if (this.keyedDocs.args && this.keyedDocs.args.length > 0) {
+  //       return new Map(this.keyedDocs.args.map((doc: any) => [doc.name, doc]));
+  //     }
+  //     return;
+  //   } catch (error) {
+  //     // Handle the error here
+  //     console.error(error);
+  //     return undefined;
+  //   }
+  // }
 
   /**
    * Processes the function documentation.
@@ -78,40 +78,41 @@ export class PineHoverFunction {
    * @param returnTypes The array of return types.
    * @param syntax The array of syntax.
    */
-  private processFunctionDocs(getDocs: any[], argsMap: Map<string, Record<string, any>>, returnTypes: string[], syntax: string[]): void {
+  private processFunctionDocs(getDocs: any[]): void {
     try {
+      const syntax: string[] = []
+      let returnedTypes: string[] | string = []
       for (const doc of getDocs) {
         if (doc.name === this.key && !doc?.isMethod) {
-          for (const arg of doc.args) {
-            this.updateArgsMap(argsMap, arg);
-            syntax.push(doc.syntax);
-            returnTypes.push(doc.returnType);
-          }
+          syntax.push(...doc.syntax.split('\n'))
+          returnedTypes = Helpers.returnTypeArrayCheck(doc)
         }
       }
+      this.keyedDocs.returnTypes = returnedTypes
+      this.keyedDocs.syntax = [...new Set(syntax)].join('\n')
     } catch (error) {
       // Handle the error here
       console.error(error);
     }
   }
 
-  /**
-   * Updates the arguments map.
-   * @param argsMap The map of function arguments.
-   * @param arg The argument to update.
-   */
-  private updateArgsMap(argsMap: Map<string, Record<string, any>>, arg: any) {
-    try {
-      if (argsMap.has(arg.name)) {
-        const getMap = argsMap.get(arg.name);
-        if (getMap && getMap.displayType) {
-          const arrReturnTypes = [...new Set(getMap.displayType.split(', ')).add(arg.displayType)];
-          getMap.displayType = arrReturnTypes.join(', ');
-        }
-      }
-    } catch (error) {
-      // Handle the error here
-      console.error(error);
-    }
-  }
+  // /**
+  //  * Updates the arguments map.
+  //  * @param argsMap The map of function arguments.
+  //  * @param arg The argument to update.
+  //  */
+  // private updateArgsMap(argsMap: Map<string, Record<string, any>>, arg: any) {
+  //   try {
+  //     if (argsMap.has(arg.name)) {
+  //       const getMap = argsMap.get(arg.name);
+  //       if (getMap && getMap.displayType) {
+  //         const arrReturnTypes = [...new Set(getMap.displayType.split(', ')).add(arg.displayType)];
+  //         getMap.displayType = arrReturnTypes.join(', ');
+  //       }
+  //     }
+  //   } catch (error) {
+  //     // Handle the error here
+  //     console.error(error);
+  //   }
+  // }
 }

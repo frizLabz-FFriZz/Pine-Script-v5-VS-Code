@@ -77,11 +77,7 @@ export class PineHoverBuildMarkdown {
 
       let syntaxPrefix = this.getSyntaxPrefix(syntax, regexId) // fieldPropertyAddition
 
-      if (syntax.includes('chart.point') && !/chart\.point$/.test(syntax)) {
-        syntaxPrefix = '(object) '
-      }
-
-      if (regexId !== 'control') {
+      if (regexId !== 'control' && regexId !== 'UDT') {
         if (syntax.includes('\n')) {
           syntax = syntax
             .split('\n')
@@ -91,7 +87,7 @@ export class PineHoverBuildMarkdown {
           syntax = syntaxPrefix + syntax.trim()
         }
       }
-
+      
       return [this.cbWrap(syntax), '***  \n']
     } catch (error) {
       console.error(error)
@@ -109,24 +105,20 @@ export class PineHoverBuildMarkdown {
     let prefix = ''
     if (regexId === 'variable') {
       if (
-        !/(?::\s*)(array|map|matrix|int|float|bool|string|color|line|label|box|table|linefill|polyline|undefined type)\b/g.test(
+        !/(?::\s*)(array|map|matrix|int|float|bool|string|color|line|label|box|table|linefill|polyline|undefined type|<\?>)\b/g.test(
           syntax,
         )
       ) {
-        prefix = '(object) '
+        return '(object) '
       } else {
-        prefix = '(variable) '
+        if (syntax.includes('chart.point') && !/chart\.point$/.test(syntax)) {
+          return '(object) '
+        }
+        return '(variable) '
       }
 
-      if (syntax.includes('chart.point')) {
-        prefix = '(object) '
-      }
-
-      if (syntax.includes('<?>')) {
-        prefix = '(variable) '
-      }
-    } else if (regexId !== 'control') {
-      prefix = '(' + regexId + ') '
+    } else if (regexId !== 'control' && regexId !== 'UDT') {
+      return '(' + regexId + ') '
     }
     return prefix
   }
@@ -176,10 +168,9 @@ export class PineHoverBuildMarkdown {
    */
   static async buildKeyBasedContent(keyedDocs: PineDocsManager, key: string) {
     try {
-      if (keyedDocs?.type || keyedDocs?.returnedType || keyedDocs?.returnedTypes || keyedDocs?.returnType) {
-        const syntax = `${keyedDocs?.name ?? key}: ${
-          (keyedDocs?.type ?? keyedDocs?.returnedType ?? keyedDocs?.returnedTypes[0]) || '<?>'
-        } `
+      const returnType = Helpers.returnTypeArrayCheck(keyedDocs)
+      if (returnType) {
+        const syntax = `${keyedDocs?.name ?? key}: ${returnType || '<?>'} `
         return syntax
       } else {
         return key
@@ -195,7 +186,10 @@ export class PineHoverBuildMarkdown {
    * @param keyedDocs - The PineDocsManager instance.
    * @returns A promise that resolves to an array containing the description.
    */
-  static async appendDescription(keyedDocs: PineDocsManager) {
+  static async appendDescription(keyedDocs: PineDocsManager, regexId: string) {
+    if (regexId === 'field') {
+      return []
+    }
     try {
       const infoDesc = keyedDocs?.info ?? keyedDocs?.desc
       if (infoDesc) {
@@ -271,7 +265,39 @@ export class PineHoverBuildMarkdown {
    */
   static buildParamHoverDescription(paramDocs: Record<string, any>, typeKey: string) {
     try {
-      return `${paramDocs?.info ?? paramDocs?.desc ?? ''} \`${Helpers.replaceType(paramDocs[typeKey] ?? '')}\``
+      const endingType = Helpers.replaceType(paramDocs[typeKey] ?? '')
+      const paramInfo = paramDocs?.info ?? paramDocs?.desc ?? ''
+      const paramInfoSplit = paramInfo.split(' ')
+      const endingTypeSplit = endingType.split(' ')
+      let e1: string | null = endingTypeSplit[0] ?? null
+      let e2: string | null = endingTypeSplit[1] ?? null
+      let flag = false
+      let count = 0
+      for (const p of paramInfoSplit) {
+        if (e2 && flag) {
+          if (!p.includes(e2)) {
+            flag = false
+          }
+          e2 = null
+        }
+        if (e1) {
+          if (p.includes(e1)) {
+            e1 = null
+            flag = true
+            continue
+          }
+        }
+        if (p.includes(endingType)) {
+          flag = true
+          break
+        }
+        if (count >= 3) {
+          break
+        }
+        count++
+      }
+      const buildStr = flag ? paramInfo : `${paramInfo} \`${endingType}\``
+      return buildStr
     } catch (error) {
       console.error(error)
       return ''
@@ -317,14 +343,17 @@ export class PineHoverBuildMarkdown {
    * @param keyedDocs - The PineDocsManager instance.
    * @returns A promise that resolves to an array containing the return values.
    */
-  static async appendReturns(keyedDocs: PineDocsManager) {
+  static async appendReturns(keyedDocs: PineDocsManager, regexId: string) {
+    if (regexId === 'UDT' || regexId === 'field') {
+      return []
+    }
     try {
       // If the symbol is a method, add the return type to the syntax
       if (keyedDocs) {
         const returns = Helpers.returnTypeArrayCheck(keyedDocs)
         if (returns) {
           // If the return type is not a string, add the return type to the syntax
-          const details = this.appendDetails(Helpers.replaceType(returns), 'Returns')
+          const details = this.appendDetails(Helpers.replaceType(returns) ?? returns, 'Returns')
           if (!returns.includes('`')) {
             const split = details[0].split(' - ')
             // If the return type is a user type, add backticks around it
@@ -335,12 +364,16 @@ export class PineHoverBuildMarkdown {
             // Return the syntax with the return type added
             return details
           }
+          if (Array.isArray(details)) {
+            return details
+          } 
+          return [details]
         }
         return ['']
       }
     } catch (error) {
       console.error(error)
-      return []
+      return ['']
     }
   }
 
@@ -376,7 +409,7 @@ export class PineHoverBuildMarkdown {
         let build = [PineHoverBuildMarkdown.iconString]
         if (keyedDocs.seeAlso instanceof Array) {
           const formatUrl = Helpers.formatUrl(keyedDocs.seeAlso.join(', '))
-          build.push(formatUrl)
+          build.push(formatUrl ?? '')
         } else {
           build.push(Helpers?.formatUrl(keyedDocs?.seeAlso ?? '') ?? '')
         }
@@ -385,7 +418,7 @@ export class PineHoverBuildMarkdown {
       return ['']
     } catch (error) {
       console.error(error)
-      return []
+      return ['']
     }
   }
 }

@@ -33,7 +33,8 @@ vsc-extension-quickstart.md
 
 # Additionally, you might want to exclude other files that are not needed in the packaged extension:
 # For example, README files, or other documentation that is not user-facing
-**/*.md
+CONTRIBUTING.md
+README_INSTALLATION.md
 
 # If there are any specific build scripts or tools configurations that are not needed in the final package
 build-scripts/
@@ -70,4 +71,5 @@ typedoc.json
 # eslint
 .eslintrc
 
-# 
+# others
+PineScripts/

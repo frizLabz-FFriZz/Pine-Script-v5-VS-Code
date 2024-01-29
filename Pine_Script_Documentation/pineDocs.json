@@ -570,15 +570,15 @@
             "[array.sort](#fun_array.sort)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.copy example\")\nlength = 5\na = array.new_float(length, close)\nb = array.copy(a)\na := array.new_float(length, open)\nplot(array.sum(a) / length)\nplot(array.sum(b) / length)",
           "methodName": "copy",
           "originalName": "array.copy",
-          "returnedType": "array",
+          "returnedType": "array<any>",
           "methodSyntax": "array.copy() → array<type>",
           "returnedTypes": [
-            "array"
+            "array<any>"
           ]
         },
         {
@@ -597,15 +597,15 @@
             "[matrix.rows](#fun_matrix.rows)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.copy()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n\t// Create a 2x3 \"float\" matrix with `1` values.\n\tvar m1 = matrix.new<float>(2, 3, 1)\n\t\n\t// Copy the matrix to a new one.\n\t// Note that unlike what `matrix.copy()` does, \n\t// the simple assignment operation `m2 = m1`\n\t// would NOT create a new copy of the `m1` matrix.\n\t// It would merely create a copy of its ID referencing the same matrix.\n\tvar m2 = matrix.copy(m1)\n\t\n\t// Display using a table.\n\tvar t = table.new(position.top_right, 5, 2, color.green)\n\ttable.cell(t, 0, 0, \"Original Matrix:\")\n\ttable.cell(t, 0, 1, str.tostring(m1))\n\ttable.cell(t, 1, 0, \"Matrix Copy:\")\n\ttable.cell(t, 1, 1, str.tostring(m2))",
           "methodName": "copy",
           "originalName": "matrix.copy",
           "methodSyntax": "matrix.copy() → matrix<type>",
-          "returnedType": "matrix",
+          "returnedType": "matrix<any>",
           "returnedTypes": [
-            "matrix"
+            "matrix<any>"
           ]
         },
         {
@@ -625,15 +625,15 @@
             "[map.size](#fun_map.size)"
           ],
           "thisType": [
-            "map"
+            "map<any>"
           ],
           "examples": "//@version=5\nindicator(\"map.copy example\")\na = map.new<string, int>()\na.put(\"example\", 1)\nb = map.copy(a)\na := map.new<string, int>()\na.put(\"example\", 2)\nplot(a.get(\"example\"))\nplot(b.get(\"example\"))",
           "methodName": "copy",
           "originalName": "map.copy",
-          "returnedType": "map",
+          "returnedType": "map<any>",
           "methodSyntax": "map.copy() → map<keyType, valueType>",
           "returnedTypes": [
-            "map"
+            "map<any>"
           ]
         },
         {
@@ -3522,7 +3522,7 @@
             "[array.sort](#fun_array.sort)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.slice example\")\na = array.new_float(0)\nfor i = 0 to 9\n\tarray.push(a, close[i])\n// take elements from 0 to 4\n// *note that changes in slice also modify original array \nslice = array.slice(a, 0, 5)\nplot(array.sum(a) / 10)\nplot(array.sum(slice) / 5)",
           "methodName": "slice",
@@ -3544,7 +3544,7 @@
             "[array.sort](#fun_array.sort)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.size example\")\na = array.new_float(0)\nfor i = 0 to 9\n\tarray.push(a, close[i])\n// note that changes in slice also modify original array\nslice = array.slice(a, 0, 5)\narray.push(slice, open)\n// size was changed in slice and in original array\nplot(array.size(a))\nplot(array.size(slice))",
           "methodName": "size",
@@ -3574,7 +3574,7 @@
             "[map.get](#fun_map.get)"
           ],
           "thisType": [
-            "map"
+            "map<any>"
           ],
           "examples": "//@version=5\nindicator(\"map.size example\")\na = map.new<int, int>()\nsize = 10\nfor i = 0 to size\n\ta.put(i, size-i)\nplot(map.size(a))",
           "methodName": "size",
@@ -3600,7 +3600,7 @@
             "[array.get](#fun_array.get)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.first example\")\narr = array.new_int(3, 10)\nplot(array.first(arr))",
           "methodName": "first",
@@ -3619,7 +3619,7 @@
             "[array.get](#fun_array.get)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.last example\")\narr = array.new_int(3, 10)\nplot(array.last(arr))",
           "methodName": "last",
@@ -3756,9 +3756,9 @@
             "[map.get](#fun_map.get)"
           ],
           "thisType": [
-            "array",
-            "map",
-            "matrix"
+            "array<any>",
+            "map<any>",
+            "matrix<any>"
           ],
           "methodName": "get",
           "originalName": "*.get",
@@ -3794,7 +3794,7 @@
             "[array.sort](#fun_array.sort)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.get example\")\na = array.new_float(0)\nfor i = 0 to 9\n\tarray.push(a, close[i] - open[i])\nplot(array.get(a, 9))",
           "methodName": "get",
@@ -3858,7 +3858,7 @@
             "[matrix.rows](#fun_matrix.rows)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator('matrix.get() example', \"\", true)\n\n// Create a 2x3 \"float\" matrix from the `hl2` values.\nm = matrix.new<float>(2, 3, hl2)\n\n// Return the value of the element at index [0, 0] of matrix `m`.\nx = matrix.get(m, 0, 0)\n\nplot(x)",
           "methodName": "get",
@@ -3878,7 +3878,7 @@
               "info": "The key of the value to retrieve.",
               "default": null,
               "required": true,
-              "displayType": "map< *keyType* ,valueType>",
+              "displayType": "any",
               "allowedTypeIDs": [],
               "possibleValues": null
             }
@@ -3893,7 +3893,7 @@
             "[map.contains](#fun_map.contains)"
           ],
           "thisType": [
-            "map"
+            "map<any>"
           ],
           "examples": "//@version=5\nindicator(\"map.get example\")\na = map.new<int, int>()\nsize = 10\nfor i = 0 to size\n\ta.put(i, size-i)\nplot(map.get(a, 1))",
           "methodName": "get",
@@ -4488,7 +4488,7 @@
             "[array.slice](#fun_array.slice)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.set example\")\na = array.new_float(10)\nfor i = 0 to 9\n\tarray.set(a, i, close[i])\nplot(array.sum(a) / 10)",
           "methodName": "set",
@@ -4563,7 +4563,7 @@
             "[matrix.rows](#fun_matrix.rows)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.set()` Example\")\n\n// Create a 2x3 \"int\" matrix containing values `4`.\nm = matrix.new<int>(2, 3, 4)\n\n// Replace the value of element at row 1 and column 2 with value `3`.\nmatrix.set(m, 0, 1, 3)\n\n// Display using a label.\nif barstate.islastconfirmedhistory\n\tlabel.new(bar_index, high, str.tostring(m))",
           "methodName": "set",
@@ -4680,8 +4680,8 @@
             "[array.fill](#fun_array.fill)"
           ],
           "thisType": [
-            "matrix",
-            "array"
+            "matrix<any>",
+            "array<any>"
           ],
           "methodName": "fill",
           "originalName": "*.fill",
@@ -4748,7 +4748,7 @@
             "[array.slice](#fun_array.slice)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.fill example\")\na = array.new_float(10)\narray.fill(a, close)\nplot(array.sum(a))",
           "methodName": "fill",
@@ -4840,7 +4840,7 @@
             "[matrix.rows](#fun_matrix.rows)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.fill()` Example\")\n\n// Create a 4x5 \"int\" matrix containing values `0`.\nm = matrix.new<float>(4, 5, 0)\n\n// Fill the intersection of rows 1 to 2 and columns 2 to 3 of the matrix with `hl2` values.\nmatrix.fill(m, hl2, 0, 2, 1, 3)\n\n// Display using a label.\nif barstate.islastconfirmedhistory\n\tlabel.new(bar_index, high, str.tostring(m))",
           "methodName": "fill",
@@ -4891,7 +4891,7 @@
             "[array.unshift](#fun_array.unshift)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.insert example\")\na = array.new_float(5, close)\narray.insert(a, 0, open)\nplot(array.get(a, 5))",
           "methodName": "insert",
@@ -4982,7 +4982,7 @@
             "[array.unshift](#fun_array.unshift)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.push example\")\na = array.new_float(5, 0)\narray.push(a, open)\nplot(array.get(a, 5))",
           "methodName": "push",
@@ -5030,8 +5030,8 @@
             "[map.remove](#fun_map.remove)"
           ],
           "thisType": [
-            "array",
-            "map"
+            "array<any>",
+            "map<any>"
           ],
           "methodName": "remove",
           "originalName": "*.remove",
@@ -5069,7 +5069,7 @@
             "[array.shift](#fun_array.shift)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.remove example\")\na = array.new_float(5, high)\nremovedEl = array.remove(a, 0)\nplot(array.size(a))\nplot(removedEl)",
           "methodName": "remove",
@@ -5103,7 +5103,7 @@
             "[map.clear](#fun_map.clear)"
           ],
           "thisType": [
-            "map"
+            "map<any>"
           ],
           "examples": "//@version=5\nindicator(\"map.remove example\")\na = map.new<string, color>()\na.put(\"firstColor\", color.green)\noldColorValue = map.remove(a, \"firstColor\")\nplot(close, color = oldColorValue)",
           "methodName": "remove",
@@ -5129,7 +5129,7 @@
             "[array.shift](#fun_array.shift)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.pop example\")\na = array.new_float(5, high)\nremovedEl = array.pop(a)\nplot(array.size(a))\nplot(removedEl)",
           "methodName": "pop",
@@ -5207,8 +5207,8 @@
           ],
           "thisType": [
             "series table",
-            "array",
-            "map"
+            "array<any>",
+            "map<any>"
           ],
           "methodName": "clear",
           "originalName": "*.clear",
@@ -5233,7 +5233,7 @@
             "[array.pop](#fun_array.pop)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "methodName": "clear",
           "originalName": "array.clear",
@@ -5259,7 +5259,7 @@
             "[map.remove](#fun_map.remove)"
           ],
           "thisType": [
-            "map"
+            "map<any>"
           ],
           "examples": "//@version=5\nindicator(\"map.clear example\")\noddMap = map.new<int, bool>()\noddMap.put(1, true)\noddMap.put(2, false)\noddMap.put(3, true)\nmap.clear(oddMap)\nplot(oddMap.size())",
           "methodName": "clear",
@@ -5956,8 +5956,8 @@
               "required": true,
               "displayType": "array|matrix<any>",
               "allowedTypeIDs": [
-                "array",
-                "matrix"
+                "array<any>",
+                "matrix<any>"
               ],
               "possibleValues": null
             }
@@ -5969,8 +5969,8 @@
             "[matrix.concat](#fun_matrix.concat)"
           ],
           "thisType": [
-            "array",
-            "matrix"
+            "array<any>",
+            "matrix<any>"
           ],
           "methodName": "concat",
           "originalName": "*.concat",
@@ -5988,7 +5988,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             }
           ],
@@ -6000,7 +6000,7 @@
             "[array.slice](#fun_array.slice), "
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.concat example\")\na = array.new_float(0, 0)\nb = array.new_float(0, 0)\nfor i = 0 to 4\n    array.push(a, high[i])\n    array.push(b, low[i])\nc = array.concat(a, b)\nplot(array.size(a))\nplot(array.size(b))\nplot(array.size(c))",
           "methodName": "concat",
@@ -6019,7 +6019,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             }
           ],
@@ -6034,15 +6034,15 @@
             "[matrix.rows](#fun_matrix.rows)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.concat()` Example\")\n\n// Create a 2x4 \"int\" matrix containing values `0`.\nm1 = matrix.new<int>(2, 4, 0)\n// Create a 2x4 \"int\" matrix containing values `1`.\nm2 = matrix.new<int>(2, 4, 1)\n\n// Append matrix `m2` to `m1`.\nmatrix.concat(m1, m2)\n\n// Display matrix elements.\nif barstate.islastconfirmedhistory\n\tvar t = table.new(position.top_right, 2, 2, color.green)\n\ttable.cell(t, 0, 0, \"Matrix Elements:\")\n\ttable.cell(t, 0, 1, str.tostring(m1))",
           "methodName": "concat",
           "originalName": "matrix.concat",
           "methodSyntax": "matrix.concat(id2) → matrix<type>",
-          "returnedType": "matrix",
+          "returnedType": "matrix<any>",
           "returnedTypes": [
-            "matrix"
+            "matrix<any>"
           ]
         },
         {
@@ -6614,7 +6614,7 @@
             "[array.insert](#fun_array.insert)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.indexof example\")\na = array.new_float(5, high)\nindex = array.indexof(a, high)\nplot(index)",
           "methodName": "indexof",
@@ -6654,7 +6654,7 @@
             "[array.insert](#fun_array.insert)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.lastindexof example\")\na = array.new_float(5, high)\nindex = array.lastindexof(a, high)\nplot(index)",
           "methodName": "lastindexof",
@@ -6694,7 +6694,7 @@
             "[array.insert](#fun_array.insert)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.includes example\")\na = array.new_float(5, high)\np = close\nif array.includes(a, high)\n\tp := open\nplot(p)",
           "methodName": "includes",
@@ -6724,7 +6724,7 @@
             "[array.includes](#fun_array.includes)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.shift example\")\na = array.new_float(5, high)\nremovedEl = array.shift(a)\nplot(array.size(a))\nplot(removedEl)",
           "methodName": "shift",
@@ -6756,7 +6756,7 @@
             "[array.indexof](#fun_array.indexof)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.unshift example\")\na = array.new_float(5, 0)\narray.unshift(a, open)\nplot(array.get(a, 0))",
           "methodName": "unshift",
@@ -6807,7 +6807,7 @@
             "[array.avg](#fun_array.avg)"
           ],
           "thisType": [
-            "array"
+            "array<any>"
           ],
           "examples": "//@version=5\nindicator(\"array.reverse example\")\na = array.new_float(0)\nfor i = 0 to 9\n\tarray.push(a, close[i])\nplot(array.get(a, 0))\narray.reverse(a)\nplot(array.get(a, 0))",
           "methodName": "reverse",
@@ -6833,7 +6833,7 @@
             "[matrix.reshape](#fun_matrix.reshape)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.reverse()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n\t// Copy the matrix to a new one.\n\tvar m1 = matrix.new<int>(2, 2, na)\n\t// Fill the matrix with values.\n\tmatrix.set(m1, 0, 0, 1)\n\tmatrix.set(m1, 0, 1, 2)\n\tmatrix.set(m1, 1, 0, 3)\n\tmatrix.set(m1, 1, 1, 4)\n\t\n\t// Copy matrix elements to a new matrix.\n\tvar m2 = matrix.copy(m1)\n\t\n\t// Reverse the `m2` copy of the original matrix. \n\tmatrix.reverse(m2)\n\t\n\t// Display using a table.\n\tvar t = table.new(position.top_right, 2, 2, color.green)\n\ttable.cell(t, 0, 0, \"Original matrix:\")\n\ttable.cell(t, 0, 1, str.tostring(m1))\n\ttable.cell(t, 1, 0, \"Reversed matrix:\")\n\ttable.cell(t, 1, 1, str.tostring(m2))",
           "methodName": "reverse",
@@ -8153,15 +8153,15 @@
             "[matrix.rows](#fun_matrix.rows)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.row()` Example\", \"\", true)\n\n// Create a 2x3 \"float\" matrix from `hlc3` values.\nm = matrix.new<float>(2, 3, hlc3)\n\n// Return an array with the values of the first row of the matrix.\na = matrix.row(m, 0)\n\n// Plot the first value from the array `a`.\nplot(array.get(a, 0))",
           "methodName": "row",
           "originalName": "matrix.row",
           "methodSyntax": "matrix.row(row) → array<type>",
-          "returnedType": "array",
+          "returnedType": "array<any>",
           "returnedTypes": [
-            "array"
+            "array<any>"
           ]
         },
         {
@@ -8202,15 +8202,15 @@
             "[matrix.columns](#fun_matrix.columns)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.col()` Example\", \"\", true)\n\n// Create a 2x3 \"float\" matrix from `hlc3` values.\nm = matrix.new<float>(2, 3, hlc3)\n\n// Return an array with the values of the first column of matrix `m`.\na = matrix.col(m, 0)\n\n// Plot the first value from the array `a`.\nplot(array.get(a, 0))",
           "methodName": "col",
           "originalName": "matrix.col",
           "methodSyntax": "matrix.col(column) → array<type>",
-          "returnedType": "array",
+          "returnedType": "array<any>",
           "returnedTypes": [
-            "array"
+            "array<any>"
           ]
         },
         {
@@ -8257,7 +8257,7 @@
             "[matrix.add_col](#fun_matrix.add_col)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.reshape()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n\t// Create a 2x3 matrix.\n\tvar m1 = matrix.new<float>(2, 3)\n\t// Fill the matrix with values.\n\tmatrix.set(m1, 0, 0, 1)\n\tmatrix.set(m1, 0, 1, 2)\n\tmatrix.set(m1, 0, 2, 3)\n\tmatrix.set(m1, 1, 0, 4)\n\tmatrix.set(m1, 1, 1, 5)\n\tmatrix.set(m1, 1, 2, 6)\n\t\n\t// Copy the matrix to a new one.\n\tvar m2 = matrix.copy(m1)\n\t\n\t// Reshape the copy to a 3x2.\n\tmatrix.reshape(m2, 3, 2)\n\t\n\t// Display using a table.\n\tvar t = table.new(position.top_right, 2, 2, color.green)\n\ttable.cell(t, 0, 0, \"Original matrix:\")\n\ttable.cell(t, 0, 1, str.tostring(m1))\n\ttable.cell(t, 1, 0, \"Reshaped matrix:\")\n\ttable.cell(t, 1, 1, str.tostring(m2))",
           "methodName": "reshape",
@@ -8300,7 +8300,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             }
           ],
@@ -8315,7 +8315,7 @@
             "[matrix.add_col](#fun_matrix.add_col)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "methodName": "add_row",
           "originalName": "matrix.add_row",
@@ -8367,7 +8367,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             }
           ],
@@ -8382,7 +8382,7 @@
             "[matrix.add_row](#fun_matrix.add_row)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "methodName": "add_col",
           "originalName": "matrix.add_col",
@@ -8439,15 +8439,15 @@
             "[matrix.remove_col](#fun_matrix.remove_col)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator(\"matrix_remove_row\", overlay = true)\n\n// Create a 2x2 \"int\" matrix containing values `1`.\nvar matrixOrig = matrix.new<int>(2, 2, 1)\n\n// Set values to the 'matrixOrig' matrix.\nmatrix.set(matrixOrig, 0, 1, 2)\nmatrix.set(matrixOrig, 1, 0, 3)\nmatrix.set(matrixOrig, 1, 1, 4)\n\n// Create a copy of the 'matrixOrig' matrix.\nmatrixCopy = matrix.copy(matrixOrig)\n\n// Remove the first row from the matrix `matrixCopy`.\narr = matrix.remove_row(matrixCopy, 0)\n\n// Display matrix elements.\nif barstate.islastconfirmedhistory\n\tvar t = table.new(position.top_right, 3, 2, color.green)\n\ttable.cell(t, 0, 0, \"Original Matrix:\")\n\ttable.cell(t, 0, 1, str.tostring(matrixOrig))\n\ttable.cell(t, 1, 0, \"Removed Elements:\")\n\ttable.cell(t, 1, 1, str.tostring(arr))\n\ttable.cell(t, 2, 0, \"Result Matrix:\")\n\ttable.cell(t, 2, 1, str.tostring(matrixCopy))",
           "methodName": "remove_row",
           "originalName": "matrix.remove_row",
           "methodSyntax": "matrix.remove_row(row) → array<type>",
-          "returnedType": "array",
+          "returnedType": "array<any>",
           "returnedTypes": [
-            "array"
+            "array<any>"
           ]
         },
         {
@@ -8487,15 +8487,15 @@
             "[matrix.remove_row](#fun_matrix.remove_row)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator(\"matrix_remove_col\", overlay = true)\n\n// Create a 2x2 matrix with ones.\nvar matrixOrig = matrix.new<int>(2, 2, 1)\n\n// Set values to the 'matrixOrig' matrix.\nmatrix.set(matrixOrig, 0, 1, 2)\nmatrix.set(matrixOrig, 1, 0, 3)\nmatrix.set(matrixOrig, 1, 1, 4)\n\n\n// Create a copy of the 'matrixOrig' matrix.\nmatrixCopy = matrix.copy(matrixOrig)\n\n// Remove the first column from the `matrixCopy` matrix.\narr = matrix.remove_col(matrixCopy, 0)\n\n// Display matrix elements.\nif barstate.islastconfirmedhistory\n\tvar t = table.new(position.top_right, 3, 2, color.green)\n\ttable.cell(t, 0, 0, \"Original Matrix:\")\n\ttable.cell(t, 0, 1, str.tostring(matrixOrig))\n\ttable.cell(t, 1, 0, \"Removed Elements:\")\n\ttable.cell(t, 1, 1, str.tostring(arr))\n\ttable.cell(t, 2, 0, \"Result Matrix:\")\n\ttable.cell(t, 2, 1, str.tostring(matrixCopy))",
           "methodName": "remove_col",
           "originalName": "matrix.remove_col",
           "methodSyntax": "matrix.remove_col(column) → array<type>",
-          "returnedType": "array",
+          "returnedType": "array<any>",
           "returnedTypes": [
-            "array"
+            "array<any>"
           ]
         },
         {
@@ -8572,15 +8572,15 @@
             "[matrix.reshape](#fun_matrix.reshape)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.submatrix()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n\t// Create a 2x3 matrix matrix with values `0`.\n\tvar m1 = matrix.new<int>(2, 3, 0)\n\t// Fill the matrix with values.\n\tmatrix.set(m1, 0, 0, 1)\n\tmatrix.set(m1, 0, 1, 2)\n\tmatrix.set(m1, 0, 2, 3)\n\tmatrix.set(m1, 1, 0, 4)\n\tmatrix.set(m1, 1, 1, 5)\n\tmatrix.set(m1, 1, 2, 6)\n\t\n\t// Create a 2x2 submatrix of the `m1` matrix.\n\tvar m2 = matrix.submatrix(m1, 0, 2, 1, 3)\n\t\n\t// Display using a table.\n\tvar t = table.new(position.top_right, 2, 2, color.green)\n\ttable.cell(t, 0, 0, \"Original Matrix:\")\n\ttable.cell(t, 0, 1, str.tostring(m1))\n\ttable.cell(t, 1, 0, \"Submatrix:\")\n\ttable.cell(t, 1, 1, str.tostring(m2))",
           "methodName": "submatrix",
           "originalName": "matrix.submatrix",
           "methodSyntax": "matrix.submatrix(from_row, to_row, from_column, to_column) → matrix<type>",
-          "returnedType": "matrix",
+          "returnedType": "matrix<any>",
           "returnedTypes": [
-            "matrix"
+            "matrix<any>"
           ]
         },
         {
@@ -8600,7 +8600,7 @@
             "[matrix.rows](#fun_matrix.rows)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.columns()` Example\")\n\n// Create a 2x6 matrix with values `0`.\nvar m = matrix.new<int>(2, 6, 0)\n\n// Get the quantity of columns in matrix `m`.\nvar x = matrix.columns(m)\n\n// Display using a label.\nif barstate.islastconfirmedhistory\n\tlabel.new(bar_index, high, \"Columns: \" + str.tostring(x) + \"\\n\" + str.tostring(m))",
           "methodName": "columns",
@@ -8630,7 +8630,7 @@
             "[matrix.row](#fun_matrix.row)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.rows()` Example\")\n\n// Create a 2x6 matrix with values `0`.\nvar m = matrix.new<int>(2, 6, 0)\n\n// Get the quantity of rows in the matrix.\nvar x = matrix.rows(m)\n\n// Display using a label.\nif barstate.islastconfirmedhistory\n\tlabel.new(bar_index, high, \"Rows: \" + str.tostring(x) + \"\\n\" + str.tostring(m))",
           "methodName": "rows",
@@ -8657,7 +8657,7 @@
             "[matrix.rows](#fun_matrix.rows)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "methodName": "elements_count",
           "originalName": "matrix.elements_count",
@@ -8715,7 +8715,7 @@
             "[matrix.swap_columns](#fun_matrix.swap_columns)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.swap_rows()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n\t// Create a 3x2 matrix with ‘na’ values.\n\tvar m1 = matrix.new<int>(3, 2, na)\n\t// Fill the matrix with values.\n\tmatrix.set(m1, 0, 0, 1)\n\tmatrix.set(m1, 0, 1, 2)\n\tmatrix.set(m1, 1, 0, 3)\n\tmatrix.set(m1, 1, 1, 4)\n\tmatrix.set(m1, 2, 0, 5)\n\tmatrix.set(m1, 2, 1, 6)\n\t\n\t// Copy the matrix to a new one.\n\tvar m2 = matrix.copy(m1)\n\t\n\t// Swap the first and second rows of the matrix copy.\n\tmatrix.swap_rows(m2, 0, 1)\n\t\n\t// Display using a table.\n\tvar t = table.new(position.top_right, 2, 2, color.green)\n\ttable.cell(t, 0, 0, \"Original matrix:\")\n\ttable.cell(t, 0, 1, str.tostring(m1))\n\ttable.cell(t, 1, 0, \"Swapped rows in copy:\")\n\ttable.cell(t, 1, 1, str.tostring(m2))",
           "methodName": "swap_rows",
@@ -8771,7 +8771,7 @@
             "[matrix.rows](#fun_matrix.rows)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.swap_columns()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n\t// Create a 2x2 matrix with ‘na’ values.\n\tvar m1 = matrix.new<int>(2, 2, na)    \n\t// Fill the matrix with values.\n\tmatrix.set(m1, 0, 0, 1)\n\tmatrix.set(m1, 0, 1, 2)\n\tmatrix.set(m1, 1, 0, 3)\n\tmatrix.set(m1, 1, 1, 4)\n\t\n\t// Copy the matrix to a new one.\n\tvar m2 = matrix.copy(m1)\n\t\n\t// Swap the first and second columns of the matrix copy.\n\tmatrix.swap_columns(m2, 0, 1)\n\n\t// Display using a table.\n\tvar t = table.new(position.top_right, 2, 2, color.green)\n\ttable.cell(t, 0, 0, \"Original matrix:\")\n\ttable.cell(t, 0, 1, str.tostring(m1))\n\ttable.cell(t, 1, 0, \"Swapped columns in copy:\")\n\ttable.cell(t, 1, 1, str.tostring(m2))",
           "methodName": "swap_columns",
@@ -8836,15 +8836,15 @@
             "[matrix.reverse](#fun_matrix.reverse)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.transpose()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n\t// Create a 2x2 matrix. \n\tvar m1 = matrix.new<float>(2, 2, na)\n\t// Fill the matrix with values.\n\tmatrix.set(m1, 0, 0, 1)\n\tmatrix.set(m1, 0, 1, 2)\n\tmatrix.set(m1, 1, 0, 3)\n\tmatrix.set(m1, 1, 1, 4)\n\t\n\t// Create a transpose of the matrix.\n\tvar m2 = matrix.transpose(m1)\n\t\n\t// Display using a table.\n\tvar t = table.new(position.top_right, 2, 2, color.green)\n\ttable.cell(t, 0, 0, \"Original matrix:\")\n\ttable.cell(t, 0, 1, str.tostring(m1))\n\ttable.cell(t, 1, 0, \"Transposed matrix:\")\n\ttable.cell(t, 1, 1, str.tostring(m2))",
           "methodName": "transpose",
           "originalName": "matrix.transpose",
           "methodSyntax": "matrix.transpose() → matrix<type>",
-          "returnedType": "matrix",
+          "returnedType": "matrix<any>",
           "returnedTypes": [
-            "matrix"
+            "matrix<any>"
           ]
         },
         {
@@ -9057,7 +9057,7 @@
             "[str.tostring](#fun_str.tostring)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.rank()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n\t// Create a 2x2 matrix. \n\tvar m1 = matrix.new<int>(2, 2, na)\n\t// Fill the matrix with values.\n\tmatrix.set(m1, 0, 0, 1)\n\tmatrix.set(m1, 0, 1, 2)\n\tmatrix.set(m1, 1, 0, 3)\n\tmatrix.set(m1, 1, 1, 4)\n\t\n\t// Get the rank of the matrix. \n\tr = matrix.rank(m1)\n\t\n\t// Display matrix elements.\n\tvar t = table.new(position.top_right, 2, 2, color.green)\n\ttable.cell(t, 0, 0, \"Matrix elements:\")\n\ttable.cell(t, 0, 1, str.tostring(m1))\n\ttable.cell(t, 1, 0, \"Rank of the matrix:\")\n\ttable.cell(t, 1, 1, str.tostring(r)) ",
           "methodName": "rank",
@@ -9540,7 +9540,7 @@
             "[matrix.rows](#fun_matrix.rows)"
           ],
           "thisType": [
-            "matrix"
+            "matrix<any>"
           ],
           "methodName": "is_square",
           "originalName": "matrix.is_square",
@@ -9827,7 +9827,7 @@
             "[map.size](#fun_map.size)"
           ],
           "thisType": [
-            "map"
+            "map<any>"
           ],
           "examples": "//@version=5\nindicator(\"map.includes example\")\na = map.new<string, float>()\na.put(\"open\", open)\np = close\nif map.contains(a, \"open\")\n\tp := a.get(\"open\")\nplot(p)",
           "methodName": "contains",
@@ -9857,15 +9857,15 @@
             "[map.size](#fun_map.size)"
           ],
           "thisType": [
-            "map"
+            "map<any>"
           ],
           "examples": "//@version=5\nindicator(\"map.keys example\")\na = map.new<string, float>()\na.put(\"open\", open)\na.put(\"high\", high)\na.put(\"low\", low)\na.put(\"close\", close)\nkeys = map.keys(a)\nohlc = 0.0\nfor key in keys\n\tohlc += a.get(key)\nplot(ohlc/4)",
           "methodName": "keys",
           "originalName": "map.keys",
           "methodSyntax": "map.keys() → array<type>",
-          "returnedType": "array",
+          "returnedType": "array<any>",
           "returnedTypes": [
-            "array"
+            "array<any>"
           ]
         },
         {
@@ -9884,15 +9884,15 @@
             "[map.size](#fun_map.size)"
           ],
           "thisType": [
-            "map"
+            "map<any>"
           ],
           "examples": "//@version=5\nindicator(\"map.values example\")\na = map.new<string, float>()\na.put(\"open\", open)\na.put(\"high\", high)\na.put(\"low\", low)\na.put(\"close\", close)\nvalues = map.values(a)\nohlc = 0.0\nfor value in values\n\tohlc += value\nplot(ohlc/4)",
           "methodName": "values",
           "originalName": "map.values",
           "methodSyntax": "map.values() → array<type>",
-          "returnedType": "array",
+          "returnedType": "array<any>",
           "returnedTypes": [
-            "array"
+            "array<any>"
           ]
         },
         {
@@ -9931,7 +9931,7 @@
             "[map.remove](#fun_map.remove)"
           ],
           "thisType": [
-            "map"
+            "map<any>"
           ],
           "examples": "//@version=5\nindicator(\"map.put example\")\na = map.new<string, float>()\nmap.put(a, \"first\", 10)\nmap.put(a, \"second\", 15)\nprevFirst = map.put(a, \"first\", 20)\ncurrFirst = a.get(\"first\")\nplot(prevFirst)\nplot(currFirst)",
           "methodName": "put",
@@ -9952,7 +9952,7 @@
               "default": null,
               "required": true,
               "displayType": "map<type>",
-              "allowedTypeIDs": "map",
+              "allowedTypeIDs": "map<any>",
               "possibleValues": null
             }
           ],
@@ -9965,7 +9965,7 @@
             "[map.remove](#fun_map.remove)"
           ],
           "thisType": [
-            "map"
+            "map<any>"
           ],
           "examples": "//@version=5\nindicator(\"map.put_all example\")\na = map.new<string, float>()\nb = map.new<string, float>()\na.put(\"first\", 10)\na.put(\"second\", 15)\nb.put(\"third\", 20)\nmap.put_all(a, b)\nplot(a.get(\"third\"))",
           "methodName": "put_all",
@@ -15074,8 +15074,8 @@
                 "series box",
                 "series table",
                 "series linefill",
-                "matrix",
-                "array"
+                "matrix<any>",
+                "array<any>"
               ],
               "possibleValues": [
                 "close",
@@ -15631,8 +15631,7 @@
               ],
               "possibleValues": [
                 "time",
-                "time_close",
-                "time_open"
+                "time_close"
               ]
             },
             {
@@ -34340,7 +34339,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             }
           ],
@@ -34365,7 +34364,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             },
             {
@@ -34418,7 +34417,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             }
           ],
@@ -34450,7 +34449,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             }
           ],
@@ -34472,7 +34471,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             }
           ],
@@ -34556,7 +34555,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             },
             {
@@ -34788,7 +34787,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             },
             {
@@ -34881,7 +34880,7 @@
             "table[]",
             "linefill[]",
             "box[]",
-            "array"
+            "array<any>"
           ],
           "returnedTypes": [
             "array<int>",
@@ -34894,7 +34893,7 @@
             "box[]",
             "table[]",
             "linefill[]",
-            "array"
+            "array<any>"
           ]
         },
         {
@@ -34908,7 +34907,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             },
             {
@@ -34978,7 +34977,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             },
             {
@@ -35089,7 +35088,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             },
             {
@@ -35128,7 +35127,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             },
             {
@@ -35169,7 +35168,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             }
           ],
@@ -35196,7 +35195,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             }
           ],
@@ -35731,7 +35730,7 @@
               "info": "The first array object.",
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             },
             {
@@ -35740,7 +35739,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             }
           ],
@@ -36116,7 +36115,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             },
             {
@@ -36158,7 +36157,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             },
             {
@@ -36200,7 +36199,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             },
             {
@@ -36242,7 +36241,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             }
           ],
@@ -36268,7 +36267,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             },
             {
@@ -36306,7 +36305,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             }
           ],
@@ -39191,7 +39190,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             },
             {
@@ -39226,9 +39225,9 @@
             "[matrix.rows](#fun_matrix.rows)"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.row()` Example\", \"\", true)\n\n// Create a 2x3 \"float\" matrix from `hlc3` values.\nm = matrix.new<float>(2, 3, hlc3)\n\n// Return an array with the values of the first row of the matrix.\na = matrix.row(m, 0)\n\n// Plot the first value from the array `a`.\nplot(array.get(a, 0))",
-          "returnedType": "array",
+          "returnedType": "array<any>",
           "returnedTypes": [
-            "array"
+            "array<any>"
           ]
         },
         {
@@ -39242,7 +39241,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             },
             {
@@ -39277,9 +39276,9 @@
             "[matrix.columns](#fun_matrix.columns)"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.col()` Example\", \"\", true)\n\n// Create a 2x3 \"float\" matrix from `hlc3` values.\nm = matrix.new<float>(2, 3, hlc3)\n\n// Return an array with the values of the first column of matrix `m`.\na = matrix.col(m, 0)\n\n// Plot the first value from the array `a`.\nplot(array.get(a, 0))",
-          "returnedType": "array",
+          "returnedType": "array<any>",
           "returnedTypes": [
-            "array"
+            "array<any>"
           ]
         },
         {
@@ -39293,7 +39292,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             },
             {
@@ -39350,7 +39349,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             },
             {
@@ -39418,7 +39417,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             },
             {
@@ -39495,7 +39494,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             },
             {
@@ -39524,7 +39523,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             }
           ],
@@ -39564,7 +39563,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             },
             {
@@ -39593,7 +39592,7 @@
               "default": null,
               "required": true,
               "displayType": "array<any>",
-              "allowedTypeIDs": "array",
+              "allowedTypeIDs": "array<any>",
               "possibleValues": null
             }
           ],
@@ -39633,7 +39632,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             },
             {
@@ -39667,9 +39666,9 @@
             "[matrix.remove_col](#fun_matrix.remove_col)"
           ],
           "examples": "//@version=5\nindicator(\"matrix_remove_row\", overlay = true)\n\n// Create a 2x2 \"int\" matrix containing values `1`.\nvar matrixOrig = matrix.new<int>(2, 2, 1)\n\n// Set values to the 'matrixOrig' matrix.\nmatrix.set(matrixOrig, 0, 1, 2)\nmatrix.set(matrixOrig, 1, 0, 3)\nmatrix.set(matrixOrig, 1, 1, 4)\n\n// Create a copy of the 'matrixOrig' matrix.\nmatrixCopy = matrix.copy(matrixOrig)\n\n// Remove the first row from the matrix `matrixCopy`.\narr = matrix.remove_row(matrixCopy, 0)\n\n// Display matrix elements.\nif barstate.islastconfirmedhistory\n\tvar t = table.new(position.top_right, 3, 2, color.green)\n\ttable.cell(t, 0, 0, \"Original Matrix:\")\n\ttable.cell(t, 0, 1, str.tostring(matrixOrig))\n\ttable.cell(t, 1, 0, \"Removed Elements:\")\n\ttable.cell(t, 1, 1, str.tostring(arr))\n\ttable.cell(t, 2, 0, \"Result Matrix:\")\n\ttable.cell(t, 2, 1, str.tostring(matrixCopy))",
-          "returnedType": "array",
+          "returnedType": "array<any>",
           "returnedTypes": [
-            "array"
+            "array<any>"
           ]
         },
         {
@@ -39683,7 +39682,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             },
             {
@@ -39717,9 +39716,9 @@
             "[matrix.remove_row](#fun_matrix.remove_row)"
           ],
           "examples": "//@version=5\nindicator(\"matrix_remove_col\", overlay = true)\n\n// Create a 2x2 matrix with ones.\nvar matrixOrig = matrix.new<int>(2, 2, 1)\n\n// Set values to the 'matrixOrig' matrix.\nmatrix.set(matrixOrig, 0, 1, 2)\nmatrix.set(matrixOrig, 1, 0, 3)\nmatrix.set(matrixOrig, 1, 1, 4)\n\n\n// Create a copy of the 'matrixOrig' matrix.\nmatrixCopy = matrix.copy(matrixOrig)\n\n// Remove the first column from the `matrixCopy` matrix.\narr = matrix.remove_col(matrixCopy, 0)\n\n// Display matrix elements.\nif barstate.islastconfirmedhistory\n\tvar t = table.new(position.top_right, 3, 2, color.green)\n\ttable.cell(t, 0, 0, \"Original Matrix:\")\n\ttable.cell(t, 0, 1, str.tostring(matrixOrig))\n\ttable.cell(t, 1, 0, \"Removed Elements:\")\n\ttable.cell(t, 1, 1, str.tostring(arr))\n\ttable.cell(t, 2, 0, \"Result Matrix:\")\n\ttable.cell(t, 2, 1, str.tostring(matrixCopy))",
-          "returnedType": "array",
+          "returnedType": "array<any>",
           "returnedTypes": [
-            "array"
+            "array<any>"
           ]
         },
         {
@@ -39733,7 +39732,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             },
             {
@@ -39827,7 +39826,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             },
             {
@@ -39898,9 +39897,9 @@
             "[matrix.reshape](#fun_matrix.reshape)"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.submatrix()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n\t// Create a 2x3 matrix matrix with values `0`.\n\tvar m1 = matrix.new<int>(2, 3, 0)\n\t// Fill the matrix with values.\n\tmatrix.set(m1, 0, 0, 1)\n\tmatrix.set(m1, 0, 1, 2)\n\tmatrix.set(m1, 0, 2, 3)\n\tmatrix.set(m1, 1, 0, 4)\n\tmatrix.set(m1, 1, 1, 5)\n\tmatrix.set(m1, 1, 2, 6)\n\t\n\t// Create a 2x2 submatrix of the `m1` matrix.\n\tvar m2 = matrix.submatrix(m1, 0, 2, 1, 3)\n\t\n\t// Display using a table.\n\tvar t = table.new(position.top_right, 2, 2, color.green)\n\ttable.cell(t, 0, 0, \"Original Matrix:\")\n\ttable.cell(t, 0, 1, str.tostring(m1))\n\ttable.cell(t, 1, 0, \"Submatrix:\")\n\ttable.cell(t, 1, 1, str.tostring(m2))",
-          "returnedType": "matrix",
+          "returnedType": "matrix<any>",
           "returnedTypes": [
-            "matrix"
+            "matrix<any>"
           ]
         },
         {
@@ -39914,7 +39913,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             }
           ],
@@ -39928,9 +39927,9 @@
             "[matrix.rows](#fun_matrix.rows)"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.copy()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n\t// Create a 2x3 \"float\" matrix with `1` values.\n\tvar m1 = matrix.new<float>(2, 3, 1)\n\t\n\t// Copy the matrix to a new one.\n\t// Note that unlike what `matrix.copy()` does, \n\t// the simple assignment operation `m2 = m1`\n\t// would NOT create a new copy of the `m1` matrix.\n\t// It would merely create a copy of its ID referencing the same matrix.\n\tvar m2 = matrix.copy(m1)\n\t\n\t// Display using a table.\n\tvar t = table.new(position.top_right, 5, 2, color.green)\n\ttable.cell(t, 0, 0, \"Original Matrix:\")\n\ttable.cell(t, 0, 1, str.tostring(m1))\n\ttable.cell(t, 1, 0, \"Matrix Copy:\")\n\ttable.cell(t, 1, 1, str.tostring(m2))",
-          "returnedType": "matrix",
+          "returnedType": "matrix<any>",
           "returnedTypes": [
-            "matrix"
+            "matrix<any>"
           ]
         },
         {
@@ -39944,7 +39943,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             }
           ],
@@ -39978,7 +39977,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             }
           ],
@@ -40011,7 +40010,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             }
           ],
@@ -40039,7 +40038,7 @@
               "info": "Matrix object to concatenate into.",
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             },
             {
@@ -40048,7 +40047,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             }
           ],
@@ -40063,9 +40062,9 @@
             "[matrix.rows](#fun_matrix.rows)"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.concat()` Example\")\n\n// Create a 2x4 \"int\" matrix containing values `0`.\nm1 = matrix.new<int>(2, 4, 0)\n// Create a 2x4 \"int\" matrix containing values `1`.\nm2 = matrix.new<int>(2, 4, 1)\n\n// Append matrix `m2` to `m1`.\nmatrix.concat(m1, m2)\n\n// Display matrix elements.\nif barstate.islastconfirmedhistory\n\tvar t = table.new(position.top_right, 2, 2, color.green)\n\ttable.cell(t, 0, 0, \"Matrix Elements:\")\n\ttable.cell(t, 0, 1, str.tostring(m1))",
-          "returnedType": "matrix",
+          "returnedType": "matrix<any>",
           "returnedTypes": [
-            "matrix"
+            "matrix<any>"
           ]
         },
         {
@@ -40079,7 +40078,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             },
             {
@@ -40137,7 +40136,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             },
             {
@@ -40195,7 +40194,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             }
           ],
@@ -40545,7 +40544,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             }
           ],
@@ -40560,9 +40559,9 @@
             "[matrix.reverse](#fun_matrix.reverse)"
           ],
           "examples": "//@version=5\nindicator(\"`matrix.transpose()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n\t// Create a 2x2 matrix. \n\tvar m1 = matrix.new<float>(2, 2, na)\n\t// Fill the matrix with values.\n\tmatrix.set(m1, 0, 0, 1)\n\tmatrix.set(m1, 0, 1, 2)\n\tmatrix.set(m1, 1, 0, 3)\n\tmatrix.set(m1, 1, 1, 4)\n\t\n\t// Create a transpose of the matrix.\n\tvar m2 = matrix.transpose(m1)\n\t\n\t// Display using a table.\n\tvar t = table.new(position.top_right, 2, 2, color.green)\n\ttable.cell(t, 0, 0, \"Original matrix:\")\n\ttable.cell(t, 0, 1, str.tostring(m1))\n\ttable.cell(t, 1, 0, \"Transposed matrix:\")\n\ttable.cell(t, 1, 1, str.tostring(m2))",
-          "returnedType": "matrix",
+          "returnedType": "matrix<any>",
           "returnedTypes": [
-            "matrix"
+            "matrix<any>"
           ]
         },
         {
@@ -40854,7 +40853,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             }
           ],
@@ -41405,7 +41404,7 @@
               "default": null,
               "required": true,
               "displayType": "matrix<any>",
-              "allowedTypeIDs": "matrix",
+              "allowedTypeIDs": "matrix<any>",
               "possibleValues": null
             }
           ],
@@ -42766,7 +42765,6 @@
               ],
               "possibleValues": [
                 "time",
-                "time_open",
                 "time_close"
               ]
             },
@@ -43456,6 +43454,7 @@
             "Each key is unique and can only appear once. When adding a new value with a key that the map already contains, that value replaces the old value associated with the key.",
             "Maps maintain insertion order. Note that the order does not change when inserting a pair with a `key` that\\`s already in the map. The new pair replaces the existing pair with the `key` in such cases."
           ],
+          "returnedType": "map<keyType, valueType>",
           "returns": "The ID of a map object which may be used in other map.*() functions.",
           "seeAlso": [
             "[map.put](#fun_map.put)",
@@ -43477,7 +43476,7 @@
               "default": null,
               "required": true,
               "displayType": "map<type>",
-              "allowedTypeIDs": "map",
+              "allowedTypeIDs": "map<any>",
               "possibleValues": null
             }
           ],
@@ -43504,7 +43503,7 @@
               "default": null,
               "required": true,
               "displayType": "map<type>",
-              "allowedTypeIDs": "map",
+              "allowedTypeIDs": "map<any>",
               "possibleValues": null
             }
           ],
@@ -43536,7 +43535,7 @@
               "default": null,
               "required": true,
               "displayType": "map<type>",
-              "allowedTypeIDs": "map",
+              "allowedTypeIDs": "map<any>",
               "possibleValues": null
             },
             {
@@ -43572,7 +43571,7 @@
               "default": null,
               "required": true,
               "displayType": "map<type>",
-              "allowedTypeIDs": "map",
+              "allowedTypeIDs": "map<any>",
               "possibleValues": null
             },
             {
@@ -43613,7 +43612,7 @@
               "default": null,
               "required": true,
               "displayType": "map<type>",
-              "allowedTypeIDs": "map",
+              "allowedTypeIDs": "map<any>",
               "possibleValues": null
             }
           ],
@@ -43627,9 +43626,9 @@
             "[map.size](#fun_map.size)"
           ],
           "examples": "//@version=5\nindicator(\"map.keys example\")\na = map.new<string, float>()\na.put(\"open\", open)\na.put(\"high\", high)\na.put(\"low\", low)\na.put(\"close\", close)\nkeys = map.keys(a)\nohlc = 0.0\nfor key in keys\n\tohlc += a.get(key)\nplot(ohlc/4)",
-          "returnedType": "array",
+          "returnedType": "array<any>",
           "returnedTypes": [
-            "array"
+            "array<any>"
           ]
         },
         {
@@ -43643,7 +43642,7 @@
               "default": null,
               "required": true,
               "displayType": "map<type>",
-              "allowedTypeIDs": "map",
+              "allowedTypeIDs": "map<any>",
               "possibleValues": null
             }
           ],
@@ -43657,9 +43656,9 @@
             "[map.size](#fun_map.size)"
           ],
           "examples": "//@version=5\nindicator(\"map.values example\")\na = map.new<string, float>()\na.put(\"open\", open)\na.put(\"high\", high)\na.put(\"low\", low)\na.put(\"close\", close)\nvalues = map.values(a)\nohlc = 0.0\nfor value in values\n\tohlc += value\nplot(ohlc/4)",
-          "returnedType": "array",
+          "returnedType": "array<any>",
           "returnedTypes": [
-            "array"
+            "array<any>"
           ]
         },
         {
@@ -43673,7 +43672,7 @@
               "default": null,
               "required": true,
               "displayType": "map<type>",
-              "allowedTypeIDs": "map",
+              "allowedTypeIDs": "map<any>",
               "possibleValues": null
             },
             {
@@ -43720,7 +43719,7 @@
               "default": null,
               "required": true,
               "displayType": "map<type>",
-              "allowedTypeIDs": "map",
+              "allowedTypeIDs": "map<any>",
               "possibleValues": null
             },
             {
@@ -43729,7 +43728,7 @@
               "default": null,
               "required": true,
               "displayType": "map<type>",
-              "allowedTypeIDs": "map",
+              "allowedTypeIDs": "map<any>",
               "possibleValues": null
             }
           ],
@@ -43758,7 +43757,7 @@
               "default": null,
               "required": true,
               "displayType": "map<type>",
-              "allowedTypeIDs": "map",
+              "allowedTypeIDs": "map<any>",
               "possibleValues": null
             },
             {
@@ -43795,7 +43794,7 @@
               "default": null,
               "required": true,
               "displayType": "map<type>",
-              "allowedTypeIDs": "map",
+              "allowedTypeIDs": "map<any>",
               "possibleValues": null
             }
           ],

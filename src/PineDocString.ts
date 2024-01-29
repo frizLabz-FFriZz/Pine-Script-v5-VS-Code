@@ -15,7 +15,7 @@ export class PineDocString {
    * @param match The string of the function's code.
    * @returns The generated docstring.
    */
-  async generateDocstring(match: string): Promise<string> {
+  async generateDocstring(match: string): Promise<string | undefined> {
     // Match the function signature
     const func: Map<string, Record<string, any>> = await Class.PineDocsManager.getMap('functions2')
     const docsMatch = func.get(match)
@@ -28,22 +28,10 @@ export class PineDocString {
     const desc = docsMatch?.desc ?? docsMatch?.info ?? '..desc..'
     let returnedType
     if (docsMatch?.returnedType || docsMatch?.returnedTypes) {
-      if (docsMatch?.returnedType) {
-        if (Array.isArray(docsMatch?.returnedType)) {
-          returnedType = docsMatch?.returnTypes.join(', ')
-        } else {
-          returnedType = docsMatch?.returnedType
-        }
-      } else if (docsMatch?.returnedTypes) {
-        if (Array.isArray(docsMatch?.returnedTypes)) {
-          returnedType = docsMatch?.returnedType.join(', ')
-        } else {
-          returnedType = docsMatch?.returnedTypes
-        }
-      }
+      returnedType = Helpers.returnTypeArrayCheck(docsMatch) ?? '?'
+    } else {
+      return
     }
-
-    returnedType = Helpers.replaceType(docsMatch?.returnedType) ?? '?'
 
     const docStringBuild = [`// @function ${isMethod ? '(**method**) - ' : ''}${desc}`]
 
@@ -101,19 +89,28 @@ export class PineDocString {
     }
     const code = VSCode?.SelectedText ?? ''
 
-    let finishedDocstring: string
+    let finishedDocstring: string | undefined
 
-    // Decide if the selected code is a function or a type
-    let match = this.functionPattern.exec(code)
-    if (match?.[1]) {
-      finishedDocstring = await this.generateDocstring(match[1].trim())
-    } else {
-      match = this.typePattern.exec(code)
+    // Define patterns and their corresponding methods in an array
+    const patterns = [
+      { pattern: this.functionPattern, method: this.generateDocstring },
+      { pattern: this.typePattern, method: this.generateTypeDocstring },
+    ];
+
+    for (let i = 0; i < patterns.length; i++) {
+      let match = patterns[i].pattern.exec(code);
       if (match?.[1]) {
-        finishedDocstring = await this.generateTypeDocstring(match[1].trim())
-      } else {
-        return
+        finishedDocstring = await patterns[i].method(match[1].trim());
+        if (!finishedDocstring) {
+          finishedDocstring = '// Invalid function match';
+        }
+        break; // Exit the loop once a match is found
       }
+    }
+
+    // If no match was found, return
+    if (!finishedDocstring) {
+      return;
     }
 
     // Replace the selected text with the new docstring followed by the original code

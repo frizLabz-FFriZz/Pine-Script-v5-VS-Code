@@ -5,10 +5,12 @@ export class VSCode {
   private static currentFile: string | undefined
   private static lastFile: string | undefined
   private static recursiveCount: number
-  static isTesting: boolean = false
-  static mockVSCodeAPI: typeof vscode
+  static newVersionFlag: boolean = true
   static context: vscode.ExtensionContext
 
+  public static setNewVersionFlag(newVersionBool: boolean) {
+    VSCode.newVersionFlag = newVersionBool
+  }
 
   public static setContext(context: vscode.ExtensionContext) {
     VSCode.context = context
@@ -40,12 +42,6 @@ export class VSCode {
     }
   }
   
-  public static _VSCode(): typeof vscode {
-    if (VSCode.isTesting) {
-      return VSCode.mockVSCodeAPI 
-    }
-    return vscode
-  }
 
   public static _Languages() {
     return VSCode.vsc.languages
@@ -89,6 +85,10 @@ export class VSCode {
     VSCode.lastFile = VSCode.currentFile;
     VSCode.currentFile = VSCode._Document()?.fileName;
     return VSCode.currentFile;
+  }
+
+  public static _VSCode() {
+    return vscode 
   }
 
   public static get vsc() {

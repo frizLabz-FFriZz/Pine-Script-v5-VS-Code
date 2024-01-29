@@ -153,7 +153,7 @@ export class PineHoverProvider implements vscode.HoverProvider {
 
   /** This function provides hover information for functions. */
   async functionsHover() {
-    const regexAndDocs = await PineHoverHelpers.formRegexGetDocs('functions', 'functions2')
+    const regexAndDocs = await PineHoverHelpers.formRegexGetDocs('functions', 'completionFunctions')
     if (!regexAndDocs) {
       return
     }
@@ -252,21 +252,18 @@ export class PineHoverProvider implements vscode.HoverProvider {
 
   /** This function provides hover information for parameters. */
   async paramsHover(): Promise<vscode.Hover | undefined> {
-    const regex1 = /(?=[,\s]*)([\w]+?)\s*?(?=\s*=\s*[\w."'<>#]+\(?|,(?<!\.*?))/g
-    const regex2 = /(?<=\(|,|[\w<>\[\].]*?)(\w+)(?:\s*=\s*[^\(,=>]+)?(?=(?=\)|,)|(?=\s*=>))/gm
-    const paramHover = (regex: RegExp, func: (key: string) => string) => {
-      return this.processWordRange(null, regex, 'param', func)
+    const regexes = [
+      /(?=[,\s]*)([\w]+?)\s*?(?=\s*=\s*[\w."'<>#]+\(?|,(?<!\.*?))/g,
+      /(?<=\(|,|[\w<>\[\].]*?)(\w+)(?:\s*=\s*[^\(,=>]+)?(?=(?=\)|,)|(?=\s*=>))/gm,
+    ]
+    const paramHover = (regex: RegExp) =>
+      this.processWordRange(null, regex, 'param', (key) => key?.split('=')[0].trim() ?? key)
+    for (const regex of regexes) {
+      const hover = await paramHover(regex)
+      if (hover) {
+        return hover
+      }
     }
-    let hover
-    hover = await paramHover(regex1, (key) => {
-      return key?.split('=')[0].trim() ?? key
-    })
-    if (!hover) {
-      hover = await paramHover(regex2, (key) => {
-        return key?.split('=')[0].trim() ?? key
-      })
-    }
-    return hover
   }
 
   /** This function provides hover information for annotations. */
@@ -292,7 +289,6 @@ export class PineHoverProvider implements vscode.HoverProvider {
     regexId: string,
     transformKey: (key: string) => string,
   ): Promise<vscode.Hover | undefined> {
-
     // If the regexId is not 'param' and either docs or hoverRegex is not defined, return undefined
     if (regexId !== 'param') {
       if (!docs) {
@@ -389,9 +385,9 @@ export class PineHoverProvider implements vscode.HoverProvider {
     // Assemble an array of promises to execute
     const promises = [
       PineHoverBuildMarkdown.appendSyntax(keyedDocs, key, namespace, regexId, this.mapArrayMatrix),
-      PineHoverBuildMarkdown.appendDescription(keyedDocs),
+      PineHoverBuildMarkdown.appendDescription(keyedDocs, regexId),
       PineHoverBuildMarkdown.appendParams(keyedDocs),
-      PineHoverBuildMarkdown.appendReturns(keyedDocs),
+      PineHoverBuildMarkdown.appendReturns(keyedDocs, regexId),
       PineHoverBuildMarkdown.appendRemarks(keyedDocs),
       PineHoverBuildMarkdown.appendSeeAlso(keyedDocs, key),
     ]

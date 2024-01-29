@@ -41,8 +41,7 @@ export class PineFormatResponse {
   async shouldRunConversion() {
     this.confirmed = []
 
-    const docText = VSCode.Text?.replace(/\s|\r\n|\n/g, '')
-    const docLength = docText?.length ?? -1
+    const docLength = VSCode.Text?.length ?? -1
 
     if (PineResponseFlow.docLength !== docLength || PineResponseFlow.docChange === null) {
       PineResponseFlow.docLength = docLength
@@ -76,6 +75,7 @@ export class PineFormatResponse {
     let funcs: any[] = [{ docs: [] }]
     let funcsCompletions: any[] = [{ docs: [] }]
 
+   
     for (const doc of functions) { // Iterate over each doc in functions
       for (let func of doc.docs) {  // Iterate over each function in doc.docs
         // Match the function syntax to extract the returned type

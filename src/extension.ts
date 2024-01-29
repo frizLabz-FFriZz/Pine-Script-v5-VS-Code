@@ -5,6 +5,7 @@ import { PineDocString } from './PineDocString'
 import { PineResponseFlow } from './PineFormatResponse'
 import { PineTypify } from './index'
 import { PineLint } from './PineLint'
+import { checkForNewVersionAndShowChangelog } from './newVersionPopUp'
 import * as vscode from 'vscode'
 
 
@@ -12,6 +13,10 @@ import * as vscode from 'vscode'
 export async function activate(context: vscode.ExtensionContext) {
   console.log('Pine Language Server Activate')
 
+  // Check for new version
+  checkForNewVersionAndShowChangelog(context)
+
+  // Set context
   VSCode.setContext(context)
   Class.setContext(context)
   PineLint.initialLint()
@@ -54,6 +59,7 @@ export async function activate(context: vscode.ExtensionContext) {
     VSCode.Lang.registerColorProvider({ language: 'pine', scheme: 'file' }, Class.PineColorProvider),
     VSCode.Lang.registerHoverProvider({ language: 'pine', scheme: 'file' }, Class.PineHoverProvider),
     VSCode.Lang.registerHoverProvider({ language: 'pine', scheme: 'file' }, Class.PineLibHoverProvider),
+    VSCode.Lang.registerRenameProvider('pine', Class.PineRenameProvider),
     VSCode.Lang.registerSignatureHelpProvider('pine', Class.PineSignatureHelpProvider, '(', ','),
     VSCode.Lang.registerCompletionItemProvider('pine', Class.PineLibCompletionProvider),
     VSCode.Lang.registerCompletionItemProvider('pine', Class.PineCompletionProvider, '.', ',', '('),

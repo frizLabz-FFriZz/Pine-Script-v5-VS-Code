@@ -72,10 +72,16 @@ export class PineTypify {
     // For each variable in the type map
     this.typeMap.forEach((type, name) => {
       // Create a regular expression to find the variable in the text
-      const regex = new RegExp(
-        `(?<!['"].*)\\b(var\\s+|varip\\s+)?(\\b${name}\\b)(\\[\\])?(?=[^\\S\\r\\n]*=(?!=|!|<|>|\\?))(?!.*,\\s*\\n)`,
+      let regex = new RegExp(
+        `(?<!['"].*)\\b(var\\s+|varip\\s+)?(\\b${name}\\b)(\\[\\])?(?=[^\\S\\r\\n]*=(?!=|!|<|>|\\?))(?!.*,\\s*\\n|\\s*\\()`,
         'g',
       )
+
+      //   regex = new RegExp(
+      //     `(?<!['"].*|(?:${typeArray}|=)\\s*)\\b(var\\s+|varip\\s+)?(\\b${name}\\b)(\\[\\])?(?=[^\\S\\r\\n]*=(?!=|!|<|>|\\?))(?!.*,\\s*\\n)`,
+      //   )
+      // }
+
       // For each match of the regular expression in the text
       let match
       while ((match = regex.exec(text)) !== null) {
@@ -101,12 +107,22 @@ export class PineTypify {
         if (lineText.startsWith('//')) {
           continue
         }
+
         if (RegExp(`\\b${type}\\s+${name}\\b`, 'g').test(lineText)) {
           continue
         }
+
+        if (type.includes('array<')) {
+          const typeArray = type.replace(/array<(.*)>/g, '$1\\[\\]')
+          if (RegExp(`\\b${typeArray}\\s+${name}\\b`, 'g').test(lineText)) {
+            continue
+          }
+        }
+
+
         // Check and replace array type notation
         let replacementType = type
-        const replacementText = lineText.replace(new RegExp(`(?<!\\.\\s*)\\b${name}\\b`, 'g'), `${replacementType} ${name}`).replace(/\n|\r/g, '')
+        const replacementText = lineText.replace(new RegExp(`(?<!(?:\\.|\\=|,|\\()\\s*|\\s{5})\\b${name}\\b`, 'g'), `${replacementType} ${name}`).replace(/\n|\r/g, '')
         edits.push(vscode.TextEdit.replace(range, replacementText))
       }
     })

@@ -29,6 +29,7 @@ export { PineHoverParam } from './PineHoverProvider/PineHoverIsParam'
 export { PineHoverProvider } from './PineHoverProvider/PineHoverProvider'
 export { PineLint } from './PineLint'
 export { PineRequest } from './PineRequest'
+export { PineRenameProvider } from './PineRenameProvider'
 export { PineSignatureHelpProvider } from './PineSignatureHelpProvider'
 
 

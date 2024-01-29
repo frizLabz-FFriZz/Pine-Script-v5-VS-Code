@@ -15,6 +15,7 @@ import { PineDocsManager } from './PineDocsManager'
 import { PineHoverParam } from './PineHoverProvider/PineHoverIsParam'
 import { PineHoverFunction } from './PineHoverProvider/PineHoverIsFunction'
 import { PineHoverMethod } from './PineHoverProvider/PineHoverIsMethod'
+import { PineRenameProvider } from './PineRenameProvider'
 
 export class Class {
   public static context: vscode.ExtensionContext | undefined
@@ -34,6 +35,7 @@ export class Class {
   public static pineHoverIsParam: PineHoverParam
   public static pineHoverIsFunction: PineHoverFunction
   public static pineHoverIsMethod: PineHoverMethod
+  public static pineRenameProvider: PineRenameProvider
 
   static setContext(context: vscode.ExtensionContext) {
     Class.context = context
@@ -193,6 +195,18 @@ export class Class {
       // console.log('PineColorProvider initializing')
     }
     return Class.pineColorProvider
+  }
+
+  /**
+   * Lazy loads and returns an instance of PineRenameProvider.
+   * @returns {PineRenameProvider} The PineRenameProvider instance.
+   */
+  static get PineRenameProvider(): PineRenameProvider {
+    if (!Class.pineRenameProvider) {
+      Class.pineRenameProvider = new PineRenameProvider()
+      // console.log('PineRenameProvider initializing')
+    }
+    return Class.pineRenameProvider
   }
 
   /**

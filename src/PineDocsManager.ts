@@ -391,20 +391,29 @@ export class PineDocsManager {
    * @param newDocs - The new docs.
    * @returns The merged docs.
   */
-  private async mergeDocs(currentDocs: any[], newDocs: any[]): Promise<any[]> {
+  // Helper function to merge new docs into current docs
+  async mergeDocs(currentDocs: any[], newDocs: any[]): Promise<any[]> {
     try {
-      if (!newDocs) {
+      if (!newDocs || newDocs.length === 0) {
         return currentDocs;
-      }
-      let mergedDocs = [...currentDocs];
+      } 
+
+      let mergedDocs: any[] = [];
       for (const doc of newDocs) {
-      // Check if doc.docs is an array
         if (Array.isArray(doc.docs)) {
-        // Iterate over each document in doc.docs
-          mergedDocs = [...mergedDocs, ...doc.docs];
+          for (const newDoc of doc.docs) {
+            const oldDoc = currentDocs.find(currentDoc => currentDoc.name === newDoc.name);
+            if (oldDoc) {
+              const mergedDict = { ...oldDoc, ...newDoc };
+              mergedDocs.push(mergedDict);
+            } else {
+              mergedDocs.push(newDoc);
+            }
+          }
         } else {
           console.warn(`Expected an array for doc.docs, but received: ${typeof doc.docs}`, 'mergeDocs');
         }
+  
       }
       return [...new Set(mergedDocs)];
     } catch (error) {

@@ -3,6 +3,8 @@ import { Class } from './PineClass'
 
 
 export class Helpers {
+
+
   /**
    * Checks if the description exists and appends a new line
    * @param desc - The description to check
@@ -34,10 +36,16 @@ export class Helpers {
    * @returns The string with the replacements made
    */
   static replaceSyntax(str: string) {
-    if (!str || typeof str !== 'string') {return str}
-    return this.regexToReplace.reduce((acc, [regex, replacement]) => acc.replace(regex, replacement), str)
+    try {
+      if (!str || typeof str !== 'string') { return str }
+      const out = this.regexToReplace.reduce((acc, [regex, replacement]) => acc.replace(regex, replacement), str)
+      return out
+    } catch (e) {
+      console.error(e, 'replaceSyntax')
+      return str
+    }
   }
-  
+
   /**
    * Checks the syntax content and replaces certain patterns
    * @param syntaxContent - The syntax content to check
@@ -45,16 +53,21 @@ export class Helpers {
    * @returns The modified syntax content
    */
   static checkSyntax(syntaxContent: string, isMethod: boolean = false) {
-    // Special case for 'method'
-    const methodBuild = []
-    if (isMethod) {
-      const methodSplit = syntaxContent.split('\n') 
-      for (const i of methodSplit) {
-        methodBuild.push(i.replace(/(?:([\w.]+\s*\([^)]+\))?([\w.]+\s*\())([^,)]+,?)/g, '$1$2'))
+    try {
+      // Special case for 'method'
+      const methodBuild = []
+      if (isMethod) {
+        const methodSplit = syntaxContent.split('\n')
+        for (const i of methodSplit) {
+          methodBuild.push(i.replace(/(?:([\w.]+\s*\([^)]+\))?([\w.]+\s*\())([^,)]+,?)/g, '$1$2'))
+        }
+        syntaxContent = methodBuild.join('\n')
       }
-      syntaxContent = methodBuild.join('\n')
+      return Helpers.replaceSyntax(syntaxContent)
+    } catch (e) {
+      console.error(e, 'checkSyntax')
+      return syntaxContent
     }
-    return Helpers.replaceSyntax(syntaxContent)
   }
 
   /**
@@ -64,20 +77,24 @@ export class Helpers {
    * @returns The type if a match is found, null otherwise
    */
   static async checkDocsMatch(expression: string, ...keys: string[]) {
-    let map = await Class.PineDocsManager.getMap(...keys)
-    if (map && map.has(expression)) {
-      const mapGet = map.get(expression)
-      let out: string | Record<string, any> | undefined = undefined
-      if (Helpers.completionCheck) {
-        out = mapGet
-      } else {
-        out = (mapGet?.type ?? mapGet?.returnedType ?? mapGet?.returnType ?? mapGet?.returnedTypes[0] ?? null) as string
-        out = Helpers.replaceType(out) 
+    try {
+      let map = await Class.PineDocsManager.getMap(...keys)
+      if (map && map.has(expression)) {
+        const mapGet = map.get(expression)
+        let out: string | Record<string, any> | undefined = undefined
+        if (Helpers.completionCheck) {
+          out = mapGet
+        } else {
+          out = Helpers.returnTypeArrayCheck(mapGet)
+        }
+        if (out) {
+          return out
+        }
+        return
       }
-      if (out) {
-        return out
-      }
-      return undefined
+    } catch (e) {
+      console.error(e, 'checkDocsMatch')
+      return
     }
   }
 
@@ -87,31 +104,37 @@ export class Helpers {
    * @param expression - The expression to check
    * @returns The type of the expression if it can be identified, null otherwise
    */
-  static async identifyType(expression: string, completionCheck: boolean = false): Promise<string | Record<string, any> | undefined>  {
-    Helpers.completionCheck = completionCheck
-    if (!completionCheck) {
-      const typePatterns: { [key: string]: RegExp } = {
-        float: /^-?\d+\.(?:\d+)?$/,
-        int: /^-?\d+$/,
-        string: /^".*"$|^'.*'$/,
-        bool: /^(true|false)$/,
-        color: /^color\(.*\)$|#\d{6,8}$/,
-      }
+  static async identifyType(expression: string, completionCheck: boolean = false): Promise<string | Record<string, any> | undefined> {
+    try {
+      Helpers.completionCheck = completionCheck
+      if (!completionCheck) {
+        const typePatterns: { [key: string]: RegExp } = {
+          float: /^-?\d+\.(?:\d+)?$/,
+          int: /^-?\d+$/,
+          string: /^".*"$|^'.*'$/,
+          bool: /^(true|false)$/,
+          color: /^color\(.*\)$|#\d{6,8}$/,
+        }
 
-      for (const type in typePatterns) {
-        if (typePatterns[type].test(expression)) {
-          return type
+        for (const type in typePatterns) {
+          if (typePatterns[type].test(expression)) {
+            return type
+          }
         }
       }
-    }
 
-    const docStrings = [['variables', 'variables2'], ['constants'], ['functions', 'functions2'], ['methods', 'methods2']]
-    let outType: string | Record<string, any> | undefined = undefined
-    for (const i of docStrings) {
-      outType = await Helpers.checkDocsMatch(expression, ...i)
-      if (outType) {return outType}
+      const docStrings = [['variables', 'variables2'], ['constants'], ['functions', 'functions2'], ['methods', 'methods2']]
+      let outType: string | Record<string, any> | undefined = undefined
+      for (const i of docStrings) {
+        outType = await Helpers.checkDocsMatch(expression, ...i)
+        if (outType) { return outType }
+      }
+
+      return outType
+    } catch (e) {
+      console.error(e, 'identifyType')
+      return
     }
-    return outType
   }
 
   /**
@@ -120,52 +143,73 @@ export class Helpers {
     * @returns The type of the expression if it is a variable, null otherwise
    */
   static returnTypeArrayCheck(keyedDocs: any) {
-    for (const i of ['returnedType', 'returnType', 'returnTypes', 'returnedTypes', 'returns']) {
-      if (keyedDocs?.[i]) {
-        if (Array.isArray(keyedDocs[i])) {
-          return keyedDocs[i].join(', ')
+    let out: string = ''
+    try {
+      for (const i of ['returnedType', 'returnType', 'returnTypes', 'returnedTypes', 'returns', 'return', 'type']) {
+        if (keyedDocs?.[i]) {
+
+          if (Array.isArray(keyedDocs?.[i])) {
+            out = [... new Set(keyedDocs?.[i])].join('|')
+            break
+          }
+          out = keyedDocs?.[i]
+          break
         }
-        return keyedDocs[i]
       }
+      return out
+    } catch (e) {
+      console.error(e, 'returnTypeArrayCheck')
+      return out
     }
-    return null
   }
 
   /**
     * Checks if the expression is a variable
+    * @param returns - The type of the expression
     * @param keyedDocs - The documentation object to check
+    * @param key - The key to check against
     * @returns The type of the expression if it is a variable, null otherwise
    */
   static getThisTypes(keyedDocs: any) {
-    for (const i of ['thisType', 'thisTypes']) {
-      if (keyedDocs?.[i]) {
-        if (Array.isArray(keyedDocs[i])) {
-          return keyedDocs[i].join(', ')
+    try {
+      for (const i of ['thisType', 'thisTypes']) {
+        if (keyedDocs?.[i]) {
+          if (Array.isArray(keyedDocs[i])) {
+            return keyedDocs[i].join(', ')
+          }
+          return keyedDocs[i]
         }
-        return keyedDocs[i]
       }
+      return null
+    } catch (e) {
+      console.error(e, 'getThisTypes')
+      return
     }
-    return null
   }
-  
+
   /**
    * Replaces the type in the string
    * @param type - The type to replace
    * @returns The string with the type replaced
    */
   static replaceType(type: string) {
-    if (typeof type === 'string') {
-      type = type
-        .replace(/(literal|const|input|series|simple)\s+(?!\.|\(|,|\))/g, '')
-        .replace(/(`)\s*\[\s*/g, ' $1[')
-        .replace(/(\w+)\s*(\[\])/g, '$1$2')
-        .replace(/undetermined type/g, '<?>')
-      return type
-    } else {
+    try {
+      if (typeof type === 'string') {
+        type = type
+          .replace(/(literal|const|input|series|simple)\s+(?!\.|\(|,|\))/g, '')
+          .replace(/(`)\s*\[\s*/g, ' $1[')
+          .replace(/(\w+)\s*(\[\])/g, '$1$2')
+          .replace(/undetermined type/g, '<?>')
+        return type
+      } else {
+        return type
+      }
+    } catch (e) {
+      console.error(e, 'replaceType')
       return type
     }
   }
- 
+
   /**
    * Formats the arguments for the syntax
    * @param doc - The documentation object containing the arguments
@@ -173,17 +217,22 @@ export class Helpers {
    * @returns The modified syntax
    */
   static formatArgsForSyntax(doc: any, modifiedSyntax: string): string {
-    if (!doc?.args) {return modifiedSyntax}
-    for (const arg of doc?.args) {
-      let def = arg?.default ?? undefined
-      if (def && typeof def === 'string') {
-        def = def.replace(/\\\"/g, '"').replace(/"na"/g, 'na')
+    try {
+      if (!doc?.args) { return modifiedSyntax }
+      for (const arg of doc?.args) {
+        let def = arg?.default ?? undefined
+        if (def && typeof def === 'string') {
+          def = def.replace(/\\\"/g, '"').replace(/"na"/g, 'na')
+        }
+        if (!arg?.required && def) {
+          modifiedSyntax = modifiedSyntax.replace(RegExp(`\\b${arg.name}\\s*(,|\\))`, ''), `${arg.name}? = ${def}$1`)
+        }
       }
-      if (!arg?.required && def) {
-        modifiedSyntax = modifiedSyntax.replace(RegExp(`\\b${arg.name}\\s*(,|\\))`, ''), `${arg.name}? = ${def}$1`)
-      }
+      return modifiedSyntax
+    } catch (e) {
+      console.error(e, 'formatArgsForSyntax')
+      return modifiedSyntax
     }
-    return modifiedSyntax
   }
 
   /**
@@ -216,13 +265,18 @@ export class Helpers {
    * @returns The formatted syntax
    */
   static modifySyntax(syntax: string, hasArgs: boolean): string {
-    syntax = Helpers.replaceType(syntax)
-    return hasArgs
-      ? syntax
-        .replace(/\(\s*/g, '(\n   ')
-        .replace(/,\s*(?=[^\u2192]*\u2192)/g, ',\n   ')
-        .replace(/\s*\)\s*\u2192\s*/g, '\n) \u2192 ')
-      : syntax
+    try {
+      syntax = Helpers.replaceType(syntax) ?? syntax
+      return hasArgs
+        ? syntax
+          .replace(/\(\s*/g, '(\n   ')
+          .replace(/,\s*(?=[^\u2192]*\u2192)/g, ',\n   ')
+          .replace(/\s*\)\s*\u2192\s*/g, '\n) \u2192 ')
+        : syntax
+    } catch (e) {
+      console.error(e, 'modifySyntax')
+      return syntax
+    }
   }
 
   /**
@@ -255,18 +309,21 @@ export class Helpers {
    * @returns The formatted URL
    */
   static formatUrl(input: string) {
-    input = input.toString()
-    if (!input) {return input}
-    const regex = /(\[[\w\.]+\]\()(#var_|#fun_|#op_)([\w\.]+\))/g
-    return input.replace(regex, ` $1${Helpers.url}$2$3`)
+    try {
+      input = input.toString()
+      if (!input) { return input }
+      const regex = /(\[[\w\.]+\]\()(#var_|#fun_|#op_)([\w\.]+\))/g
+      return input.replace(regex, ` $1${Helpers.url}$2$3`)
+    } catch (e) {
+      console.error(e, 'formatUrl')
+      return
+    }
   }
 
-  /** boldens the item in a markdown string */
   static boldWrap(item: string) {
     return `**${item}**`
   }
-  
-  /** wraps the item in a codeblock in a markdown string */
+
   static cbWrap(item: string) {
     return `\n\`\`\`pine\n${item.trim()}\n\`\`\`\n`
   }
