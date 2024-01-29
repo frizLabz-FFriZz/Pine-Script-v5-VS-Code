@@ -15,14 +15,13 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
   noSort: boolean = false
   sigCompletions: Record<string, any> = {}
 
-
-  /** Checks if there are any completions in the shared state and returns them.  */
   checkCompletions(): Record<string, any>[] {
     try {
       const activeArg = PineSharedCompletionState.getActiveArg
       if (PineSharedCompletionState.getSignatureCompletionsFlag && activeArg) {
         PineSharedCompletionState.setSignatureCompletionsFlag(false)
         this.noSort = true
+        // console.log('activeArg', activeArg)
         return PineSharedCompletionState.getCompletions[activeArg] ?? []
       }
       return []
@@ -84,7 +83,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
   ) {
     try {
       // Determine if the item is a method
-      const isMethod = !namespace ? false : true  ?? false
+      const isMethod = doc?.isMethod ?? false
       // Get the kind of the item
       const kind = doc?.kind
       // Determine if the item is the default (applies to function params for now)
@@ -148,11 +147,12 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         // Set the replacement range and insert text of the completion item
         completionItem.insertText = insertText
         completionItem.preselect = def ? true : false
+        // console.log('insert Text', insertText)
         completionItem.range = new vscode.Range(new vscode.Position(position.line, wordStart), position)
       }
 
       if (moveCursor) {
-        completionItem.command = { command: 'pine.completionAccepted', title: 'Completion Accept Logic.' }
+        completionItem.command = { command: 'pine-extended.completionAccepted', title: 'Completion Accept Logic.' }
         moveCursor = false
       }
 
@@ -161,6 +161,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         PineSharedCompletionState.setIsLastArg()
       }
 
+      // console.log('completionItem', completionItem)
       return completionItem
     } catch (error) {
       console.error(error)
@@ -212,7 +213,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
     }
   }
 
-  /** Handles the completion accepted event. */  
+  // moves cursor inside of () without using the TextEdits, then fires the signatureHelp
   async completionAccepted() {
     try {
       vscode.commands.executeCommand('cursorLeft')
@@ -221,133 +222,83 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
       console.error(error)
     }
   }
-  
-  /**
- * Provides completions for method names based on the current position and match.
- * @param document - The current document.
- * @param position - The current position within the document.
- * @param match - The text used to filter method completions.
- * @returns A promise that resolves to an array of completion items or an empty array if no matches are found.
- */
-  // async methodCompletions(document: vscode.TextDocument, position: vscode.Position, match: string) {
-  //   try {
-  //     console.log(`methodCompletions called with match: ${match}`);
-  //     // Retrieve the documentation map containing information about methods
-  //     const map = await Class.PineDocsManager.getMap('methods', 'methods2')
-  //     console.log('Documentation map retrieved successfully.');
-  
-  //     // Initialize variables to hold parts of the match after splitting
-  //     let splitName0: string | null = null
-  //     let splitName1: string | null = null
 
-  //     // If the match contains a '.', it indicates a method call; split it into object and method parts
-  //     if (match.includes('.')) {
-  //       const split = match.split('.')
-  //       splitName0 = split[0]
-  //       splitName1 = '.' + split.pop()
-  //       console.log(`Match split into object: ${splitName0} and method: ${splitName1}`);
-  //     } else {
-  //       // If there's no '.', return an empty array as it's not a valid method call format
-  //       console.log('No period found in match. Returning empty array.');
-  //       return []
-  //     }
+  async methodCompletions(document: vscode.TextDocument, position: vscode.Position, match: string) {
+    try {
+      // Get the documentation map
+      const map = await Class.PineDocsManager.getMap('methods', 'methods2')
+      // For each entry in the map, if the name starts with the matched text, create a completion item for it
+      let splitName0: string | null = null
+      let splitName1: string | null = null
+      if (match.includes('.')) {
+        const split = match.split('.') ?? null
+        splitName0 = split[0]
+        splitName1 = '.' + split.pop() ?? null
+      } else {
+        return []
+      }
 
-  //     // Check if the split parts are valid and not aliases; if not, return an empty array
-  //     if (!splitName1 || !splitName0 || Class.PineDocsManager.getAliases.includes(splitName0)) {
-  //       console.log('Invalid split parts or splitName0 is an alias. Returning empty array.');
-  //       return []
-  //     }
+      if (!splitName1 || !splitName0 || Class.PineDocsManager.getAliases.includes(splitName0)) {
+        return []
+      }
 
-  //     // Clear the completion items list before adding new items
-  //     this.completionItems = [];
+      let typoTrack = 0
+      for (let [name, doc] of map.entries()) {
+        if (!doc.isMethod || name[0] === '*') {
+          continue
+        }
 
-  //     // Iterate over each entry in the documentation map
-  //     for (let [name, doc] of map.entries()) {
-  //       // Skip entries that are not methods or whose names start with '*'
-  //       if (!doc.isMethod || name.startsWith('*')) {
-  //         continue
-  //       }
+        let docNameSplit0: string | null = null
+        if (name.includes('.')) {
+          const docNameSplit = name.split('.')
+          docNameSplit0 = docNameSplit[0]
+        } else {
+          continue
+        }
 
-  //       // Split the documented method name into object and method parts
-  //       let docNameSplit0: string | null = null
-  //       if (name.includes('.')) {
-  //         const docNameSplit = name.split('.')
-  //         docNameSplit0 = docNameSplit[0]
-  //       } else {
-  //         // If the documented name doesn't contain a '.', skip this entry
-  //         continue
-  //       }
+        if (
+          splitName1 &&
+          docNameSplit0 &&
+          name.toLowerCase().startsWith(`${docNameSplit0}${splitName1[0]}`.toLowerCase())
+        ) {
+          for (const i of `${docNameSplit0}${splitName1}`) {
+            if (typoTrack > 1) {
+              break
+            }
+            if (!name.includes(i.toLowerCase())) {
+              typoTrack++
+            }
+          }
+          if (typoTrack > 1) {
+            typoTrack = 0
+            continue
+          }
 
-  //       // Convert both names to lowercase for comparison
-  //       const lowerCaseName = name.toLowerCase();
-  //       const lowerCaseMatch = `${docNameSplit0}${splitName1}`.toLowerCase();
+          let type = await Helpers.identifyType(splitName0)
+          const docType = Helpers.getThisTypes(doc)
+          if (!type || !docType) {
+            continue
+          }
+          if (!docType.includes(type)) {
+            continue
+          }
 
-  //       // Check if the documented name starts with the same object and method initials as the match
-  //       if (lowerCaseName.startsWith(lowerCaseMatch)) {
-  //         // Reintroduce typo tracking with a maximum of one typo/mismatch allowed
-  //         let typoTrack = 0;
-  //         for (let i = 0; i < lowerCaseMatch.length; i++) {
-  //           if (lowerCaseName[i] !== lowerCaseMatch[i]) {
-  //             typoTrack++;
-  //             if (typoTrack > 1) {
-  //               break;
-  //             }
-  //           }
-  //         }
+          // doc.kind.includes('Imported') ? doc.syntax?.split('.').shift() : null
+          const completionItem = await this.createCompletionItem(document, name, splitName0, doc, position, false)
+          if (completionItem) {
+            this.completionItems.push(completionItem)
+          }
+        }
+      }
+    } catch (error) {
+      console.error(error)
+      return []
+    }
+  }
 
-  //         // If more than one typo/mismatch was found, skip to the next entry
-  //         if (typoTrack > 1) {
-  //           continue;
-  //         }
-
-  //         // Identify the type of the object part of the match and get the corresponding documentation type
-  //         // let type = await Helpers.identifyType(splitName0)
-  //         // const docType = Helpers.getThisTypes(doc)
-
-  //         // If either the type cannot be identified or the documentation type is not found, skip this entry
-  //         // if (!type || !docType) {
-  //         //   // console.log(`Type identification failed or docType not found for ${name}. Continuing.`);
-  //         //   continue
-  //         // }
-
-  //         // If the documentation type does not include the identified type, skip this entry
-  //         // if (!docType.includes(type)) {
-  //         //   console.log(`docType does not include the identified type for ${name}. Continuing.`);
-  //         //   continue
-  //         // }
-
-  //         // Create a completion item for the method name if it passes all checks
-  //         const completionItem = await this.createCompletionItem(document, name, splitName0, doc, position, false)
-
-  //         // If a valid completion item is returned, add it to the list of completion items
-  //         if (completionItem) {
-  //           console.log(`Completion item created for ${name}.`);
-  //           this.completionItems.push(completionItem)
-  //         }
-  //       }
-  //     }
-
-  //     console.log(`methodCompletions completed. Found ${this.completionItems.length} items.`);
-  //     return this.completionItems;
-  //   } catch (error) {
-  //     // Log any errors encountered during the operation
-  //     console.error('Error in methodCompletions:', error);
-  //     // Return an empty array if an error occurs
-  //     return []
-  //   }
-  // }
-  
-
-  /**
-* Provides completions for function names based on the current position and match.
-* @param document - The current document.
-* @param position - The current position within the document.
-* @param match - The text used to filter function completions.
-* @returns A promise that resolves to an array of completion items or an empty array if no matches are found.
-*/
   async functionCompletions(document: vscode.TextDocument, position: vscode.Position, match: string) {
     try {
-      // Retrieve the documentation map containing information about functions, variables, constants, etc.
+      // Get the documentation map
       const map = await Class.PineDocsManager.getMap(
         'functions',
         'completionFunctions',
@@ -356,65 +307,40 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         'constants',
         'UDT',
         'fields',
-        'fields2',
       )
 
-      // Split the match string into individual characters for typo tolerance checking
       const split = match.split('')
-      // Initialize a counter to track the number of typos/mismatches
-      let typoTrack = 0
-      // Iterate over each entry in the documentation map
-      for (const [name, doc] of map.entries()) {
-      // Check if the function name starts with the same letter as the first character of the match string, ignoring case
-        const funcCondition = name.toLowerCase().startsWith(split[0].toLowerCase())
-        // const methodCondition = (name.includes('.') && match.includes('.') && name.split('.')[1].toLowerCase().startsWith(match.split('.')[-1].split('')[0].toLowerCase())) ?? false
-        if (!funcCondition) {
-          continue
-        }
+      // For each entry in the map, if the name starts with the matched text, create a completion item for it
 
-        let nameCheck = name
-            
-        // Iterate over each character in the split match string
-        for (const i of split) {
-          // If more than one typo/mismatch is found, exit the loop for this entry
+      let typoTrack = 0
+      for (const [name, doc] of map.entries()) {
+        if (name.toLowerCase().startsWith(split[0].toLowerCase())) {
+          for (const i of split) {
+            if (typoTrack > 1) {
+              break
+            }
+            if (!name.includes(i.toLowerCase())) {
+              typoTrack++
+            }
+          }
           if (typoTrack > 1) {
-            break
+            typoTrack = 0
+
+            continue
           }
-          // If the current character is not found in the function name, increment the typo counter
-          if (!(nameCheck).toLowerCase().includes(i.toLowerCase())) {
-            typoTrack++
+
+          const completionItem = await this.createCompletionItem(document, name, null, doc, position, false)
+          if (completionItem) {
+            this.completionItems.push(completionItem)
           }
         }
-        // If more than one typo/mismatch was found, reset the counter and skip to the next entry
-        if (typoTrack > 1) {
-          // console.log(`More than one typo/mismatch found for ${name}. Resetting typoTrack and continuing.`);
-          typoTrack = 0
-          continue
-        }
-        // Create a completion item for the function name if it passes the typo check
-        const completionItem = await this.createCompletionItem(document, nameCheck, null, doc, position, false)
-        // If a valid completion item is returned, add it to the list of completion items
-        if (completionItem) {
-          this.completionItems.push(completionItem)
-        }
-        
       }
     } catch (error) {
-    // Log any errors encountered during the operation
-      console.error('Error in functionCompletions:', error);
-      // Return an empty array if an error occurs
+      console.error(error)
       return []
     }
   }
 
- 
-
-  /**
-   * Gathers and sorts the main completions for the current position in the document.
-   * @param document - The current document.
-   * @param position - The current position within the document.
-   * @returns A promise that resolves to a CompletionList object containing the sorted completion items or an empty array if none are found.
-   */
   async mainCompletions(document: vscode.TextDocument, position: vscode.Position) {
     try {
       // Get the text on the current line up to the cursor position
@@ -435,7 +361,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
       }
 
       await this.functionCompletions(document, position, match)
-      // await this.methodCompletions(document, position, match)
+      await this.methodCompletions(document, position, match)
 
       if (this.completionItems.length > 0) {
         // Sort the completion items by label length and return them
@@ -456,13 +382,6 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
     }
   }
 
-  /**
-   * Provides signature completions based on the provided documentation records.
-   * @param document - The current document.
-   * @param position - The current position within the document.
-   * @param docs - An array of documentation records used to generate completion items.
-   * @returns A promise that resolves to a CompletionList object containing the completion items or an empty array if none are found.
-   */
   async signatureCompletions(document: vscode.TextDocument, position: vscode.Position, docs: Record<string, any>[]) {
     try {
       if (!docs || docs.length === 0) {
