@@ -21,7 +21,6 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
       if (PineSharedCompletionState.getSignatureCompletionsFlag && activeArg) {
         PineSharedCompletionState.setSignatureCompletionsFlag(false)
         this.noSort = true
-        // //console.log('activeArg', activeArg)
         return PineSharedCompletionState.getCompletions[activeArg] ?? []
       }
       return []
@@ -153,7 +152,6 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         // Set the replacement range and insert text of the completion item
         completionItem.insertText = insertText
         completionItem.preselect = def ? true : false
-        // //console.log('insert Text', insertText)
         completionItem.range = new vscode.Range(new vscode.Position(position.line, wordStart), position)
         
         if (moveCursor) {
@@ -163,7 +161,6 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
       }
 
 
-      // //console.log('completionItem', completionItem)
       return completionItem
     } catch (error) {
       console.error(error)
@@ -227,13 +224,8 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
 
   async methodCompletions(document: vscode.TextDocument, position: vscode.Position, match: string) {
     try {
-      //console.log('Starting methodCompletions...');
-      //console.log(`Document: ${document}`);
-      //console.log(`Position: ${position}`);
-      //console.log(`Match: ${match}`);
 
       const map = await Class.PineDocsManager.getMap('methods', 'methods2')
-      //console.log('Map obtained:', map);
 
       let splitName0: string = ''
       let splitName1: string = ''
@@ -246,23 +238,17 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
           splitName0 = split.pop() ?? ''
         }
       } else {
-        //console.log('Match does not include a dot. Returning empty array.');
         return []
       }
 
-      //console.log(`splitName0: ${splitName0}`);
-      //console.log(`splitName1: ${splitName1}`);
 
       if (!splitName0 || Class.PineDocsManager.getAliases.includes(splitName0)) {
-        //console.log('Either splitName1, splitName0 is null or splitName0 is an alias. Returning empty array.');
         return []
       }
 
       let typoTrack = 0
       for (let [name, doc] of map.entries()) {
-        //console.log(`Processing entry: ${name}`);
         if (!doc.isMethod || name[0] === '*') {
-          //console.log('Either doc is not a method or name starts with *. Skipping this entry.');
           continue
         }
 
@@ -272,10 +258,8 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
           docNameSplitLast = docNameSplit.pop() ?? null
         } else {
           docNameSplitLast = name
-          //console.log('Name does not include a dot');
         }
 
-        //console.log(`docNameSplitLast: ${docNameSplitLast}`);
         const namejoin = `${splitName0}.${docNameSplitLast}`
 
         if (
@@ -293,16 +277,12 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
           }
           if (typoTrack > 2) {
             typoTrack = 0
-            //console.log('Typo track exceeded 1. Skipping this entry.');
             continue
           }
 
           let nType = await Helpers.identifyType(splitName0)
           let dType = Helpers.getThisTypes(doc)
-          //console.log(`Type: ${nType}`);
-          //console.log(`DocType: ${dType}`);
           if (!nType || !dType) {
-            //console.log('Either type or docType is null. Skipping this entry.');
             continue
           }
 
@@ -314,7 +294,6 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
           nType = nType.replace(/([\w.]+)\[\]/, 'array<$1>')
           dType = dType.replace(/([\w.]+)\[\]/, 'array<$1>')
 
-          //console.log(`nType: ${nType}`, `dType: ${dType}`);
 
           for (const t of ['array', 'matrix', 'map']) {
             if (nType?.includes(t)) {
@@ -353,19 +332,16 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
           }
 
           if (typeof namespaceType !== 'string' || typeof docType !== 'string') {
-            //console.log('Type is not a string. Skipping this entry.');
             continue
           }
 
           if (!docType.includes(namespaceType) && !namespaceType.includes(docType)) {
-            //console.log('DocType does not include type. Skipping this entry.');
             continue
           }
 
           const completionItem = await this.createCompletionItem(document, name, splitName0, doc, position, false)
 
           if (completionItem) {
-            //console.log('Pushing completion item to the list:', completionItem);
             this.completionItems.push(completionItem)
           }
         }
@@ -513,12 +489,10 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
 //   let argTypeCompletions: Record<string, any>[] = []
 //   if (argTypes.length > 0) {
 //     for (const type of argTypes) {
-//       //console.log('TYPE', type)
 //       const typeDocs = await Class.PineDocsManager.getTypeDocs(type)
 //       for (const docs of typeDocs) {
 //         const name = docs?.name ?? type
 //         if (typeDocs) {
-//           //console.log('typeDocs', typeDocs)
 //           this.docsToMatchSignatureCompletions?.set(name, docs)
 //         }
 //       }
@@ -539,7 +513,6 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
 //   // Check if all elements are numbers
 //   const allNumbers = possibleValues.every((value) => typeof value === 'number')
 //   if (allNumbers) {
-//     //console.log('All elements are numbers')
 //     possibleValues.forEach((value: number) => {
 //       const type = Number.isInteger(value) ? 'int' : 'float'
 //       this.docsToMatchSignatureCompletions?.set(value, { name: value, kind: 'Numeric Literal', type })
