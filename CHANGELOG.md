@@ -25,9 +25,6 @@
     <img src="https://img.shields.io/badge/TradingView-Message Me-white?style=flat-square" alt="Message on TradingView">
   </a>
 </div>
-
-
-
 </div>
 <br>
 
