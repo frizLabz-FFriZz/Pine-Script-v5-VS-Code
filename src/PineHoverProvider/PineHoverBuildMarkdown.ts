@@ -57,7 +57,7 @@ export class PineHoverBuildMarkdown {
       if (['function', 'method', 'UDT', 'type', 'param'].includes(regexId)) {
         const isMethod = regexId === 'method'
         syntax = keyedDocs?.syntax ?? key
-        syntax = PineHoverHelpers.replaceNamespace(syntax, namespace)
+        syntax = PineHoverHelpers.replaceNamespace(syntax, namespace, isMethod)
         syntax = this.formatSyntaxContent(syntax, mapArrayMatrix)
         syntax = await this.checkSyntaxContent(syntax, isMethod)
       }
@@ -181,6 +181,28 @@ export class PineHoverBuildMarkdown {
     }
   }
 
+  /** 
+   * Checks the namespace.
+   * @param keyedDocs - The PineDocsManager instance.
+   * @param isMethod - Whether or not the symbol is a method.
+   */
+  static namespaceCheck(syntax: string, keyedDocs: PineDocsManager, isMethod: boolean = false) {
+    try {
+      if (/^\w+\([^)]*\)/.test(syntax) && isMethod) {
+        if (keyedDocs.args) {
+          const namespace = keyedDocs.args[0]?.name ?? null
+          if (namespace) {
+            return `${namespace}.${syntax}`
+          }
+        }
+      }
+      return syntax
+    } catch (error) {
+      console.error(error)
+      return syntax
+    }
+  }
+  
   /** 
    * Appends the description to the markdown.
    * @param keyedDocs - The PineDocsManager instance.
@@ -344,7 +366,7 @@ export class PineHoverBuildMarkdown {
    * @returns A promise that resolves to an array containing the return values.
    */
   static async appendReturns(keyedDocs: PineDocsManager, regexId: string) {
-    if (regexId === 'UDT' || regexId === 'field') {
+    if (['UDT', 'field', 'variable', 'constant', 'control'].includes(regexId)) {
       return []
     }
     try {

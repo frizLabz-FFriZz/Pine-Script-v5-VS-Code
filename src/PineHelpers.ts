@@ -46,6 +46,16 @@ export class Helpers {
     }
   }
 
+  static replaceFunctionSignatures(str: string) {
+    try {
+      if (!str || typeof str !== 'string') { return str }
+      return str.replace(/(?<=\(|,\s*)(?:\w+\s+)?((?:[\w<>\[\].]+|map<[^,]+,[^>]+>)\s+)?(?=\w+)/g, '')
+    } catch (e) {
+      console.error(e, 'replaceSignatures')
+      return str
+    }
+  }
+
   /**
    * Checks the syntax content and replaces certain patterns
    * @param syntaxContent - The syntax content to check
@@ -56,10 +66,15 @@ export class Helpers {
     try {
       // Special case for 'method'
       const methodBuild = []
-      if (isMethod) {
-        const methodSplit = syntaxContent.split('\n')
+      if (isMethod && typeof syntaxContent === 'string') {
+        let methodSplit = [] 
+        if (syntaxContent.includes('\n')) {
+          methodSplit = syntaxContent.split('\n')
+        } else {
+          methodSplit = [syntaxContent]
+        }
         for (const i of methodSplit) {
-          methodBuild.push(i.replace(/(?:([\w.]+\s*\([^)]+\))?([\w.]+\s*\())([^,)]+,?)/g, '$1$2'))
+          methodBuild.push(i.replace(/(?:([\w.]+\s*\([^)]+\))?([\w.]+\s*\())([^,)]+,?\s*(?:\s*[\w.]+>\s\w+,\s)?)(.+)/, '$1$2$4'))
         }
         syntaxContent = methodBuild.join('\n')
       }
@@ -77,21 +92,22 @@ export class Helpers {
    * @returns The type if a match is found, null otherwise
    */
   static async checkDocsMatch(expression: string, ...keys: string[]) {
+
+    let out: string | Record<string, any> | undefined = undefined
+
     try {
       let map = await Class.PineDocsManager.getMap(...keys)
       if (map && map.has(expression)) {
         const mapGet = map.get(expression)
-        let out: string | Record<string, any> | undefined = undefined
         if (Helpers.completionCheck) {
           out = mapGet
+          Helpers.completionCheck = false
         } else {
           out = Helpers.returnTypeArrayCheck(mapGet)
         }
-        if (out) {
-          return out
-        }
-        return
       }
+
+      return out
     } catch (e) {
       console.error(e, 'checkDocsMatch')
       return
@@ -123,11 +139,15 @@ export class Helpers {
         }
       }
 
-      const docStrings = [['variables', 'variables2'], ['constants'], ['functions', 'functions2'], ['methods', 'methods2']]
+      const docStrings = [['variables', 'variables2'], ['constants'], ['functions', 'completionFunctions'], ['methods', 'methods2']]
       let outType: string | Record<string, any> | undefined = undefined
       for (const i of docStrings) {
         outType = await Helpers.checkDocsMatch(expression, ...i)
-        if (outType) { return outType }
+        if (outType) { break }
+      }
+
+      if (typeof outType === 'string') {
+        outType = Helpers.replaceType(outType)
       }
 
       return outType
@@ -152,11 +172,12 @@ export class Helpers {
             out = [... new Set(keyedDocs?.[i])].join('|')
             break
           }
+
           out = keyedDocs?.[i]
           break
         }
       }
-      return out
+      return Helpers.replaceType(out)
     } catch (e) {
       console.error(e, 'returnTypeArrayCheck')
       return out
@@ -171,19 +192,22 @@ export class Helpers {
     * @returns The type of the expression if it is a variable, null otherwise
    */
   static getThisTypes(keyedDocs: any) {
+    let out: string = ''
     try {
       for (const i of ['thisType', 'thisTypes']) {
         if (keyedDocs?.[i]) {
           if (Array.isArray(keyedDocs[i])) {
-            return keyedDocs[i].join(', ')
+            out = keyedDocs[i].join(', ')
+            break
           }
-          return keyedDocs[i]
+          out = keyedDocs[i]
+          break
         }
       }
-      return null
+      return Helpers.replaceType(out)
     } catch (e) {
       console.error(e, 'getThisTypes')
-      return
+      return out
     }
   }
 
@@ -200,10 +224,9 @@ export class Helpers {
           .replace(/(`)\s*\[\s*/g, ' $1[')
           .replace(/(\w+)\s*(\[\])/g, '$1$2')
           .replace(/undetermined type/g, '<?>')
-        return type
-      } else {
-        return type
+
       }
+      return type
     } catch (e) {
       console.error(e, 'replaceType')
       return type
@@ -244,12 +267,12 @@ export class Helpers {
     try {
       return [
         ...new Set(
-          types
-            .join('|')
-            .replace(/(\w+)\[\]/g, 'array<$1>')
-            .replace(/(literal|const|input|series|simple)\s+/g, '')
-            .trim()
-            .split('|'),
+          types.map((type) => {
+            return type
+              .replace(/(\w+)\[\]/g, 'array<$1>')
+              .replace(/(literal|const|input|series|simple)\s+/g, '')
+              .trim()
+          }),
         ),
       ]
     } catch (e) {

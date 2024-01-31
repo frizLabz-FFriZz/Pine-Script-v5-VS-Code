@@ -67,7 +67,7 @@ export class PineHoverHelpers {
    * @param namespace - The namespace to replace.
    * @returns The syntax string with replaced namespace.
    */
-  static replaceNamespace(syntax: string, namespace: string | undefined) {
+  static replaceNamespace(syntax: string, namespace: string | undefined, isMethod: boolean = false) {
     try {
       if (!namespace || namespace === '') {
         return syntax
@@ -83,8 +83,9 @@ export class PineHoverHelpers {
           splitSyntax.unshift(namespace)
           splitOpeningParen[0] = splitSyntax.join('.')
           buildSyntax.push(splitOpeningParen.join('('))
-        } else {
-          buildSyntax.push(syn)
+        } else if (isMethod && /^\w+\(/.test(syntax)) {
+          const syntaxJoin = `${namespace}.${syn}` 
+          buildSyntax.push(syntaxJoin)
         }
       }
       return buildSyntax.join('\n')

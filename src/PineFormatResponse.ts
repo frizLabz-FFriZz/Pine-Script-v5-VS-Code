@@ -98,6 +98,7 @@ export class PineFormatResponse {
           func.kind = doc.title.substring(0, doc.title.length - 1).replace('Function', 'Method')
           func.methodSyntax = func.syntax
           methods[0]?.docs.push(func) // Add the function to the docs array of the first object in methods
+          continue
         }
         func.kind = doc.title.substring(0, doc.title.length - 1) // Set the kind property of the function
         funcs[0].docs.push(func)// Add the function to the docs array of the first object in funcs
@@ -156,6 +157,7 @@ export class PineFormatResponse {
             // Format the syntax of the field
             const formattedSyntax = `${field.name}: ${field?.type?.replace(/(?:\w+\s+)?([^\s]+)/, '$1').replace(/([\w.]+)\[\]/, 'array<$1>') ?? ''}`
             field.syntax = formattedSyntax // Set the syntax property of the field
+            field.parent = type.name // Set the parent property of the field
             syntax.push(formattedSyntax) // Add the field's syntax to the syntax array
             buildFields.push(field) // Add the field to the buildFields array
             fields[0].docs.push(field) // Add the field to the docs array of the first object in fields

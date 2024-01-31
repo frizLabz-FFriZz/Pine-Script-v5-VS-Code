@@ -34,6 +34,14 @@
   
 # Changelog
 
+**v0.1.2** - 2024-01-30
+- **Bug Fix**: Fixed method completions.
+- **Bug Fix**: Fixed method argument completions.
+- **Improvement**: Argument completions now reference other like-typed variables.
+- **Bug Fix**: Fixed some hover over bugs.
+- **Bug Fix**: Fixed minor highlighting bugs.
+
+
 **v0.1.1** - 2024-01-29
 - **Improvement**: Improved syntax highlighting to correctly highlight UDT types in function headers.
 - **Bug Fix**: Fixed Hover Over first param not showing in functions.
