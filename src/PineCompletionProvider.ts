@@ -2,6 +2,27 @@ import { Helpers, PineSharedCompletionState } from './index'
 import { Class } from './PineClass'
 import * as vscode from 'vscode'
 
+
+export class PineInlineCompletionContext implements vscode.InlineCompletionItemProvider {
+  selectedCompletionText: string | undefined;
+  provideInlineCompletionItems(document: vscode.TextDocument, position: vscode.Position, context: vscode.InlineCompletionContext): vscode.ProviderResult<vscode.InlineCompletionItem[] | vscode.InlineCompletionList> {
+    const selectedCompletionText = context.selectedCompletionInfo?.text
+    
+    if (selectedCompletionText) {
+      this.selectedCompletionText = selectedCompletionText
+      PineSharedCompletionState.setSelectedCompletion(context.selectedCompletionInfo?.text)
+      vscode.commands.executeCommand('editor.action.triggerParameterHints')
+    }
+    
+    console.log(context.selectedCompletionInfo?.text, 'selectedCompletionInfo')
+    return null
+  }
+
+  clearSelectedCompletion() {
+    PineSharedCompletionState.setSelectedCompletion(undefined)
+  }
+}
+
 export class PineCompletionProvider implements vscode.CompletionItemProvider {
   completionItems: vscode.CompletionItem[] = []
   docType: any
@@ -12,7 +33,6 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
   match: string | undefined = undefined
   activeArg: string | null = null
   signatureCompletionsFlag: boolean = false
-  noSort: boolean = false
   sigCompletions: Record<string, any> = {}
 
   checkCompletions(): Record<string, any>[] {
@@ -20,7 +40,6 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
       const activeArg = PineSharedCompletionState.getActiveArg
       if (PineSharedCompletionState.getSignatureCompletionsFlag && activeArg) {
         PineSharedCompletionState.setSignatureCompletionsFlag(false)
-        this.noSort = true
         return PineSharedCompletionState.getCompletions[activeArg] ?? []
       }
       return []
@@ -128,17 +147,17 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         }
 
         if (!PineSharedCompletionState.getIsLastArg) {
-          insertText += ', '
+          insertText += ''
         }
 
         // Set the replacement range and insert text of the completion item
         completionItem.insertText = insertText
         completionItem.range = new vscode.Range(new vscode.Position(position.line, argStart), position)
 
-        if (PineSharedCompletionState.getIsLastArg) {
-          completionItem.command = { command: 'cursorRight', title: 'Move Cursor Outside of Ending ")".' }
-          PineSharedCompletionState.setIsLastArg()
-        }
+        // if (PineSharedCompletionState.getIsLastArg) {
+        //   completionItem.command = { command: 'cursorRight', title: 'Move Cursor Outside of Ending ")".' }
+        //   PineSharedCompletionState.setIsLastArg(false)
+        // }
 
       } else {
         // Calculate the start position of the word being completed
@@ -200,7 +219,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
       }
       // For each key in the mapping, if the kind includes the key, return the corresponding completion item kind
       for (const key in kinds) {
-        if (kind.includes(key)) {
+        if (kind.toLowerCase().includes(key.toLowerCase())) {
           return kinds[key]
         }
       }
@@ -225,7 +244,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
   async methodCompletions(document: vscode.TextDocument, position: vscode.Position, match: string) {
     try {
 
-      const map = await Class.PineDocsManager.getMap('methods', 'methods2')
+      const map = Class.PineDocsManager.getMap('methods', 'methods2')
 
       let splitName0: string = ''
       let splitName1: string = ''
@@ -294,7 +313,6 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
           nType = nType.replace(/([\w.]+)\[\]/, 'array<$1>')
           dType = dType.replace(/([\w.]+)\[\]/, 'array<$1>')
 
-
           for (const t of ['array', 'matrix', 'map']) {
             if (nType?.includes(t)) {
               namespaceType = t
@@ -355,7 +373,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
   async functionCompletions(document: vscode.TextDocument, position: vscode.Position, match: string) {
     try {
       // Get the documentation map
-      const map = await Class.PineDocsManager.getMap(
+      const map = Class.PineDocsManager.getMap(
         'functions',
         'completionFunctions',
         'variables',
@@ -419,16 +437,6 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
       await this.methodCompletions(document, position, match)
 
       if (this.completionItems.length > 0) {
-        // Sort the completion items by label length and return them
-        this.completionItems.sort((a, b) => {
-          if (typeof a.insertText === 'number' && typeof b.insertText === 'number') {
-            return a.insertText - b.insertText
-          } else if (typeof a.insertText === 'string' && typeof b.insertText === 'string') {
-            return a.insertText.localeCompare(b.insertText)
-          } else {
-            return 0
-          }
-        })
         return new vscode.CompletionList(this.completionItems, true)
       }
     } catch (error) {
@@ -439,12 +447,14 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
 
   
   async signatureCompletions(document: vscode.TextDocument, position: vscode.Position, docs: Record<string, any>[]) {
+ 
     try {
       if (!docs || docs.length === 0) {
         PineSharedCompletionState.clearCompletions()
         return []
       }
 
+      let index = 0
       for (const completion of docs) {
         const completionItem = await this.createCompletionItem(
           document,
@@ -455,20 +465,11 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
           true,
         )
         if (completionItem) {
+          completionItem.sortText = `order${index.toString().padStart(4, '0')}`;
           this.completionItems.push(completionItem)
         }
+        index++
       }
-
-      // Sort the completion items by label length and return them
-      this.completionItems.sort((a, b) => {
-        if (typeof a.insertText === 'number' && typeof b.insertText === 'number') {
-          return a.insertText - b.insertText
-        } else if (typeof a.insertText === 'string' && typeof b.insertText === 'string') {
-          return a.insertText.localeCompare(b.insertText)
-        } else {
-          return 0
-        }
-      })
 
       PineSharedCompletionState.clearCompletions()
       const cList = new vscode.CompletionList(this.completionItems)
@@ -480,44 +481,3 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
   }
 }
 
-// /**
-//  * Gets extra completions based on the argument types.
-//  * @param argTypes - The types of the arguments.
-//  * @returns An array of completions.
-//  */
-// async getExtraCompletions(argTypes: string[]) {
-//   let argTypeCompletions: Record<string, any>[] = []
-//   if (argTypes.length > 0) {
-//     for (const type of argTypes) {
-//       const typeDocs = await Class.PineDocsManager.getTypeDocs(type)
-//       for (const docs of typeDocs) {
-//         const name = docs?.name ?? type
-//         if (typeDocs) {
-//           this.docsToMatchSignatureCompletions?.set(name, docs)
-//         }
-//       }
-//     }
-//   }
-//   return [...new Set(argTypeCompletions)]
-// }
-
-// /**
-//  * Tests if the given array contains only int or float values.
-//  * @param possibleValues - The array to test.
-//  * @returns An array of objects representing the numbers in the input array,
-//  *          or an empty array if the input contains non-number elements.
-//  */
-// testPossibleValues(possibleValues: any[]): any[] {
-//   const numberArray: any[] = []
-
-//   // Check if all elements are numbers
-//   const allNumbers = possibleValues.every((value) => typeof value === 'number')
-//   if (allNumbers) {
-//     possibleValues.forEach((value: number) => {
-//       const type = Number.isInteger(value) ? 'int' : 'float'
-//       this.docsToMatchSignatureCompletions?.set(value, { name: value, kind: 'Numeric Literal', type })
-//     })
-//   }
-
-//   return numberArray
-// }

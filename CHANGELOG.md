@@ -31,13 +31,24 @@
   
 # Changelog
 
+**v0.1.3** - 2024-02-04
+- **Bug Fix**: Fixed bugs in Auto Completion and Signature Helper
+- **Improvement**: Improved Auto Completion and Signature Helper in functions
+- **Improvement**: Libraries and working document are parsed for the default arguments values.
+- **Improvement**: Default argument values are now displayed with hover over.
+- **Improvement**: Now prompted to select param name first in functions and then value.
+- **Improvement**: Like typed variables now are queued for the auto completion in functions.
+- **Improvement**: Signature helper now changes the argument highlighted based on the auto completion highlighted.
+- **Improvement**: Signature helper now shows the default argument value if there is one.
+- **Improvement**: The default argument value is selectable in the auto completion.
+- **Improvement**: Like typed type fields now show in the auto completion of functions.
+
 **v0.1.2** - 2024-01-30
 - **Bug Fix**: Fixed method completions.
 - **Bug Fix**: Fixed method argument completions.
 - **Improvement**: Argument completions now reference other like-typed variables.
 - **Bug Fix**: Fixed some hover over bugs.
 - **Bug Fix**: Fixed minor highlighting bugs.
-
 
 **v0.1.1** - 2024-01-29
 - **Improvement**: Improved syntax highlighting to correctly highlight UDT types in function headers.

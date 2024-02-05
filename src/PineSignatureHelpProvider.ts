@@ -1,5 +1,6 @@
 import { Helpers, PineSharedCompletionState } from './index'
 import { Class } from './PineClass'
+import { VSCode } from './VSCode'
 import * as vscode from 'vscode'
 import { PineDocsManager } from './PineDocsManager'
 
@@ -7,22 +8,33 @@ import { PineDocsManager } from './PineDocsManager'
  * Provides signature help for Pine functions.
  */
 export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
+  signatureHelp: vscode.SignatureHelp = new vscode.SignatureHelp()
+  line: string = ''
+  position: vscode.Position = new vscode.Position(0, 0)
+  document: vscode.TextDocument | undefined
+  paramIndexes: string[][] = []
   activeSignature: number = 0
   activeFunction: string | null = null
   activeParameter: number | null = null
+  commaSwitch: number = 0
   activeArg: string | null = null
+  usedParams: string[] = []
+  isParamOrArg: boolean = false
+  argsLength: number = 0
   offset: number = 0
   newFunction: boolean = false
+  keyValueMatchesSave: any = null
+  lastSelection: string | null = null
   docsToMatchSignatureCompletions?: Map<string | number, PineDocsManager>
 
   init() {
     new Promise(async () => {
-      await this.getDocsMap()
+      this.getDocsMap()
     })
   }
 
-  async getDocsMap() {
-    this.docsToMatchSignatureCompletions = await Class.PineDocsManager.getMap(
+  getDocsMap() {
+    this.docsToMatchSignatureCompletions = Class.PineDocsManager.getMap(
       'variables',
       'constants',
       'controls',
@@ -46,17 +58,20 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
   ): Promise<vscode.SignatureHelp | null> {
     try {
       // Get the current line of text
-      const line = document.lineAt(position).text
+      this.line = document.lineAt(position).text
+      this.position = position
+      this.document = document
+      this.signatureHelp = new vscode.SignatureHelp()
+
       // Create a new SignatureHelp object
-      const signatureHelp = new vscode.SignatureHelp()
       // Find the last opening and closing parentheses before the current position
-      const lastOpeningParenIndex = line.lastIndexOf('(', position.character)
-      let lastCloseParenIndex = line.lastIndexOf(')', position.character)
+      const lastOpeningParenIndex = this.line.lastIndexOf('(', this.position.character)
+      let lastCloseParenIndex = this.line.lastIndexOf(')', this.position.character)
       if (lastCloseParenIndex < 0) {
         lastCloseParenIndex = 0
       }
       // If the current position is after the last closing parenthesis, return null
-      if (position.isAfter(new vscode.Position(position.line, lastCloseParenIndex))) {
+      if (this.position.isAfter(new vscode.Position(this.position.line, lastCloseParenIndex))) {
         this.activeFunction = null
         this.activeSignature = 0
         this.activeParameter = 0
@@ -67,9 +82,9 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
         return null
       }
       // Extract the function name from the line
-      const trim = line.slice(0, lastOpeningParenIndex)
+      const trim = this.line.slice(0, lastOpeningParenIndex)
       const trimMatch = trim.match(/([\w.]+)$/g)
-      const functionMatch = /.*?([\w.]+)\s*\(/.exec(line)
+      const functionMatch = /.*?([\w.]+)\s*\(/.exec(this.line)
 
       // If new function detected, reset active signature and parameter
       if (functionMatch && functionMatch?.[1] !== this.activeFunction) {
@@ -93,14 +108,14 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       let methodMapFlag = false
       let map: Map<string, PineDocsManager> | null = null
 
-      map = await Class.PineDocsManager.getMap('functions', 'functions2')
+      map = Class.PineDocsManager.getMap('functions', 'functions2')
       if (map.has(toGet)) {
         funcMapFlag = true
       }
 
 
       if (!funcMapFlag) {
-        map = await Class.PineDocsManager.getMap('methods', 'methods2')
+        map = Class.PineDocsManager.getMap('methods', 'methods2')
         for (const key of map.keys()) {
           let keySplit = key
           if (key.includes('.')) {
@@ -118,11 +133,9 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
         }
       }
 
-
       if (!funcMapFlag && !methodMapFlag) {
         return null
       }
-
 
       if (!toGet) {
         return null
@@ -145,25 +158,21 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
         }
       }
       // Build the signatures for the function
-      const [buildSignatures, activeSignatureHelper] = this.buildSignatures(docs, isMethod, methodString)
-      signatureHelp.signatures = buildSignatures
+      const [buildSignatures, activeSignatureHelper, paramIndexes] = this.buildSignatures(docs, isMethod, methodString)
+      this.paramIndexes = paramIndexes
+      this.signatureHelp.signatures = buildSignatures
 
       // Calculate the active parameter and signature
-      signatureHelp.activeParameter = this.calculateActiveParameter(line, position, signatureHelp.signatures)
-      signatureHelp.activeSignature = await this.calculateActiveSignature(
-        line,
-        position,
-        activeSignatureHelper,
-        signatureHelp.activeParameter,
-      )
-      const parameters = buildSignatures[signatureHelp.activeSignature].parameters
-      PineSharedCompletionState.setActiveParameterNumber(signatureHelp.activeParameter)
-      PineSharedCompletionState.setLastArgNumber(parameters.length - 1)
-      await this.sendCompletions(docs, activeSignatureHelper[signatureHelp.activeSignature])
-      await this.setActiveArg(signatureHelp)
+      this.signatureHelp.activeParameter = this.calculateActiveParameter()
+      this.signatureHelp.activeSignature = this.calculateActiveSignature(activeSignatureHelper)
+
+      PineSharedCompletionState.setActiveParameterNumber(this.signatureHelp.activeParameter)
+
+      await this.sendCompletions(docs, activeSignatureHelper[this.signatureHelp.activeSignature])
+      await this.setActiveArg(this.signatureHelp)
 
       // Return the signature help
-      return signatureHelp
+      return this.signatureHelp
     } catch (e) {
       // If an error occurs, reset the active signature and return null
       console.error('signatureProvider error', e, '')
@@ -181,11 +190,12 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
     docs: PineDocsManager,
     isMethod: boolean = false,
     methodString: string | null = null,
-  ): [vscode.SignatureInformation[], Record<string, string>[][]] {
+  ): [vscode.SignatureInformation[], Record<string, string>[][], string[][]] {
     // Initialize an array to hold the signature information
     const signatureInfo: vscode.SignatureInformation[] = []
     // Initialize an array to hold the active signature help
     const activeSignatureHelper: Record<string, string>[][] = []
+    let signatureParamIndexes: string[][] = []
 
     // Extract the syntax from the function
     // If the syntax includes a newline, split it into multiple lines
@@ -213,18 +223,20 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       syn = Helpers.replaceType(syn)
       syn = Helpers.replaceFunctionSignatures(syn)
       // Build the parameters for the function
-      const [parametersOut, activeSignatureHelpOut, synOut] = this.buildParameters(docs, syn)
+      const [parametersOut, paramIndexesOut, activeSignatureHelpOut, synOut] = this.buildParameters(docs, syn)
       // add overload number to syntax display
       const signatureInformation = new vscode.SignatureInformation(synOut)
       // Assign the parameters to the SignatureInformation object
       signatureInformation.parameters = parametersOut
+      // Add the parameter indexes to the paramIndexes array
+      signatureParamIndexes.push(paramIndexesOut)
       // Add the SignatureInformation object to the signature info array
       signatureInfo.push(signatureInformation)
       // Add the active signature help to the active signature help array
       activeSignatureHelper.push(activeSignatureHelpOut)
     }
     // Return the signature info and active signature help
-    return [signatureInfo, activeSignatureHelper]
+    return [signatureInfo, activeSignatureHelper, signatureParamIndexes]
   }
 
   /**
@@ -237,10 +249,11 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
   private buildParameters(
     docs: any,
     syn: string,
-  ): [vscode.ParameterInformation[], Record<string, string>[], string] {
+  ): [vscode.ParameterInformation[], string[], Record<string, string>[], string] {
     try {
       // Initialize an array to hold the parameter information
       const parameters: vscode.ParameterInformation[] = []
+      const paramIndexes: string[] = []
       // Initialize an array to hold the active signature help
       const activeSignatureHelper = []
       // Initialize an array to hold the argument names
@@ -291,119 +304,161 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
         // Build the parameter label
         const paramLabel = `${argType !== '' ? ' ' : ''}${argName}`
 
-        const defaultValue =
-          !argDocs?.required && argDocs?.default !== null
-            ? `${!argDocs?.default ? ' = na' : ' = ' + argDocs.default}`
-            : ''
-
+        let defaultValue = ''
         let questionMark = ''
+        let required = 'Required'
 
+        if (argDocs.default && (argDocs.default === null || argDocs.default === 'null')) {
+          defaultValue = `${' = na'}`
+        } else if (!argDocs.default || argDocs.default === undefined || argDocs.default === 'undefined') {
+          defaultValue = ''
+        } else if (argDocs.default) {
+          defaultValue = ` = ${argDocs.default}`
+        } else {
+          defaultValue = ''
+        }
+            
         if (!argDocs?.required) {
-          if (argDocs.default === null) {
+          if (defaultValue !== '') {
             questionMark = '?'
+            required = 'Optional'
+            syn = syn.replace(RegExp(`\\b${argName}\\b`), `${argName}?`)
           }
-          questionMark = '?'
-          syn = syn.replace(RegExp(`\\b${argName}\\b`), `${argName}?`)
         }
 
         // Build the parameter documentation
-        const paramDocumentation = new vscode.MarkdownString(
-          `**${
-            argDocs.required ? 'Required' : 'Optional'
-          }**\n\`\`\`pine\n${paramLabel}${questionMark}: ${argType}${defaultValue}\n\`\`\`\n${argDesc.trim()}`,
-        )
+        const paramDocumentation = new vscode.MarkdownString(`**${required}**\n\`\`\`pine\n${paramLabel}${questionMark}: ${argType}${defaultValue}\n\`\`\`\n${argDesc.trim()}`)
+        
         // Add the argument to the active signature help
         activeSignatureHelper.push({ arg: argName, type: argType })
         // find match position (doing it this way prevents matching the namespace or function if the argument name is the same)
         // example: str.contains(source, str) → bool, the str arg would highlight the str namespace
+        const startEnd = this.findRegexMatchPosition(syn, argName)
 
-        const matchPosition = this.findRegexMatchPosition(syn, argName)
         // Add the parameter information to the parameters array
-        if (!matchPosition) {
+        if (!startEnd) {
           continue
         }
+        const paramInfo = new vscode.ParameterInformation(startEnd)
+        if (paramDocumentation) {
+          // console.log(paramDocumentation, 'paramDocumentation')
+          paramInfo.documentation = paramDocumentation
+        }
+        parameters.push(paramInfo)
+        paramIndexes.push(argName)
 
-        parameters.push(new vscode.ParameterInformation(matchPosition, paramDocumentation))
       }
-      return [parameters, activeSignatureHelper, syn]
+      // console.log(JSON.stringify(parameters, null, 2), 'parameters in function')
+      return [parameters, paramIndexes, activeSignatureHelper, syn]
     } catch (e) {
       console.error('buildParameters error', e)
-      return [[], [], syn]
+      return [[], [], [], syn]
     }
   }
+
 
   /**
-   * Calculates the active parameter based on the current line, position, and signatures.
-   * @param line - The current line of code.
-   * @param position - The current position within the line.
-   * @param signatures - The signature information.
-   * @returns The index of the active parameter.
-   */
-  private calculateActiveParameter(
-    line: string,
-    position: vscode.Position,
-    signatures: vscode.SignatureInformation[],
-  ): number {
+ * Calculates the active parameter based on the current line, position, and signatures.
+ * @param line - The current line of code.
+ * @param position - The current position within the line.
+ * @param signatures - The signature information.
+ * @returns The index of the active parameter.
+ */
+  private calculateActiveParameter(): number {
     try {
+      console.log(`calculateActiveParameter called with line: ${this.line}, position: ${this.position.character}`);
+  
       // Find the last opening parenthesis before the current position
-      const lastOpeningParenthesisIndex = line.lastIndexOf('(', position.character - 1)
-      // If no opening parenthesis is found, default to the start of the line
-      const startIndex = lastOpeningParenthesisIndex !== -1 ? lastOpeningParenthesisIndex : 0
-      // Slice the line from the starting index to the current position
-      const argumentsSubstring = line.slice(startIndex, position.character)
-      // Apply regex logic to the slice to match key-value pairs
-      const keyValueMatches = argumentsSubstring.matchAll(/(\w+)\s*=\s*[\w'".]+/g)
-      // Initialize variables to hold the last key-value index, skipped index, and furthest index
-      let [lastKeyValueIndex, skippedIndex, furthestIndex] = [0, 0, 0]
-      // Initialize a variable to hold whether or not the last index is less than the furthest index
-      let lastIndex = false
-      // If there are key-value matches, find the index of each key in the parameters
-      if (keyValueMatches) {
-        for (const match of keyValueMatches) {
-          const [, key] = match
-          const index = signatures[this.activeSignature].parameters.findIndex((param: any) => param.label === key)
+      const lastOpeningParenthesisIndex = this.line.lastIndexOf('(', this.position.character - 1);
+      if (lastOpeningParenthesisIndex === -1) {
+        return 0; // No opening parenthesis found, unable to determine active parameter
+      }
+  
+      // Extract substring from the last opening parenthesis to the current position
+      const substringToPosition = this.line.substring(lastOpeningParenthesisIndex + 1, this.position.character);
+  
+      // Initialize active parameter index
+      let activeParameterIndex = 0;
+  
+      // Split substring by commas
+      const args = substringToPosition.split(',');
+      const equal = substringToPosition.match(/=/)
+  
+      // Check for explicit naming of parameters
+      let count = 0
+      this.usedParams = []
+      this.isParamOrArg = false
+      const selectedCompletion = PineSharedCompletionState?.getSelectedCompletion?.replace('=', '')
+      console.log(selectedCompletion, 'selectedCompletion')
+      
+      for (const arg of args) {
 
-          // Update the last key-value index if the current index is greater
-          if (index > lastKeyValueIndex) {
-            lastKeyValueIndex = index
+        const paramNameMatch = arg.match(/\s*(\w+)\s*=/);
 
-            // If the current index is less than the last key-value index, update the skipped index
-          } else if (index < lastKeyValueIndex) {
-            skippedIndex = index
-            lastIndex = true
+
+        const isParamOrArg = arg.match(/^\s*$/);
+        if ((isParamOrArg || isParamOrArg?.[0] === '') && !this.isParamOrArg) {
+          this.isParamOrArg = true
+        } else {
+          this.isParamOrArg = false
+        }
+
+        
+        const addSpace = arg === ''
+        if ((addSpace) && this.isParamOrArg) {
+          if (args.length > 1 && args.length > this.commaSwitch && this.argsLength !== args.length) {
+            this.commaSwitch = args.length
+            let editor = vscode.window.activeTextEditor;
+            if (editor && VSCode.ActivePineEditor) {
+              let snippet = new vscode.SnippetString(' ');
+              editor.insertSnippet(snippet);
+              this.argsLength = args.length
+            }
+          } else {
+            this.commaSwitch = args.length
           }
         }
-      }
 
-      // Update the furthest index
-      furthestIndex = Math.max(furthestIndex, lastKeyValueIndex, skippedIndex)
-      // Split the line at equal signs and check the last segment
-      const lineSplitEqual = line.split('=')
-      let shiftFix = 1
-      const check = lineSplitEqual[lineSplitEqual.length - 1].trim()
-      if (check === ')') {
-        shiftFix = 0
+        if (paramNameMatch || selectedCompletion) {
+          let paramName: string
+          if (paramNameMatch) {
+            this.usedParams.push(paramNameMatch[1])
+            paramName = paramNameMatch[1];
+          } 
+          if (selectedCompletion && (equal || count === 0)) {
+            paramName = selectedCompletion
+            console.log('paramName', paramName)
+          }
+          let index = this.paramIndexes[this.activeSignature].findIndex((param: string) => param === paramName);
+          if (index > -1 && selectedCompletion) {
+            this.lastSelection = selectedCompletion
+          } else {
+            index = this.paramIndexes[this.activeSignature].findIndex((param: string) => param === this.lastSelection);
+          }
+          if (args.length === this.paramIndexes[this.activeSignature].length) {
+            PineSharedCompletionState.setIsLastArg(true)
+          }
+          if (index >= 0) {
+            // If the parameter name exists in the signature, use its index as the active parameter
+            activeParameterIndex = index;
+          }
+        } else {
+          // If there is no explicit parameter name, use the next parameter in the signature
+          if (count !== 0) {
+            activeParameterIndex++;
+          }
+        }
+        count++
       }
-      // Count the number of commas after the last equals sign
-      let commasCountAfterEqual = lineSplitEqual[lineSplitEqual.length - 1].split(',').length - shiftFix
-      // Count the total number of commas before the current position
-      const commasAll = line.slice(0, position.character).split(',').length - 1
-      // If there are commas after the last equals sign, update lastIndex
-      if (commasCountAfterEqual > 0) {
-        lastIndex = false
-      }
-
-      let activeParameter = lastIndex
-        ? skippedIndex
-        : furthestIndex + (furthestIndex > 0 ? commasCountAfterEqual : commasAll)
-
-      return activeParameter === signatures[this.activeSignature].parameters.length ? -1 : activeParameter
+  
+      console.log(`Active parameter index: ${activeParameterIndex}`);
+      return activeParameterIndex < this.signatureHelp.signatures[this.activeSignature].parameters.length ? activeParameterIndex : -1;
     } catch (e) {
-      console.error('calculateActiveParameter error', e)
-      return 0
+      console.error('calculateActiveParameter error', e);
+      return 0;
     }
   }
-
+  
   /**
    * Calculates the active signature based on the current line, position, signature help, and active parameter.
    * @param line - The current line of code.
@@ -412,22 +467,17 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
    * @param activeParameter - The index of the active parameter.
    * @returns The index of the active signature.
    */
-  private async calculateActiveSignature(
-    line: string,
-    position: vscode.Position,
-    signatureHelp: Record<string, string>[][],
-    activeParameter: number,
-  ): Promise<number> {
+  private calculateActiveSignature(activeSignatureHelper: Record<string, string>[][]): number {
     try {
       // If there is only one signature or the active signature is not the first one, return the current active signature.
-      if ((signatureHelp.length <= 1, this.activeSignature !== 0)) {
+      if ((activeSignatureHelper.length <= 1, this.activeSignature !== 0)) {
         return this.activeSignature
       }
 
-      // Extract the function call from the line up to the current position.
-      const startToCursor = line.slice(0, position.character)
-      const openingParenIndex = startToCursor.lastIndexOf('(', position.character) + 1
-      const openingParenToCursor = startToCursor.slice(openingParenIndex, position.character)
+      // Extract the function call from the line up to the current this.position.
+      const startToCursor = this.line.slice(0, this.position.character)
+      const openingParenIndex = startToCursor.lastIndexOf('(', this.position.character) + 1
+      const openingParenToCursor = startToCursor.slice(openingParenIndex, this.position.character)
       // Remove any closing parentheses from the function call.
       const closingParenIndex = openingParenToCursor.lastIndexOf(')')
       const functionCallNoParens = openingParenToCursor.slice(
@@ -443,7 +493,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       if (matchEq) {
         matchEq?.shift()
         for (const eq of matchEq) {
-          for (const help of signatureHelp) {
+          for (const help of activeSignatureHelper) {
             // Check if the named argument matches any of the signature help arguments.
             let match = false
             for (const h of help) {
@@ -480,10 +530,10 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
         return this.activeSignature
       }
 
-      const iType = await Helpers.identifyType(popMatch)
+      const iType = Helpers.identifyType(popMatch)
 
-      for (const help of signatureHelp) {
-        const helpType = help[activeParameter]?.type
+      for (const help of activeSignatureHelper) {
+        const helpType = help[this.signatureHelp.activeParameter]?.type
         // Check if the type of the last argument matches any of the signature help argument types.
         if (helpType === iType) {
           sigMatch.push(count)
@@ -536,6 +586,18 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       const buildCompletions: Record<string, any> = {}
       const args = Array.from(docs.args.map((i: Record<string, any>) => i.name))
 
+      let paramArray = activeSignatureHelper.map((param: Record<string, string>) => {
+        return {
+          name: param.arg + '=',
+          kind: 'Parameter',
+          desc: `Parameter ${param.arg}.`,
+        }
+      })
+
+      for (const p of this.usedParams) {
+        paramArray = paramArray.filter((i: Record<string, any>) => !i.name.includes(p))
+      }
+
       for (const argDocs of docs.args) {
         const argName = argDocs?.name ?? null
         let match = false
@@ -560,13 +622,10 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
         }
 
         const def = argDocs?.default ?? null
-        if (def) {
-          possibleValues = [...new Set([...possibleValues, def])]
-        }
 
         // Merge completions from different sources
         const completions = [...(await this.extractCompletions(possibleValues, argTypes, def))]
-        buildCompletions[argName] = [...new Set(completions)]
+        buildCompletions[argName] = [...new Set(this.isParamOrArg ? paramArray : completions)]
       }
       // If there are completions, set them and trigger the suggest command
       PineSharedCompletionState.setCompletions(buildCompletions)
@@ -587,6 +646,13 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
     try {
       let completions: any[] = []
 
+      if (def) {
+        const defDocs = await this.getCompletionDocs(def)
+        if (defDocs) {
+          defDocs.default = true
+          completions.push(defDocs)
+        }
+      }
 
       if (possibleValues && Array.isArray(possibleValues) && possibleValues.length > 0) {
         
@@ -634,7 +700,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
               kind: 'Literal Boolean',
               desc: `Boolean ${name}.`,
               type: 'bool',
-              default: name === def ? def : null,
+              default: false,
             }
             completions.push(boolDocs)
             continue
@@ -643,12 +709,8 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
           const completionDocs: typeof Class.PineDocsManager | null = await this.getCompletionDocs(nameEdit)
 
           if (completionDocs) {
-            if (name === def) {
-              completionDocs.default = true
-            }
             const docsCopy = { ...completionDocs }
             docsCopy.name = `${name}`
-
             completions.push(docsCopy)
             continue
           } else {
@@ -657,41 +719,47 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
               default: false,
               kind: 'Other',
             }
-            if (name === def) {
-              otherDocs.default = true
-            }
             buildStr.push(otherDocs)
             continue
           }
         }
-
         completions = [...completions, ...buildStr]
         return completions
-      }
+      
+      } else if (argTypes && Array.isArray(argTypes) && argTypes.length > 0) {
+        console.log('argTypes3333', argTypes)
+        
+        const mapFields = Class.PineDocsManager.getMap('fields', 'fields2')
+        const mapVars2 = Class.PineDocsManager.getMap('variables2') 
+        const mapVarsAndConstants = Class.PineDocsManager.getMap('variables', 'constants')
+        const maps = [mapVars2, mapFields, mapVarsAndConstants]
 
-      if (argTypes && Array.isArray(argTypes) && argTypes.length > 0) {
-
-        const fieldsSearch = (field: any, map: Map<any, any>) => {
-          for (const searchDocs of map.values()) {
-            if (searchDocs.name === field.parent) {
-              field.name = `${searchDocs.name}.${field.name}`
-              return 
+        try {
+          for (const map of maps) {
+            for (let doc of map.values()) {
+              if (argTypes.includes(Helpers.replaceType(doc.type))) {
+                if (doc?.parent) {
+                  for (const searchDocs of mapVars2.values()) {
+                    if (Helpers.replaceType(searchDocs.type) === doc.parent) {
+                      console.log('field', doc)
+                      const fieldCopy = { ...doc }
+                      fieldCopy.name = `${searchDocs.name}.${doc.name}`
+                      completions.push(fieldCopy)
+                    }
+                  }
+                } else {
+                  const docsCopy = { ...doc }
+                  completions.push(docsCopy)
+                }
+              }
             }
           }
+          return completions
+          
+        } catch (e) {
+          console.error('extractCompletions error', e)
+          return []
         }
-        
-        
-        const map = await Class.PineDocsManager.getMap('variables2', 'fields')
-        for (const doc of map.values()) {
-          if (argTypes.includes(Helpers.replaceType(doc.type))) {
-            if (doc.parent) {
-              fieldsSearch(doc, map)
-            }
-            const docsCopy = { ...doc }
-            completions.push(docsCopy)
-          }
-        }
-        return completions
       }
       return []
     } catch (e) {
@@ -764,10 +832,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
     // isMethod: boolean = false,
   ): string | [number, number] | null {
     try {
-      // if (/(\w+\s*\.\s*\w+\s*\()[^,)]*(?:,?\s*)(.+)/.test(syntax) && isMethod) {
-      //   syntax = syntax.replace(/(\w+\s*\.\s*\w+\s*\()[^,)]*(?:,?\s*)(.+)/, '$1$2')
-      // }
-
+      
       const regex = RegExp(`\\b(${arg})(?!\\.|\\()\\b`)
       const match = regex.exec(syntax)
 

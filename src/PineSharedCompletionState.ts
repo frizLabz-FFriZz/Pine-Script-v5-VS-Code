@@ -10,11 +10,27 @@ export class PineSharedCompletionState {
   /** Holds the active parameter index for code completion */
   static activeParameter: number | null = null
   /** Holds the last argument index for code completion */
-  static lastArg: number | null = null
+  static lastArg: boolean = false
   /** A flag indicating whether signature completions are active */
   private static sigCompletionsFlag: boolean = false
   /** Holds the signature completions */
   private static sigCompletions: Record<string | number, any> = []
+  /** Holds the currently selected completion */
+  private static selectedCompletion: string | undefined = undefined
+
+  /** Gets the currently selected completion.
+   * @returns The currently selected completion.
+   */
+  static get getSelectedCompletion() {
+    return PineSharedCompletionState.selectedCompletion
+  }
+
+  /** Sets the currently selected completion.
+   * @param completion - The new selected completion.
+   */
+  static setSelectedCompletion(completion: string | undefined) {
+    PineSharedCompletionState.selectedCompletion = completion
+  }
 
   /** Gets the current arguments object.
    * @returns The current arguments object.
@@ -50,14 +66,11 @@ export class PineSharedCompletionState {
    * @returns The current active argument.
     */
   static get getIsLastArg() {
-    if (PineSharedCompletionState.lastArg !== null && (PineSharedCompletionState.lastArg < 0 || PineSharedCompletionState.lastArg === PineSharedCompletionState.activeParameter)) {
-      return true
-    }
-    return false
+    return PineSharedCompletionState.lastArg
   }
   
   /** sets the last argument to 0. */
-  static setIsLastArg(toSet: number = 0) {
+  static setIsLastArg(toSet: boolean = false) {
     PineSharedCompletionState.lastArg = toSet
   }
 
@@ -81,9 +94,9 @@ export class PineSharedCompletionState {
   // /** Sets the last argument.
   //  * @param lastArgument - The new last argument.
   //  */
-  static setLastArgNumber(lastArgument: number) {
-    PineSharedCompletionState.lastArg = lastArgument
-  }
+  // static setLastArgNumber(lastArgument: number) {
+  //   PineSharedCompletionState.lastArg = lastArgument
+  // }
 
   /** Gets the current last argument.
    * @returns The current last argument.

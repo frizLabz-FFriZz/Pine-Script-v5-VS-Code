@@ -9,6 +9,11 @@ import { checkForNewVersionAndShowChangelog } from './newVersionPopUp'
 import * as vscode from 'vscode'
 
 
+
+export function deactivate() {
+  return undefined
+}
+
 // Activate Function =============================================
 export async function activate(context: vscode.ExtensionContext) {
   console.log('Pine Language Server Activate')
@@ -30,6 +35,7 @@ export async function activate(context: vscode.ExtensionContext) {
       if (!VSCode.ActivePineFile) {
         PineLint.DiagnosticCollection.clear()
         PineLint.versionClear()
+        deactivate()
       } else {
         if (PineLint.diagnostics.length > 0 && VSCode.Uri) {
           PineLint.DiagnosticCollection.set(VSCode.Uri, PineLint.diagnostics)
@@ -60,6 +66,7 @@ export async function activate(context: vscode.ExtensionContext) {
     VSCode.Lang.registerHoverProvider({ language: 'pine', scheme: 'file' }, Class.PineHoverProvider),
     VSCode.Lang.registerHoverProvider({ language: 'pine', scheme: 'file' }, Class.PineLibHoverProvider),
     VSCode.Lang.registerRenameProvider('pine', Class.PineRenameProvider),
+    VSCode.Lang.registerInlineCompletionItemProvider('pine', Class.PineInlineCompletionContext),
     VSCode.Lang.registerSignatureHelpProvider('pine', Class.PineSignatureHelpProvider, '(', ','),
     VSCode.Lang.registerCompletionItemProvider('pine', Class.PineLibCompletionProvider),
     VSCode.Lang.registerCompletionItemProvider('pine', Class.PineCompletionProvider, '.', ',', '('),
@@ -74,6 +81,4 @@ export async function activate(context: vscode.ExtensionContext) {
   )
 }
 
-export function deactivate() {
-  return undefined
-}
+

@@ -115,8 +115,8 @@ export class PineHoverHelpers {
     }
   }
 
-  static mapArrayMatrixType = /map<type,type>|matrix<type>|array<type>/g
-  static mapArrayMatrixNew = /map\.new<type,type>|matrix\.new<type>|array\.new<type>/g
+  static mapArrayMatrixType = /map<(?:type,type|keyType, valueType)>|matrix<type>|array<type>/g
+  static mapArrayMatrixNew = /map\.new<(?:type,type|keyType, valueType)>|matrix\.new<type>|array\.new<type>/g
 
   /**
    * Replaces map, array, and matrix types in a syntax content key.
@@ -130,7 +130,7 @@ export class PineHoverHelpers {
       const out = syntaxContentKey
         .replace(PineHoverHelpers.mapArrayMatrixNew, mapArrayMatrix)
         .replace(PineHoverHelpers.mapArrayMatrixType, reducedArrayMatrix)
-        .replace(/\s{2,}/, ' ')
+        .replace(/\s{2,}/g, ' ')
       return out
     } catch (error) {
       console.error(error)

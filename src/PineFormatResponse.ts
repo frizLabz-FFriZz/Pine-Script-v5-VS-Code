@@ -8,6 +8,10 @@ export class PineResponseFlow {
 
   static docLength: number | null = null
   static docChange: boolean | null = null
+
+  /**
+   * Resets the docLength.
+   */
   static resetDocChange() {
     PineResponseFlow.docChange = null
   }
@@ -21,11 +25,24 @@ export class PineFormatResponse {
   response: any = {}
   confirmed: string[] = []
 
+  /** Gets the library data from the linting response
+   * This function will get the lib data from the linting response and set it in the pineFetchLibData object
+   * @returns void */
+  getLibData() {
+    const libIds = this.response.imports?.map((imp: any) => {
+      const { libId = '', alias = '' } = imp
+      return { id: libId, alias: alias, script: '' }
+    })
+    if (libIds) {
+      Class.PineParser?.setLibIds(libIds)
+    }
+  }
+
   /**
    * Adds aliases to the pineDocsManager based on imports in the response.
    * This function adds aliases to the pineDocsManager object based on imports in the response. 
    */
-  async setAliases() {
+  setAliases() {
     const aliases = this.response?.imports?.map((imp: any) => imp.alias)
     if (aliases) {
       Class.PineDocsManager.setImportAliases = [...aliases]
@@ -38,7 +55,7 @@ export class PineFormatResponse {
    *
    * @returns A set of flags indicating which parts of the response have changed. 
    */
-  async shouldRunConversion() {
+  shouldRunConversion() {
     this.confirmed = []
 
     const docLength = VSCode.Text?.length ?? -1
@@ -56,18 +73,17 @@ export class PineFormatResponse {
   /**
    * Set imports in PineDocsManager.
    */
-  async setImports() {
+  setImports() {
     const imports = this.response?.imports ?? []
     if (PineResponseFlow.docChange && imports.length > 0) {
-      const confirm = Class.PineDocsManager.setImportDocs(imports)
-      this.confirmed.push(confirm)
+      Class.PineDocsManager.setImportDocs(imports)
     }
   }
     
   /**
    * Set functions in PineDocsManager.
    */
-  async setFunctions() {
+  setFunctions() {
     // Get the functions from the response, or default to an empty array if no functions are present
     let functions = this.response?.functions2 ?? this.response?.functions ?? []
     // Initialize methods, funcs, and funcsCompletions as arrays with one object that has an empty docs array
@@ -107,38 +123,34 @@ export class PineFormatResponse {
 
     // If getFunctionsChange is true, set the docs for funcsCompletions, funcs, and methods and add the confirmations to this.confirmed
     if (PineResponseFlow.docChange && functions.length > 0) {
-      let confirm1, confirm2, confirm3
-      confirm1 = await Class.PineDocsManager.setDocs(funcsCompletions, 'completionFunctions')
-      confirm2 = await Class.PineDocsManager.setDocs(funcs, 'functions2')
-      confirm3 = await Class.PineDocsManager.setDocs(methods, 'methods2')
-      this.confirmed.push(confirm1, confirm2, confirm3)
+      Class.PineDocsManager.setDocs(funcsCompletions, 'completionFunctions')
+      Class.PineDocsManager.setDocs(funcs, 'functions2')
+      Class.PineDocsManager.setDocs(methods, 'methods2')
     }
   }
 
   /**
    * Set variables in PineDocsManager.
    */
-  async setVariables() {
+  setVariables() {
     // Get the variables from the response, or default to an empty array if no variables are present
     const variables = this.response?.variables2 ?? this.response?.variables ?? []
-
-    variables.forEach((docVars: any) => {// Iterate over each variable in variables
+    variables.forEach((docVars: any) => { // Iterate over each variable in variables
       for (const variable of docVars.docs) { // Iterate over each doc in docVars.docs
-        variable.kind = docVars.title.substring(0, docVars.title.length - 1)// Set the kind property of the variable
+        variable.kind = docVars.title.substring(0, docVars.title.length - 1) // Set the kind property of the variable
       }
     })
 
     // If getVariablesChange is true, set the docs for variables and add the confirmation to this.confirmed
     if (PineResponseFlow.docChange && variables.length > 0) {
-      const confirm = await Class.PineDocsManager.setDocs(variables, 'variables2')
-      this.confirmed.push(confirm)
+      Class.PineDocsManager.setDocs(variables, 'variables2')
     }
   }
 
   /**
    * Set user-defined types and fields in PineDocsManager.
    */
-  async setUDT() {
+  setUDT() {
     // Get the types from the response, or default to an empty array if no types are present
     const types = this.response?.types ?? []
     // Initialize fields and UDT as arrays with one object that has an empty docs array
@@ -172,10 +184,8 @@ export class PineFormatResponse {
 
     // If getTypesChange is true, set the docs for fields and UDT and add the confirmations to this.confirmed
     if (PineResponseFlow.docChange && types.length > 0) {
-      let confirm1, confirm2
-      confirm1 = await Class.PineDocsManager.setDocs(fields, 'fields2')
-      confirm2 = await Class.PineDocsManager.setDocs(UDT, 'UDT')
-      this.confirmed.push(confirm1, confirm2)
+      Class.PineDocsManager.setDocs(fields, 'fields2')
+      Class.PineDocsManager.setDocs(UDT, 'UDT')
     }
   }
 
@@ -187,17 +197,22 @@ export class PineFormatResponse {
 
     if (response) {
       if (response?.result.errors2 || response?.result.errors) {
+        Class.PineParser.parseDoc()
         return null
       }
       this.response = response.result
     }
-    if (await this.shouldRunConversion()) {    
+    if (this.shouldRunConversion()) {    
       this.setAliases()
       this.setImports()
       this.setFunctions()
       this.setVariables()
-      this.setUDT()    
+      this.setUDT() 
+      this.getLibData()  
+      Class.PineParser.parseDoc()
+      Class.PineParser.parseLibs() 
     }
+
     return this.confirmed
   }
 }

@@ -30,6 +30,22 @@
             "close": ")"
         },
         {
+            "open": "array<",
+            "close": ">"
+        },
+        {
+            "open": "map<",
+            "close": ">"
+        },
+        {
+            "open": "matrix<",
+            "close": ">"
+        },
+        {
+            "open": "new<",
+            "close": ">"
+        },
+        {
             "open": "'",
             "close": "'",
             "notIn": [
@@ -46,6 +62,10 @@
         },
     ],
     "surroundingPairs": [
+        [
+            "<",
+            ">"
+        ],
         [
             "{",
             "}"
@@ -75,8 +95,8 @@
         }
     },
     "indentationRules": {
-        "increaseIndentPattern": "^\\s*(type|if|for|while|else|switch|.*=\\s*if\\s+|.*for\\s+.+in|.*=\\s*for)\\b.*$|=>$",
-        "decreaseIndentPattern": "^\\s*(else if|else)$"
+        "increaseIndentPattern": "^\\s*((?:export\\s+)type|if|for|while|else|switch|.*=\\s*if\\s*|.*for\\s+.+in|.*=\\s*for)\\b.*$|.+=>\\s*$",
+        "decreaseIndentPattern": "^\\s*(else if.+|else)\\s*$"
     },
     "onEnterRules": [
         {

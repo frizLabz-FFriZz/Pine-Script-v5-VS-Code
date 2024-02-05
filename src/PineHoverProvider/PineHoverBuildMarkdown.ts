@@ -55,6 +55,9 @@ export class PineHoverBuildMarkdown {
     try {
       let syntax
       if (['function', 'method', 'UDT', 'type', 'param'].includes(regexId)) {
+        if (regexId === 'UDT') {
+          this.buildUDTDefaultSyntax(keyedDocs)
+        }
         const isMethod = regexId === 'method'
         syntax = keyedDocs?.syntax ?? key
         syntax = PineHoverHelpers.replaceNamespace(syntax, namespace, isMethod)
@@ -87,11 +90,54 @@ export class PineHoverBuildMarkdown {
           syntax = syntaxPrefix + syntax.trim()
         }
       }
+
+      if (['UDT', 'field', 'function', 'method'].includes(regexId)) {
+        syntax = this.addDefaultArgsToSyntax(syntax, keyedDocs)
+      }
       
       return [this.cbWrap(syntax), '***  \n']
     } catch (error) {
       console.error(error)
       return []
+    }
+  }
+
+  /** 
+   * Adds default arguments to the syntax.
+   * @param syntax - The syntax.
+   * @param docs - The PineDocsManager instance.
+   */
+  static addDefaultArgsToSyntax(syntax: string, docs: PineDocsManager) {
+    if (docs && (docs.args || docs.fields)) {
+      for (const i of docs.args ?? docs.fields) {
+        if (i?.default) {
+          const argField = i.name
+          syntax = syntax.replace(RegExp(`${argField}(\\s*[,)])`), `${argField}=${i.default}$1`)
+        }
+      }
+    }
+    return syntax
+  }
+
+  /** 
+   * Modifies the syntax to include default values for UDTs.
+   * @param keyedDocs - The PineDocsManager instance.
+   */
+  static buildUDTDefaultSyntax(keyedDocs: PineDocsManager) {
+    try {
+      if (keyedDocs?.syntax && keyedDocs?.fields) {
+        const fields = keyedDocs.fields
+        let syntax = keyedDocs.syntax
+        for (const field of fields) {
+          if (field?.name && field.type) {
+            const regex = RegExp(`    ${field.name}: [^\\n]+`)
+            syntax = syntax.replace(regex, `    ${field.name}: ${field.type}${field.default ? ` = ${field.default}` : ''}`)
+          }
+        }
+        keyedDocs.syntax = syntax
+      }
+    } catch (error) {
+      console.error(error, 'buildUDTDefaultSyntax')
     }
   }
 
@@ -105,7 +151,7 @@ export class PineHoverBuildMarkdown {
     let prefix = ''
     if (regexId === 'variable') {
       if (
-        !/(?::\s*)(array|map|matrix|int|float|bool|string|color|line|label|box|table|linefill|polyline|undefined type|<\?>)\b/g.test(
+        !/(?::\s*)(array|map|matrix|int|float|bool|string|color|line|label|box|table|linefill|polyline|undefined type|na|<\?>)\b/g.test(
           syntax,
         )
       ) {
@@ -144,6 +190,7 @@ export class PineHoverBuildMarkdown {
       return ''
     }
   }
+
 
   /** 
    * Builds the syntax or key content.
@@ -366,7 +413,7 @@ export class PineHoverBuildMarkdown {
    * @returns A promise that resolves to an array containing the return values.
    */
   static async appendReturns(keyedDocs: PineDocsManager, regexId: string) {
-    if (['UDT', 'field', 'variable', 'constant', 'control'].includes(regexId)) {
+    if (['UDT', 'field', 'variable', 'constant', 'control', 'param', 'annotation'].includes(regexId)) {
       return []
     }
     try {

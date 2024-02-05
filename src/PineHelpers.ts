@@ -4,7 +4,6 @@ import { Class } from './PineClass'
 
 export class Helpers {
 
-
   /**
    * Checks if the description exists and appends a new line
    * @param desc - The description to check
@@ -91,12 +90,12 @@ export class Helpers {
    * @param keys - The keys to check against
    * @returns The type if a match is found, null otherwise
    */
-  static async checkDocsMatch(expression: string, ...keys: string[]) {
+  static checkDocsMatch(expression: string, ...keys: string[]) {
 
     let out: string | Record<string, any> | undefined = undefined
 
     try {
-      let map = await Class.PineDocsManager.getMap(...keys)
+      let map = Class.PineDocsManager.getMap(...keys)
       if (map && map.has(expression)) {
         const mapGet = map.get(expression)
         if (Helpers.completionCheck) {
@@ -120,7 +119,7 @@ export class Helpers {
    * @param expression - The expression to check
    * @returns The type of the expression if it can be identified, null otherwise
    */
-  static async identifyType(expression: string, completionCheck: boolean = false): Promise<string | Record<string, any> | undefined> {
+  static identifyType(expression: string, completionCheck: boolean = false): string | Record<string, any> | undefined {
     try {
       Helpers.completionCheck = completionCheck
       if (!completionCheck) {
@@ -142,7 +141,7 @@ export class Helpers {
       const docStrings = [['variables', 'variables2'], ['constants'], ['functions', 'completionFunctions'], ['methods', 'methods2']]
       let outType: string | Record<string, any> | undefined = undefined
       for (const i of docStrings) {
-        outType = await Helpers.checkDocsMatch(expression, ...i)
+        outType = Helpers.checkDocsMatch(expression, ...i)
         if (outType) { break }
       }
 
@@ -293,7 +292,7 @@ export class Helpers {
       return hasArgs
         ? syntax
           .replace(/\(\s*/g, '(\n   ')
-          .replace(/,\s*(?=[^\u2192]*\u2192)/g, ',\n   ')
+          .replace(/(?<!map<[^,]+),\s*(?=[^\u2192]*\u2192)/g, ',\n   ')
           .replace(/\s*\)\s*\u2192\s*/g, '\n) \u2192 ')
         : syntax
     } catch (e) {

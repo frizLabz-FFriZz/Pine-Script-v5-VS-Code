@@ -70,7 +70,7 @@ export class PineDocsManager {
    * Retrieves the types documentation.
    * @returns The types documentation.
    */
-  async getTypes(): Promise<Record<string, any>[]> {
+  getTypes(): Record<string, any>[] {
     return this.typesDocs;
   }
 
@@ -78,7 +78,7 @@ export class PineDocsManager {
    * Retrieves the imports documentation.
    * @returns The imports documentation.
    */
-  async getImports(): Promise<Record<string, any>[]> {
+  getImports(): Record<string, any>[] {
     return this.importsDocs;
   }
 
@@ -86,7 +86,7 @@ export class PineDocsManager {
    * Retrieves the methods documentation.
    * @returns The methods documentation.
    */
-  async getMethods(): Promise<Record<string, any>[]> {
+  getMethods(): Record<string, any>[] {
     return this.methodsDocs;
   }
 
@@ -94,7 +94,7 @@ export class PineDocsManager {
    * Retrieves the second set of methods documentation.
    * @returns The second set of methods documentation.
    */
-  async getMethods2(): Promise<Record<string, any>[]> {
+  getMethods2(): Record<string, any>[] {
     return this.methods2Docs;
   }
 
@@ -102,7 +102,7 @@ export class PineDocsManager {
    * Retrieves the controls documentation.
    * @returns The controls documentation.
    */
-  async getControls(): Promise<Record<string, any>[]> {
+  getControls(): Record<string, any>[] {
     return this.controlsDocs;
   }
 
@@ -110,7 +110,7 @@ export class PineDocsManager {
    * Retrieves the variables documentation.
    * @returns The variables documentation.
    */
-  async getVariables(): Promise<Record<string, any>[]> {
+  getVariables(): Record<string, any>[] {
     return this.variablesDocs;
   }
 
@@ -118,7 +118,7 @@ export class PineDocsManager {
    * Retrieves the second set of variables documentation.
    * @returns The second set of variables documentation.
    */
-  async getVariables2(): Promise<Record<string, any>[]> {
+  getVariables2(): Record<string, any>[] {
     return this.variables2Docs;
   }
 
@@ -126,7 +126,7 @@ export class PineDocsManager {
    * Retrieves the constants documentation.
    * @returns The constants documentation.
    */
-  async getConstants(): Promise<Record<string, any>[]> {
+  getConstants(): Record<string, any>[] {
     return this.constantsDocs;
   }
 
@@ -134,7 +134,7 @@ export class PineDocsManager {
    * Retrieves the functions documentation.
    * @returns The functions documentation.
    */
-  async getFunctions(): Promise<Record<string, any>[]> {
+  getFunctions(): Record<string, any>[] {
     return this.functionsDocs;
   }
 
@@ -142,7 +142,7 @@ export class PineDocsManager {
    * Retrieves the second set of functions documentation.
    * @returns The second set of functions documentation.
    */
-  async getFunctions2(): Promise<Record<string, any>[]> {
+  getFunctions2(): Record<string, any>[] {
     return this.functions2Docs;
   }
 
@@ -150,7 +150,7 @@ export class PineDocsManager {
    * Retrieves the completion functions documentation.
    * @returns The completion functions documentation.
    */
-  async getCompletionFunctions(): Promise<Record<string, any>[]> {
+  getCompletionFunctions(): Record<string, any>[] {
     return this.completionFunctionsDocs;
   }
 
@@ -158,7 +158,7 @@ export class PineDocsManager {
    * Retrieves the annotations documentation.
    * @returns The annotations documentation.
    */
-  async getAnnotations(): Promise<Record<string, any>[]> {
+  getAnnotations(): Record<string, any>[] {
     return this.annotationsDocs;
   }
 
@@ -166,7 +166,7 @@ export class PineDocsManager {
    * Retrieves the UDT (User-Defined Types) documentation.
    * @returns The UDT documentation.
    */
-  async getUDT(): Promise<Record<string, any>[]> {
+  getUDT(): Record<string, any>[] {
     return this.UDTDocs;
   }
 
@@ -174,7 +174,7 @@ export class PineDocsManager {
    * Retrieves the fields documentation.
    * @returns The fields documentation.
    */
-  async getFields(): Promise<Record<string, any>[]> {
+  getFields(): Record<string, any>[] {
     return this.fieldsDocs;
   }
 
@@ -182,7 +182,7 @@ export class PineDocsManager {
    * Retrieves the second set of fields documentation.
    * @returns The second set of fields documentation.
    */
-  async getFields2(): Promise<Record<string, any>[]> {
+  getFields2(): Record<string, any>[] {
     return this.fields2Docs;
   }
   
@@ -192,7 +192,7 @@ export class PineDocsManager {
    * @param key - The key to switch on.
    * @returns The typedocs for the getSwitch function.
    */
-  async getSwitch(key: string) {
+  getSwitch(key: string): Record<string, any>[]  {
     switch (key) {
       case 'types':
         return this.getTypes()
@@ -235,7 +235,7 @@ export class PineDocsManager {
    * @param docs - The docs to set.
    * @returns The typedocs for the setSwitch function.
    */
-  async setSwitch(key: string, docs: any) {
+  setSwitch(key: string, docs: any) {
     switch (key) {
       case 'types':
         this.typesDocs = docs
@@ -290,10 +290,10 @@ export class PineDocsManager {
    * @param keys - The keys to get the map for.
    * @returns The map.
    */
-  async getMap(...keys: string[]): Promise<Map<string, PineDocsManager>> {
+  getMap(...keys: string[]): Map<string, PineDocsManager> {
     try {
-      const docs = await this.getDocs(...keys)
-      const outMap: Map<string, PineDocsManager> = await this.makeMap(docs)
+      const docs = this.getDocs(...keys)
+      const outMap: Map<string, PineDocsManager> = this.makeMap(docs)
       return outMap ?? []
     } catch (error) {
       console.error(error)
@@ -307,7 +307,7 @@ export class PineDocsManager {
    * @param docs - The docs to make the map for.
    * @returns The map.
    */
-  async makeMap(docs: any[]): Promise<Map<string, PineDocsManager>> {
+  makeMap(docs: any[]): Map<string, PineDocsManager> {
     try {
       const entries: [string, PineDocsManager][] = docs.flatMap((doc: any) => {
         if (doc?.name) {
@@ -329,16 +329,16 @@ export class PineDocsManager {
    * @param keys - The keys to get the docs for.
    * @returns The docs.
    */
-  async getDocs(...keys: string[]) {
+  getDocs(...keys: string[]) {
     try {
       let result: any = []
       for (let key of keys) {
-        const docsForKey = await this.getSwitch(key)
+        const docsForKey = this.getSwitch(key)
         if (Array.isArray(docsForKey)) {
 
-          if (/functions\\b/.test(key)) {
+          if (/unctions/.test(key)) {
             docsForKey.filter((doc: any) => !doc?.isMethod)
-          } else if (/methods\\b/.test(key)) {
+          } else if (/methods/.test(key)) {
             docsForKey.filter((doc: any) => doc?.isMethod)
           }
 
@@ -366,17 +366,65 @@ export class PineDocsManager {
     return 'imports'
   }
 
+
+  /**
+   * the setParsed function is used to set the parsed docs for a given key
+   * @param docs - The docs to set.
+   * @param keyType - The key type to set the docs for.
+   */
+  setParsed(docs: any[], keyType: string) {
+    const key = keyType === 'args' ? 'functions2' : 'UDT';
+    const currentMap = this.getMap(key);
+  
+    for (const doc of docs) {
+      const name = doc.name;
+      let currentDocs = currentMap.get(name);
+  
+      if (currentDocs && doc[keyType] && doc[keyType].length > 0) {
+        // Ensure the currentDocs[keyType] exists and is an array.
+        if (!Array.isArray(currentDocs[keyType])) {
+          currentDocs[keyType] = [];
+        }
+  
+        for (let arg of doc[keyType]) {
+          const argName = arg.name;
+          let currentArg = currentDocs[keyType].find((a: any) => a.name === argName);
+  
+          if (currentArg) {
+            // Update properties of the existing argument.
+            currentArg.required = arg.required;
+            if (arg.default) {
+              currentArg.default = arg.default;
+            }
+            if (currentArg.type === 'undefined type') {
+              currentArg.type = arg.type;
+            }
+          } else {
+            // If the argument doesn't exist, push the new argument to the array.
+            //console.log('Arg not found: ', argName);
+          }
+        }
+        // Update the map with the modified document.
+        //console.log('Setting docs for: ', name);
+        currentMap.set(name, currentDocs);
+      }
+    }
+  
+    // Save the updated map.
+    this.setDocs([ { docs: Array.from(currentMap.values()) } ], key);
+  }
+  
   /** 
    * the setDocs function is used to set the docs for a given key
    * @param newDocs - The new docs to set.
    * @param key - The key to set the docs for.
    * @returns The key.
   */
-  async setDocs(newDocs: any, key: string) {
+  setDocs(newDocs: any, key: string) {
     try {
-      const currentDocs: any[] = await this.getSwitch(key)
-      const mergedDocs = await this.mergeDocs(currentDocs, newDocs)
-      await this.setSwitch(key, mergedDocs)
+      const currentDocs: any[] = this.getSwitch(key)
+      const mergedDocs = this.mergeDocs(currentDocs, newDocs)
+      this.setSwitch(key, mergedDocs)
       return key
     } catch (error) {
       console.error(error)
@@ -392,21 +440,25 @@ export class PineDocsManager {
    * @returns The merged docs.
   */
   // Helper function to merge new docs into current docs
-  async mergeDocs(currentDocs: any[], newDocs: any[]): Promise<any[]> {
+  mergeDocs(currentDocs: any[], newDocs: any[]): any[] {
     try {
       if (!newDocs || newDocs.length === 0) {
+        //console.log('No new docs to merge')
         return currentDocs;
       } 
 
       let mergedDocs: any[] = [];
       for (const doc of newDocs) {
         if (Array.isArray(doc.docs)) {
+          //console.log('doc.docs true')
           for (const newDoc of doc.docs) {
             const oldDoc = currentDocs.find(currentDoc => currentDoc.name === newDoc.name);
             if (oldDoc) {
+              //console.log('old Docs')
               const mergedDict = { ...oldDoc, ...newDoc };
               mergedDocs.push(mergedDict);
             } else {
+              //console.log('old Docs else')
               mergedDocs.push(newDoc);
             }
           }
@@ -443,7 +495,7 @@ export class PineDocsManager {
    * the cleanDocs function is used to clean the docs
    * @returns The cleaned docs.
   */
-  async cleanDocs() {
+  cleanDocs() {
     const docs = ['methods2', 'variables2', 'completionFunctions', 'functions2', 'UDT', 'fields']
     for (const doc of docs) {
       this.setSwitch(doc, [])

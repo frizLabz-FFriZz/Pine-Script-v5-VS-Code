@@ -103,7 +103,7 @@
     },
     {
       "comment": "highlights [....] in the hover over following ) → [..,...,..]",
-      "match": "\\)\\s(\u2192\\s\\[(?:[^,\\]]+,\\s*)+[\\w.]+\\])$",
+      "match": "\\)\\s(\u2192\\s(?:\\[(?:[^,\\]]+,\\s*)+[\\w.]+\\])|\\w+)$",
       "captures": {
         "1": {
           "name": "keyword.operator.type"

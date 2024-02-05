@@ -1,13 +1,13 @@
 import * as vscode from 'vscode'
 
-import { PineSignatureHelpProvider } from './PineSignatureHelpProvider'
 import { PineRequest } from './PineRequest'
 import { PineColorProvider } from './PineColorProvider'
 import { PineUserInputs } from './PineUserInputs'
 import { PineHoverProvider } from './PineHoverProvider/PineHoverProvider'
 import { PineLibCompletionProvider } from './PineLibCompletionProvider'
 import { PineLibHoverProvider } from './PineLibHoverProvider'
-import { PineCompletionProvider } from './PineCompletionProvider'
+import { PineInlineCompletionContext, PineCompletionProvider } from './PineCompletionProvider'
+import { PineSignatureHelpProvider } from './PineSignatureHelpProvider'
 import { PineFormatResponse } from './PineFormatResponse'
 import { PineScriptList } from './PineScriptList'
 import { PineTemplates } from './PineTemplates'
@@ -16,6 +16,7 @@ import { PineHoverParam } from './PineHoverProvider/PineHoverIsParam'
 import { PineHoverFunction } from './PineHoverProvider/PineHoverIsFunction'
 import { PineHoverMethod } from './PineHoverProvider/PineHoverIsMethod'
 import { PineRenameProvider } from './PineRenameProvider'
+import { PineParser } from './PineParser'
 
 export class Class {
   public static context: vscode.ExtensionContext | undefined
@@ -27,6 +28,7 @@ export class Class {
   public static pineLibHoverProvider: PineLibHoverProvider
   public static pineLibCompletionProvider: PineLibCompletionProvider
   public static pineSignatureHelpProvider: PineSignatureHelpProvider
+  public static pineInlineCompletionContext: PineInlineCompletionContext
   public static pineCompletionProvider: PineCompletionProvider
   public static pineColorProvider: PineColorProvider
   public static pineScriptList: PineScriptList
@@ -36,6 +38,7 @@ export class Class {
   public static pineHoverIsFunction: PineHoverFunction
   public static pineHoverIsMethod: PineHoverMethod
   public static pineRenameProvider: PineRenameProvider
+  public static pineParser: PineParser
 
   static setContext(context: vscode.ExtensionContext) {
     Class.context = context
@@ -123,6 +126,18 @@ export class Class {
     }
     return Class.pineCompletionProvider
   }
+
+  /**
+   * Lazy loads and returns an instance of PineInlineCompletionContext.
+   * @returns {PineInlineCompletionContext} The PineInlineCompletionContext instance.
+   */
+  static get PineInlineCompletionContext(): PineInlineCompletionContext {
+    if (!Class.pineInlineCompletionContext) {
+      Class.PineCompletionSignatureInitOrder()
+    }
+    return Class.pineInlineCompletionContext
+  }
+  
   /**
    * Initializes PineSignatureHelpProvider and PineCompletionProvider.
    */
@@ -133,6 +148,7 @@ export class Class {
     }
     if (!Class.pineCompletionProvider) {
       // console.log('PineCompletionProvider initializing')
+      Class.pineInlineCompletionContext = new PineInlineCompletionContext()
       Class.pineCompletionProvider = new PineCompletionProvider()
     }
   }
@@ -209,6 +225,20 @@ export class Class {
     return Class.pineRenameProvider
   }
 
+  /**
+   * Lazy loads and returns an instance of PineParser.
+   * @returns {PineParser} The PineParser instance.
+   */
+  static get PineParser(): PineParser {
+    if (!Class.pineParser) {
+      Class.pineParser = new PineParser()
+      // console.log('PineParser initializing')
+    }
+    return Class.pineParser
+  }
+  
+
+  // Non-lazy load classes
   /**
    * Initializes PineHoverParam and returns an instance of PineHoverParam.
    * @param {string} argument - The argument.
