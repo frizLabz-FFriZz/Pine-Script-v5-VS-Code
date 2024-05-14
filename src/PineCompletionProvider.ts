@@ -14,7 +14,7 @@ export class PineInlineCompletionContext implements vscode.InlineCompletionItemP
       vscode.commands.executeCommand('editor.action.triggerParameterHints')
     }
     
-    console.log(context.selectedCompletionInfo?.text, 'selectedCompletionInfo')
+    // console.log(context.selectedCompletionInfo?.text, 'selectedCompletionInfo')
     return null
   }
 
@@ -67,8 +67,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
 
       const completionsFromState: Record<string, any>[] = this.checkCompletions()
 
-      if (token.isCancellationRequested) {
-      }
+      if (token.isCancellationRequested) {}
 
       if (completionsFromState.length > 0) {
         return await this.signatureCompletions(document, position, completionsFromState)
@@ -105,7 +104,8 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
       // Get the kind of the item
       const kind = doc?.kind
       // Determine if the item is the default (applies to function params for now)
-      const def = doc?.default ?? false
+      let preselect = (doc?.preselect ?? false) ? doc.preselect : (doc?.default ?? false)
+      
       // name the label variable
       let label = name
       // If the item is a function or method, add parentheses to the name
@@ -119,7 +119,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         moveCursor = true
       }
       // Format the syntax and check for overloads
-      const modifiedSyntax = Helpers.formatSyntax(name, doc, isMethod)
+      const modifiedSyntax = Helpers.formatSyntax(name, doc, isMethod, namespace)
       // Format the label and description
       label = isMethod ? `${namespace}.${label.split('.').pop()}` : label
       label = label + openParen + closeParen
@@ -130,7 +130,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
       // Create a new CompletionItem object
       const completionItem = new vscode.CompletionItem(label, itemKind)
       completionItem.documentation = new vscode.MarkdownString(`${formattedDesc} \`\`\`pine\n${modifiedSyntax}\n\`\`\``)
-      const detail = (def ? '(Default) ' : '') + kind ?? ''
+      const detail = kind ?? ''
       completionItem.detail = detail
 
       // Use a snippet string for the insert text
@@ -154,11 +154,6 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         completionItem.insertText = insertText
         completionItem.range = new vscode.Range(new vscode.Position(position.line, argStart), position)
 
-        // if (PineSharedCompletionState.getIsLastArg) {
-        //   completionItem.command = { command: 'cursorRight', title: 'Move Cursor Outside of Ending ")".' }
-        //   PineSharedCompletionState.setIsLastArg(false)
-        // }
-
       } else {
         // Calculate the start position of the word being completed
         const wordBoundaryRegex = /\b[\w.]+$/
@@ -170,7 +165,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
 
         // Set the replacement range and insert text of the completion item
         completionItem.insertText = insertText
-        completionItem.preselect = def ? true : false
+        completionItem.preselect = preselect
         completionItem.range = new vscode.Range(new vscode.Position(position.line, wordStart), position)
         
         if (moveCursor) {
@@ -178,7 +173,6 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
           moveCursor = false
         }
       }
-
 
       return completionItem
     } catch (error) {
@@ -214,7 +208,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         Type: vscode.CompletionItemKind.TypeParameter,
         Annotation: vscode.CompletionItemKind.Snippet,
         Property: vscode.CompletionItemKind.Property,
-        Parameter: vscode.CompletionItemKind.Field,
+        Parameter: vscode.CompletionItemKind.Struct,
         Other: vscode.CompletionItemKind.Value,
       }
       // For each key in the mapping, if the kind includes the key, return the corresponding completion item kind
@@ -246,22 +240,20 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
 
       const map = Class.PineDocsManager.getMap('methods', 'methods2')
 
-      let splitName0: string = ''
-      let splitName1: string = ''
+      let namespace: string = ''
+      let funcName: string = ''
       if (match.includes('.')) {
         const split = match.split('.') ?? ''
         if (split.length > 1) {
-          splitName1 = split.pop() ?? ''
-          splitName0 = split.pop() ?? ''
-        } else if (split.length === 1) {
-          splitName0 = split.pop() ?? ''
+          funcName = split.pop() ?? ''
+          namespace = split.pop() ?? ''
         }
       } else {
         return []
       }
 
 
-      if (!splitName0 || Class.PineDocsManager.getAliases.includes(splitName0)) {
+      if (!namespace || Class.PineDocsManager.getAliases.includes(namespace)) {
         return []
       }
 
@@ -279,85 +271,48 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
           docNameSplitLast = name
         }
 
-        const namejoin = `${splitName0}.${docNameSplitLast}`
+        const namejoin = `${namespace}.${docNameSplitLast}`
+        if (namespace && docNameSplitLast) {
+          const fullName = `${namespace}.${funcName}`.toLowerCase();
+          typoTrack = [...fullName].reduce((acc, char) => {
+            if (!namejoin.toLowerCase().includes(char)) {
+              acc++;
+            }
+            return acc;
+          }, 0);
 
-        if (
-          splitName0 &&
-          docNameSplitLast &&
-          namejoin.toLowerCase().startsWith(`${splitName0}.`.toLowerCase())
-        ) {
-          for (const i of `${splitName0}.${splitName1}`) {
-            if (typoTrack > 2) {
-              break
-            }
-            if (!namejoin.toLowerCase().includes(i.toLowerCase())) {
-              typoTrack++
-            }
-          }
           if (typoTrack > 2) {
-            typoTrack = 0
-            continue
+            continue; // Skip this iteration if more than 2 typos
           }
 
-          let nType = await Helpers.identifyType(splitName0)
-          let dType = Helpers.getThisTypes(doc)
+          let nType = Helpers.identifyType(namespace);
+          let dType = Helpers.getThisTypes(doc);
           if (!nType || !dType) {
-            continue
+            continue; // Skip this iteration if either type is not identified
           }
-
-          let flag1 = false
-          let flag2 = false
-          let namespaceType = null
-          let docType = null
-
+        
           nType = nType.replace(/([\w.]+)\[\]/, 'array<$1>')
           dType = dType.replace(/([\w.]+)\[\]/, 'array<$1>')
 
           for (const t of ['array', 'matrix', 'map']) {
-            if (nType?.includes(t)) {
-              namespaceType = t
-              flag1 = true
-            }
-            
             if (dType?.includes(t)) {
-              docType = t
-              flag2 = true
+              for (const r of ['any', 'type', t]) {
+                if (dType?.includes(r) || dType === r) {
+                  dType = t
+                }
+              }
+              break
             }
           }
 
-          if (flag1 && flag2) {
-
-            flag1 = false
-            flag2 = false
-
-            for (const r of ['<any>', '<type>']) {
-              if (nType?.includes(r)) {
-                flag1 = true
-              }
-              if (dType?.includes(r)) {
-                flag2 = true
-              }
-            }
-
+          if (typeof nType !== 'string' || typeof dType !== 'string') {
+            continue
           }
-
-          if (!flag1) {
-            namespaceType = nType
-          }
-
-          if (!flag2) {
-            docType = dType
-          }
-
-          if (typeof namespaceType !== 'string' || typeof docType !== 'string') {
+          if (!nType?.includes(dType)) {
             continue
           }
 
-          if (!docType.includes(namespaceType) && !namespaceType.includes(docType)) {
-            continue
-          }
-
-          const completionItem = await this.createCompletionItem(document, name, splitName0, doc, position, false)
+          const completionItem = await this.createCompletionItem(document, name, namespace, doc, position, false)
 
           if (completionItem) {
             this.completionItems.push(completionItem)
@@ -464,6 +419,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
           position,
           true,
         )
+        
         if (completionItem) {
           completionItem.sortText = `order${index.toString().padStart(4, '0')}`;
           this.completionItems.push(completionItem)

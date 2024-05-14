@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 
+import { PineSignatureHelpProvider } from './PineSignatureHelpProvider'
 import { PineRequest } from './PineRequest'
 import { PineColorProvider } from './PineColorProvider'
 import { PineUserInputs } from './PineUserInputs'
@@ -7,7 +8,6 @@ import { PineHoverProvider } from './PineHoverProvider/PineHoverProvider'
 import { PineLibCompletionProvider } from './PineLibCompletionProvider'
 import { PineLibHoverProvider } from './PineLibHoverProvider'
 import { PineInlineCompletionContext, PineCompletionProvider } from './PineCompletionProvider'
-import { PineSignatureHelpProvider } from './PineSignatureHelpProvider'
 import { PineFormatResponse } from './PineFormatResponse'
 import { PineScriptList } from './PineScriptList'
 import { PineTemplates } from './PineTemplates'
@@ -39,6 +39,7 @@ export class Class {
   public static pineHoverIsMethod: PineHoverMethod
   public static pineRenameProvider: PineRenameProvider
   public static pineParser: PineParser
+
 
   static setContext(context: vscode.ExtensionContext) {
     Class.context = context
@@ -126,7 +127,7 @@ export class Class {
     }
     return Class.pineCompletionProvider
   }
-
+  
   /**
    * Lazy loads and returns an instance of PineInlineCompletionContext.
    * @returns {PineInlineCompletionContext} The PineInlineCompletionContext instance.
@@ -225,6 +226,42 @@ export class Class {
     return Class.pineRenameProvider
   }
 
+  // /**
+  //  * Initializes PineHoverParam and returns an instance of PineHoverParam.
+  //  * @param {string} argument - The argument.
+  //  * @param {vscode.Range} wordRange - The word range.
+  //  * @returns {PineHoverParam} The PineHoverParam instance.
+  //  */
+  // static PineHoverIsParam(argument: string, wordRange: vscode.Range): PineHoverParam {
+  //   Class.pineHoverIsParam = new PineHoverParam(argument, wordRange)
+  //   // console.log('PineHover initializing')
+  //   return Class.pineHoverIsParam
+  // }
+
+  // /**
+  //  * Initializes PineHoverFunction and returns an instance of PineHoverFunction.
+  //  * @param {PineDocsManager} docs - The PineDocsManager instance.
+  //  * @param {string} key - The key.
+  //  * @returns {PineHoverFunction} The PineHoverFunction instance.
+  //  */
+  // static PineHoverIsFunction(docs: PineDocsManager, key: string): PineHoverFunction {
+  //   Class.pineHoverIsFunction = new PineHoverFunction(docs, key)
+  //   // console.log('PineHover initializing')
+  //   return Class.pineHoverIsFunction
+  // }
+
+  // /**
+  //  * Initializes PineHoverMethod and returns an instance of PineHoverMethod.
+  //  * @param {PineDocsManager} docs - The PineDocsManager instance.
+  //  * @param {string} key - The key.
+  //  * @returns {PineHoverMethod} The PineHoverMethod instance.
+  //  */
+  // static PineHoverIsMethod(docs: PineDocsManager, key: string, wordRange: vscode.Range): PineHoverMethod {
+  //   Class.pineHoverIsMethod = new PineHoverMethod(docs, key, wordRange)
+  //   // console.log('PineHover initializing')
+  //   return Class.pineHoverIsMethod
+  // }
+
   /**
    * Lazy loads and returns an instance of PineParser.
    * @returns {PineParser} The PineParser instance.
@@ -236,61 +273,15 @@ export class Class {
     }
     return Class.pineParser
   }
-  
-
-  // Non-lazy load classes
-  /**
-   * Initializes PineHoverParam and returns an instance of PineHoverParam.
-   * @param {string} argument - The argument.
-   * @param {vscode.Range} wordRange - The word range.
-   * @returns {PineHoverParam} The PineHoverParam instance.
-   */
-  static PineHoverIsParam(argument: string, wordRange: vscode.Range): PineHoverParam {
-    Class.pineHoverIsParam = new PineHoverParam(argument, wordRange)
-    // console.log('PineHover initializing')
-    return Class.pineHoverIsParam
-  }
-
-  /**
-   * Initializes PineHoverFunction and returns an instance of PineHoverFunction.
-   * @param {PineDocsManager} docs - The PineDocsManager instance.
-   * @param {string} key - The key.
-   * @returns {PineHoverFunction} The PineHoverFunction instance.
-   */
-  static PineHoverIsFunction(docs: PineDocsManager, key: string): PineHoverFunction {
-    Class.pineHoverIsFunction = new PineHoverFunction(docs, key)
-    // console.log('PineHover initializing')
-    return Class.pineHoverIsFunction
-  }
-
-  /**
-   * Initializes PineHoverMethod and returns an instance of PineHoverMethod.
-   * @param {PineDocsManager} docs - The PineDocsManager instance.
-   * @param {string} key - The key.
-   * @returns {PineHoverMethod} The PineHoverMethod instance.
-   */
-  static PineHoverIsMethod(docs: PineDocsManager, key: string): PineHoverMethod {
-    Class.pineHoverIsMethod = new PineHoverMethod(docs, key)
-    // console.log('PineHover initializing')
-    return Class.pineHoverIsMethod
-  }
-
+    
   /**
    * Disposes the specified class.
    * @param {any} ClassToDisposeOf - The class to dispose of.
    */
   static dispose(ClassToDisposeOf: any = null) {
     if (ClassToDisposeOf) {
-      ClassToDisposeOf = null
+      // Since directly nullifying the parameter won't affect the actual instance,
+      // consider implementing a different strategy for disposal.
     }
   }
 }
-
-
-// /**
-//  * Saves to TradingView.
-//  */
-// static async PineSaveToTradingView() {
-//   await PineSaveToTradingView.pasteToTv()
-//   return
-// }

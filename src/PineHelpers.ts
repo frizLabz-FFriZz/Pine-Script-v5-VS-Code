@@ -117,6 +117,7 @@ export class Helpers {
   /**
    * Checks the type of the expression
    * @param expression - The expression to check
+   * @param completionCheck - Whether to check for completion
    * @returns The type of the expression if it can be identified, null otherwise
    */
   static identifyType(expression: string, completionCheck: boolean = false): string | Record<string, any> | undefined {
@@ -161,10 +162,16 @@ export class Helpers {
     * @param keyedDocs - The documentation object to check
     * @returns The type of the expression if it is a variable, null otherwise
    */
-  static returnTypeArrayCheck(keyedDocs: any) {
+  static returnTypeArrayCheck(keyedDocs: any, otherKeys: string[] | null = null) {
     let out: string = ''
     try {
-      for (const i of ['returnedType', 'returnType', 'returnTypes', 'returnedTypes', 'returns', 'return', 'type']) {
+      let keys = ['returnedType', 'returnType', 'returnTypes', 'returnedTypes', 'returns', 'return', 'type']
+
+      if (otherKeys) {
+        keys = otherKeys
+      }
+
+      for (const i of keys) {
         if (keyedDocs?.[i]) {
 
           if (Array.isArray(keyedDocs?.[i])) {
@@ -196,7 +203,7 @@ export class Helpers {
       for (const i of ['thisType', 'thisTypes']) {
         if (keyedDocs?.[i]) {
           if (Array.isArray(keyedDocs[i])) {
-            out = keyedDocs[i].join(', ')
+            out = [...keyedDocs[i]].join(', ')
             break
           }
           out = keyedDocs[i]
@@ -286,9 +293,14 @@ export class Helpers {
    * @param hasArgs - Whether the syntax has arguments
    * @returns The formatted syntax
    */
-  static modifySyntax(syntax: string, hasArgs: boolean): string {
+  static modifySyntax(syntax: string, hasArgs: boolean, namespace: string | null = null): string {
     try {
       syntax = Helpers.replaceType(syntax) ?? syntax
+
+      if (namespace) {
+        syntax = syntax.replace(/(?:[^.]+\s*\.\s*)?(\w+\s*\()/, `${namespace}.$1`)
+      }
+
       return hasArgs
         ? syntax
           .replace(/\(\s*/g, '(\n   ')
@@ -308,15 +320,20 @@ export class Helpers {
    * @param isMethod - Whether the syntax is a method
    * @returns The formatted syntax
    */
-  static formatSyntax(name: string, doc: any, isMethod: boolean): string {
+  static formatSyntax(name: string, doc: any, isMethod: boolean, namespace: string | null = null): string {
     try {
       let modifiedSyntax = (isMethod ? doc.methodSyntax : doc.syntax) ?? name
-      if (modifiedSyntax !== name && modifiedSyntax === typeof 'string' && modifiedSyntax.includes('\n')) {
-        modifiedSyntax = modifiedSyntax.split('\n')[0] ?? modifiedSyntax
+      const getKey = (isMethod ? 'methods' : 'functions')
+      if (modifiedSyntax !== name && modifiedSyntax === typeof 'string') {
+        const filterDocs = Class.PineDocsManager.getDocs(getKey, getKey + '2').filter((i: any) => i.name === name)
+        const synLen = filterDocs.length
+        if (synLen > 1) {
+          modifiedSyntax = `${modifiedSyntax}\n\n(Overload +${synLen})`
+        }
       }
       modifiedSyntax = Helpers.formatArgsForSyntax(doc, modifiedSyntax)
       const hasArgs = /\(.+\)/.test(modifiedSyntax)
-      return Helpers.modifySyntax(modifiedSyntax, hasArgs)
+      return Helpers.modifySyntax(modifiedSyntax, hasArgs, namespace)
     } catch (e) {
       console.error(e, 'formatSyntax', name, doc, isMethod)
       return name
@@ -334,7 +351,7 @@ export class Helpers {
     try {
       input = input.toString()
       if (!input) { return input }
-      const regex = /(\[[\w\.]+\]\()(#var_|#fun_|#op_)([\w\.]+\))/g
+      const regex = /(\[[\w\.]+\]\()(#(?:var|fun|op|kw|type|an|const)_)([\w\.]+\))/g
       return input.replace(regex, ` $1${Helpers.url}$2$3`)
     } catch (e) {
       console.error(e, 'formatUrl')

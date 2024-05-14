@@ -31,6 +31,8 @@ export { PineLint } from './PineLint'
 export { PineRequest } from './PineRequest'
 export { PineRenameProvider } from './PineRenameProvider'
 export { PineSignatureHelpProvider } from './PineSignatureHelpProvider'
+export { PineParser } from './PineParser'
+
 
 
 

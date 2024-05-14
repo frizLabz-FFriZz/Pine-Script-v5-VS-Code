@@ -1,6 +1,7 @@
 import { Class } from './index'
 import { Helpers } from './PineHelpers'
 import { VSCode } from './VSCode'
+// import { PineConsole } from './PineConsole'
 
 
 type LibItem = {
@@ -16,29 +17,32 @@ export class PineParser {
   parsedLibsFunctions: any = {}
   parsedLibsUDT: any = {}
   typePattern: RegExp = /(?<!\/\/.+|@.)(?<=type\s+)(\w+)((?:\s*\n(?:(?:    |^\n(?!\S+)|\s*\/\/).*(?=\n)))+(?!\n\S))/g
-  fieldsPattern: RegExp = /\s{4}(\w+(?:<\w+(?:,\s*\w+(?:\.\w+)?)?>)?)\s+(\w+)(?:\s*=\s*([\w\.'"]+))?/g
+  fieldsPattern: RegExp = /\s{4}(\w+(?:<\w+(?:,\s*\w+(?:\.\w+)?)?>|\[\])?)\s+(\w+)(?:\s*=\s*([#\w\.'"]+))?/g
   funcPattern: RegExp = /((?<!\/\/.+)(\w+)\s*\(([^)]*)\)\s*=>)(?:((?:(?:\s*\n    (?!\s{1,}).+\n))(?:(?: .*(?:\n)+)+)?)+|(.*(?=\n)))/g
-  funcArgPattern: RegExp = /(?:(simple|series)?\s+?)?([\w\.\[\]]*?|\w+<[^>]+>)\s*(\w+)(?:\s*=\s*(['"]?[^,)\n]+['"]?)|\s*(?:,|\)))/g
+  funcArgPattern: RegExp = /(?:(simple|series)?\s+?)?([\w\.\[\]]*?|\w+<[^>]+>)\s*(\w+)(?:\s*=\s*(['"]?[^,)\n]+['"]?)|\s*(?:,|\)|$))/g
   funcNameArgsPattern: RegExp = /([\w.]+)\(([^)]+)\)/g
 
   constructor() {
     this.libs = []
   }
 
-  async setLibIds(libIds: any) {
+  setLibIds(libIds: any) {
     this.libIds = libIds
   }
 
-  async parseLibs() {
-    await this.callLibParser()
+  parseLibs() {
+    // console.log('parseLibs')
+    this.callLibParser()
   }
 
-  async parseDoc() {
-    await this.callDocParser()
+  parseDoc() {
+    // console.log('parseDoc')
+    this.callDocParser()
   }
 
-  async fetchLibs() {
-    //console.log('fetchLibs', this.libIds)
+
+  fetchLibs() {
+    // console.log('fetchLibs', this.libIds)
     const _lib: LibItem[] = []
 
     for (const lib of this.libIds) {
@@ -53,26 +57,30 @@ export class PineParser {
       }
 
       try {
-        const response = await Class.PineRequest.libList(libId)
-        //console.log('libList')
+        Class.PineRequest.libList(libId).then((response: any) => {
+          // console.log('libList')
 
-        if (!response || !(response instanceof Array)) {
-          return null
-        }
-        for (const libData of response) {
-          if (!libData.scriptIdPart) {
-            continue
+          if (!response || !(response instanceof Array)) {
+            return null
           }
-          const scriptContent = await Class.PineRequest.getScript(libData.scriptIdPart, libData.version.replace('.0', ''))
-          if (!scriptContent) {
-            continue
+          for (const libData of response) {
+            if (!libData.scriptIdPart) {
+              return null
+            }
+            Class.PineRequest.getScript(libData.scriptIdPart, libData.version.replace('.0', '')).then((scriptContent: any) => {
+              if (!scriptContent) {
+                return null
+              }
+              const scriptString = scriptContent.source.replace(/\r\n/g, '\n')
+              const libObj = { id: libId, alias: alias, script: scriptString }
+              _lib.push(libObj)
+            },
+            )
           }
-          const scriptString = scriptContent.source.replace(/\r\n/g, '\n')
-          const libObj = { id: libId, alias: alias, script: scriptString }
-          _lib.push(libObj)
-        }
+        },
+        )
       } catch (e) {
-        //console.log(e, 'fetchLibs')
+        // console.log(e, 'fetchLibs')
       }
     }
     return _lib
@@ -80,59 +88,61 @@ export class PineParser {
 
 
 
-  async callLibParser() {
-    //console.log('callLibParser$$$$$$$$$$$$$$$$$$$$$')
-    this.libs = await this.fetchLibs()
+  callLibParser() {
+    // console.log('callLibParser$$$$$$$$$$$$$$$$$$$$$')
+    this.libs = this.fetchLibs()
     let flag = false
     for (const lib of this.libs) {
       if (this.parsedLibsFunctions?.[lib.alias]) {
-        await Class.PineDocsManager.setParsed(this.parsedLibsFunctions[lib.alias], 'args')
+        Class.PineDocsManager.setParsed(this.parsedLibsFunctions[lib.alias], 'args')
         flag = true
       }
       if (this.parsedLibsUDT?.[lib.alias]) {
-        await Class.PineDocsManager.setParsed(this.parsedLibsUDT[lib.alias], 'fields')
+        Class.PineDocsManager.setParsed(this.parsedLibsUDT[lib.alias], 'fields')
         flag = true
       }
       if (flag) {
         flag = false
         continue
       }
-      await this.parseFunctions(this.libs)
-      await this.parseTypes(this.libs)
+      this.parseFunctions(this.libs)
+      this.parseTypes(this.libs)
     }
   }
 
-  async callDocParser() {
-    //console.log('callDocParser')
+  callDocParser() {
+    // console.log('callDocParser')
     const editorDoc = VSCode.Text?.replace(/\r\n/g, '\n') ?? ''
     // only parse when new line is added to document
     const document = [{ script: editorDoc }]
-    await this.parseFunctions(document)
-    await this.parseTypes(document)
+    this.parseFunctions(document)
+    this.parseTypes(document)
   }
 
 
-  async parseFunctions(documents: any[]) {
+  parseFunctions(documents: any[]) {
     try {
-      //console.log('parseFunctions');
+      // console.log('parseFunctions');
       const func: any[] = [];
   
       for (const data of documents) {
         const script = data.script;
         if (typeof script !== 'string') {
-          //console.log('Script is not a string:', script);
+          // console.log('Script is not a string:', script);
           continue;
         }
   
         let matches = script.matchAll(this.funcPattern);
         if (!matches) {
-          //console.log('No function matches:', script);
+          // console.log('No function matches:', script);
           continue;
         }
         for (const funcMatch of matches) {
 
           const funcName = funcMatch[2];
           const funcParams = funcMatch[3].matchAll(this.funcArgPattern);
+
+          // PineConsole.log(funcMatch, 'funcMatch').show()
 
           const name = (data.alias ? data.alias + '.' : '') + funcName;
           let funcBuild: any = {
@@ -142,16 +152,17 @@ export class PineParser {
           };
 
           if (!funcParams) { // Ensure match2 has at least three elements
-            //console.log('Function name or parameters not matched:', funcMatch[3]);
+            // console.log('Function name or parameters not matched:', funcMatch[3]);
             continue;
           }
   
           for (const funcParam of funcParams) {
             let [_, __, funcArgType, funcArgName, funcArgValue] = funcParam; // eslint-disable-line
-            // Further processing...
+            
+            // PineConsole.log(funcArgValue, 'funcArgValue', funcArgType, 'funcArgType', funcArgName, 'funcArgName').show()
 
             if (funcArgType === '' || !funcArgType) {
-              const checkDocsMatch = await Helpers.checkDocsMatch(funcArgValue ?? '');
+              const checkDocsMatch = Helpers.checkDocsMatch(funcArgValue ?? '');
               funcArgType = checkDocsMatch && typeof checkDocsMatch === 'string' ? checkDocsMatch : funcArgType;
             }
   
@@ -166,77 +177,79 @@ export class PineParser {
             if (funcArgType) {
               argsDict.type = funcArgType
             }
-
-            //console.log(JSON.stringify(argsDict, null, 2), 'argsDict')
+            // console.log(JSON.stringify(argsDict, null, 2), 'argsDict')
             funcBuild.args.push(argsDict);
           }
-  
           func.push(funcBuild);
         }
-  
         if (data.alias) {
           this.parsedLibsFunctions[data.alias] = func;
         }
-
-        await Class.PineDocsManager.setParsed(func, 'args');
+        
+        // PineConsole.log(func, 'func').show()
+        Class.PineDocsManager.setParsed(func, 'args');
       }
     } catch (e) {
-      //console.log('Error parsing function:', e);
+      console.error('Error parsing function:', e);
     }
   }
   
-  async parseTypes(documents: any[]) {
-    const type: any[] = [];
+  parseTypes(documents: any[]) {
+    try {
+      const type: any[] = [];
   
-    for (const data of documents) {
-      const script = data.script;
+      for (const data of documents) {
+        const script = data.script;
   
-      if (typeof script !== 'string') {
-        //console.log('Script is not a string:', script);
-        continue;
-      }
+        if (typeof script !== 'string') {
+          // console.log('Script is not a string:', script);
+          continue;
+        }
   
-      // Use matchAll for types
-      const typeMatches = script.matchAll(this.typePattern);
-      for (const typeMatch of typeMatches) {
-        const typeName = typeMatch[1];
-        const typeFields = typeMatch[2];
+        // Use matchAll for types
+        const typeMatches = script.matchAll(this.typePattern);
+        for (const typeMatch of typeMatches) {
+          const typeName = typeMatch[1];
+          const typeFields = typeMatch[2];
   
-        const name = (data.alias ? data.alias + '.' : '') + typeName;
+          const name = (data.alias ? data.alias + '.' : '') + typeName;
   
-        const typeBuild: any = {
-          name: name,
-          fields: [],
-          originalName: typeName,
-        };
+          const typeBuild: any = {
+            name: name,
+            fields: [],
+            originalName: typeName,
+          };
   
-        // Use matchAll for fields within each type
-        if (typeFields) { // Ensure typeFieldsStr is not undefined
-          const fieldMatches = typeFields.matchAll(this.fieldsPattern);
-          for (const fieldMatch of fieldMatches) {
+          // Use matchAll for fields within each type
+          if (typeFields) { // Ensure typeFieldsStr is not undefined
+            const fieldMatches = typeFields.matchAll(this.fieldsPattern);
+            for (const fieldMatch of fieldMatches) {
             const [_, fieldType, fieldName, fieldValue] = fieldMatch; // eslint-disable-line
 
   
-            const fieldsDict: Record<string, any> = {}
-            fieldsDict.name = fieldName
-            fieldsDict.type = fieldType
-            if (fieldValue) {
-              fieldsDict.default = fieldValue
+              const fieldsDict: Record<string, any> = {}
+              fieldsDict.name = fieldName
+              fieldsDict.type = fieldType
+              if (fieldValue) {
+                fieldsDict.default = fieldValue
+              }
+              typeBuild.fields.push(fieldsDict);
             }
-            typeBuild.fields.push(fieldsDict);
           }
+  
+          type.push(typeBuild);
         }
-  
-        type.push(typeBuild);
-      }
 
-      if (data.alias) {
-        this.parsedLibsUDT[data.alias] = type;
+        if (data.alias) {
+          this.parsedLibsUDT[data.alias] = type;
+        }
       }
-    }
     
-    //console.log(JSON.stringify(type, null, 2))
-    await Class.PineDocsManager.setParsed(type, 'fields');
-  }
+      // console.log(JSON.stringify(type, null, 2))
+      Class.PineDocsManager.setParsed(type, 'fields');
   
+    } catch (e) {
+      console.error('Error parsing types:', e);
+    } 
+  }
 }

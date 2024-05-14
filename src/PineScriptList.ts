@@ -193,6 +193,7 @@ export class PineScriptList {
         const existingFileStat = await vscode.workspace.fs.stat(existingFileUri);
         if (existingFileStat) {
           await this.processExistingFile(existingFileUri, scriptDir, response.scriptName, response.source);
+          await this.openDocument(existingFileUri);
         }
       } catch (err) {
         await vscode.workspace.fs.writeFile(existingFileUri, Buffer.from(response.source));

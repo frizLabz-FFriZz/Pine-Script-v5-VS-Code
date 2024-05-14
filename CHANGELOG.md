@@ -30,6 +30,17 @@
 
   
 # Changelog
+**v0.1.5** - 2024-05-13
+- **Bug Fix**: Fixed the Signature Provider and the completions for functions, which now displays recommended parameters and like-typed values.
+- **Bug Fix**: Fixed miscellaneous bugs in the Hover Provider, documentation strings, themes, highlighting, and images on the download page and other areas.
+- **Improvement**: The function parameter completions now display objects and their properties correctly.
+- **Improvement**: Updated the typify functionality to correctly handle array types without adding an array type prefix to an array type that uses `[]`.
+- **Documentation**: Updated the README to reflect recent changes and improvements.
+- **Documentation**: Fixed the Pine Documentation to show information for all documentation in different parts of extension.
+
+**v0.1.4** - 2024-04-05
+- **Bug Fix**: Fixed a bug where errors remained displayed even after being resolved.
+- **Documentation**: Updated the README to reflect recent changes and improvements.
 
 **v0.1.3** - 2024-02-04
 - **Bug Fix**: Fixed bugs in Auto Completion and Signature Helper

@@ -146,7 +146,7 @@ export class PineHoverParam {
       }
 
       // Get the functions map from the PineDocsManager
-      const map = await Class.PineDocsManager.getMap('functions', 'functions2');
+      const map = Class.PineDocsManager.getMap('functions', 'functions2');
       
       if (!map.has(this.functionName)) {
         return;
@@ -169,7 +169,7 @@ export class PineHoverParam {
     try {
       this.displayType = this.argDocs?.displayType ?? this.argDocs?.type ?? '';
       this.def = this.argDocs?.default ? ` = ${this.argDocs?.default}` : '';
-      this.qm = this.argDocs?.required ? '' : this.argDocs?.required ? '?' : '';
+      this.qm = this.argDocs?.required ?? true ? '' : '?';
     } catch (error) {
       console.error(error);
     }
@@ -201,7 +201,7 @@ export class PineHoverParam {
         if (this.mapDocs?.has(this.argVal)) {
           const funcDocs = this.mapDocs.get(this.argVal)
           if (funcDocs) {
-            type = await Helpers.identifyType(this.argVal)
+            type = Helpers.identifyType(this.argVal)
           }
         } else if (this.argVal.includes('.')) {
           const argValSplit = this.argVal.split('.')
@@ -212,7 +212,7 @@ export class PineHoverParam {
             if (this.mapDocs?.has(a)) {
               const funcDocs = this.mapDocs.get(a)
               if (funcDocs) {
-                type = await Helpers.identifyType(this.argVal)
+                type = Helpers.identifyType(this.argVal)
                 if (type) {
                   break
                 } else {
@@ -227,7 +227,7 @@ export class PineHoverParam {
             this.argDocs.type = type
           }
           if (this.mapDocs?.syntax) {
-            this.mapDocs.syntax = this.mapDocs.syntax.replace(RegExp(`${this.argument}`), `${this.argument}${this.qm}${this.displayType !== '' ? ': ' : ' '}${this.displayType}${this.def}`)
+            this.mapDocs.syntax = this.mapDocs.syntax.replace(this.argument, `${this.argument}${this.qm}${this.displayType !== '' ? ': ' : ' '}${this.displayType}${this.def}`)
           }
           this.displayType = type
         }

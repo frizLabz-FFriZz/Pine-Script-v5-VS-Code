@@ -1,10 +1,9 @@
 
 
-/** Strings for different markdown parts of the extension */
 export class PineStrings {
-  static readonly pineIconSeeAlso: string = '[![Pine](https://cdn.discordapp.com/attachments/1004112195707207683/1179837300352495686/PineIconMini.png?ex=657b3c1c&is=6568c71c&hm=1a575e24adfd7d5ebcc7a2fe68a71baa5826cce3377fa25d1b58fe71a449f14d&)](https://www.tradingview.com/pine-script-reference/v5/)'
-  static readonly tvIcon: string = '![TV Account page](https://cdn.discordapp.com/attachments/1004112195707207683/1179837300834832465/TVIconMini.png?ex=657b3c1c&is=6568c71c&hm=a3f8114b4a35b85554cb61c9b2e43dc2a93616a09aa2380070ecfec4a9bcf393&) - '
-  static readonly pineIcon: string = '![Pine](https://cdn.discordapp.com/attachments/1004112195707207683/1179837300352495686/PineIconMini.png?ex=657b3c1c&is=6568c71c&hm=1a575e24adfd7d5ebcc7a2fe68a71baa5826cce3377fa25d1b58fe71a449f14d&) - '
+  static readonly pineIconSeeAlso: string = '[![Pine](https://lh3.googleusercontent.com/pw/AP1GczNpPgxnxZTQ879JBaQlFDvZ35zkTMOUR-R2ZkH0A2F2-ZQIvGs-7cJxZ5Nvk9G6_T1n014ZFLhulcV11Nhkvvfd_BSoRUkP2z3mYN3AFT5_WlIPkkd0jp637uA2CnEEDbGks6P7II7_2Au8opF0RUQA=w12-h12-s-no-gm?authuser=0)](https://www.tradingview.com/pine-script-reference/v5/)'
+  static readonly tvIcon: string = '![TV Account page](https://lh3.googleusercontent.com/pw/AP1GczN5A9BNpeRaiQq4lOXu5LTvu1D2407OATFe0zaDa_pp4yZOrhztshoEFzTq2bH64g_G285jBqEl_x_RLA8gbircXAVm-S_o89AZ8MQ_JSqwQGMUeY-BRmE9eYqHCwC1lerPfHsKaZF_LoRxrkLcFsA4=w20-h12-s-no-gm?authuser=0) - '
+  static readonly pineIcon: string = '![Pine](https://lh3.googleusercontent.com/pw/AP1GczNpPgxnxZTQ879JBaQlFDvZ35zkTMOUR-R2ZkH0A2F2-ZQIvGs-7cJxZ5Nvk9G6_T1n014ZFLhulcV11Nhkvvfd_BSoRUkP2z3mYN3AFT5_WlIPkkd0jp637uA2CnEEDbGks6P7II7_2Au8opF0RUQA=w12-h12-s-no-gm?authuser=0) - '
   static readonly tvUrl: string = 'https://www.tradingview.com'
 
 }

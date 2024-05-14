@@ -200,6 +200,7 @@ export class PineFormatResponse {
         Class.PineParser.parseDoc()
         return null
       }
+
       this.response = response.result
     }
     if (this.shouldRunConversion()) {    

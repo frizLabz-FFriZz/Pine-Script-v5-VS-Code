@@ -42,7 +42,7 @@ export class PineTypify {
   async makeMap() {
     try {
       // Get the documentation for the variables
-      const variables = await Class.PineDocsManager.getDocs('variables2')
+      const variables = Class.PineDocsManager.getDocs('variables2')
       // Populate the type map with the names and types of the variables
       this.typeMap = new Map(
         variables.map((item: any) => [
@@ -58,75 +58,66 @@ export class PineTypify {
 
   /** Applies type annotations to the variables in the active document. */
   async typifyDocument() {
-    // Populate the type map
-    await this.makeMap()
-    // Get the active document
-    const document = VSCode.Document
-    if (!document) {
-      return
-    }
-    // Get the text of the document
-    const text = document.getText()
-    // Initialize an empty array to hold the text edits
-    let edits: vscode.TextEdit[] = []
-    // For each variable in the type map
-    this.typeMap.forEach((type, name) => {
-      // Create a regular expression to find the variable in the text
-      let regex = new RegExp(
-        `(?<!['"].*)\\b(var\\s+|varip\\s+)?(\\b${name}\\b)(\\[\\])?(?=[^\\S\\r\\n]*=(?!=|!|<|>|\\?))(?!.*,\\s*\\n|\\s*\\()`,
-        'g',
-      )
 
-      //   regex = new RegExp(
-      //     `(?<!['"].*|(?:${typeArray}|=)\\s*)\\b(var\\s+|varip\\s+)?(\\b${name}\\b)(\\[\\])?(?=[^\\S\\r\\n]*=(?!=|!|<|>|\\?))(?!.*,\\s*\\n)`,
-      //   )
-      // }
-
-      // For each match of the regular expression in the text
-      let match
-      while ((match = regex.exec(text)) !== null) {
-        // If the type is not defined or is 'plot', 'hline', or 'undetermined type', skip to the next iteration
-        if (!type || /(plot|hline|undetermined type)/g.test(type)) {
-          continue
-        }
-
-        const matchIndex = match.index
-        const lineStartIndex = text.lastIndexOf('\n', matchIndex) + 1
-        const lineEndIndex = text.indexOf('\n', matchIndex)
-
-        const range = new vscode.Range(
-          document.positionAt(lineStartIndex),
-          document.positionAt(lineEndIndex !== -1 ? lineEndIndex : text.length),
+    try {
+      // Populate the type map
+      await this.makeMap()
+      // Get the active document
+      const document = VSCode.Document
+      if (!document) {
+        return
+      }
+      // Get the text of the document
+      const text = document.getText()
+      // Initialize an empty array to hold the text edits
+      let edits: vscode.TextEdit[] = []
+      // For each variable in the type map
+      this.typeMap.forEach((type, name) => {
+        // Create a regular expression to find the variable in the text
+        const regex = new RegExp(
+          `(?<!['"(].*)\\b(var\\s+|varip\\s+)?(\\b${name}\\b)(\\[\\])?(?=[^\\S\\r\\n]*=(?!=|!|<|>|\\?))(?!.*,\\s*\\n)`,
+          'g',
         )
-
-        if (edits.some(edit => range.intersection(edit.range))) {
-          continue
-        }
-
-        const lineText = text.substring(lineStartIndex, lineEndIndex !== -1 ? lineEndIndex : text.length)
-        if (lineText.startsWith('//')) {
-          continue
-        }
-
-        if (RegExp(`\\b${type}\\s+${name}\\b`, 'g').test(lineText)) {
-          continue
-        }
-
-        if (type.includes('array<')) {
-          const typeArray = type.replace(/array<(.*)>/g, '$1\\[\\]')
-          if (RegExp(`\\b${typeArray}\\s+${name}\\b`, 'g').test(lineText)) {
+        // For each match of the regular expression in the text
+        let match
+        while ((match = regex.exec(text)) !== null) {
+          // If the type is not defined or is 'plot', 'hline', or 'undetermined type', skip to the next iteration
+          if (!type || /(plot|hline|undetermined type)/g.test(type)) {
             continue
           }
+
+          const matchIndex = match.index
+          const lineStartIndex = text.lastIndexOf('\n', matchIndex) + 1
+          const lineEndIndex = text.indexOf('\n', matchIndex)
+
+          const range = new vscode.Range(
+            document.positionAt(lineStartIndex),
+            document.positionAt(lineEndIndex !== -1 ? lineEndIndex : text.length),
+          )
+
+          if (edits.some(edit => range.intersection(edit.range))) {
+            continue
+          }
+
+          const lineText = text.substring(lineStartIndex, lineEndIndex !== -1 ? lineEndIndex : text.length)
+          if (lineText.startsWith('//')) {
+            continue
+          }
+          if (RegExp(`\\b(${type}|\\[\\])\\s+${name}\\b`, 'g').test(lineText)) {
+            continue
+          }
+          // Check and replace array type notation
+          let replacementType = type
+          const replacementText = lineText.replace(new RegExp(`(?<!\\.\\s*)\\b${name}\\b`, 'g'), `${replacementType} ${name}`).replace(/\n|\r/g, '')
+          edits.push(vscode.TextEdit.replace(range, replacementText))
         }
-
-
-        // Check and replace array type notation
-        let replacementType = type
-        const replacementText = lineText.replace(new RegExp(`(?<!(?:\\.|\\=|,|\\()\\s*|\\s{5})\\b${name}\\b`, 'g'), `${replacementType} ${name}`).replace(/\n|\r/g, '')
-        edits.push(vscode.TextEdit.replace(range, replacementText))
-      }
-    })
-    // Apply the text edits to the document
-    await EditorUtils.applyEditsToDocument(edits)
+      })
+      // Apply the text edits to the document
+      await EditorUtils.applyEditsToDocument(edits)
+      
+    } catch (e) {
+      // If an error occurred, log the error
+      console.error(e)
+    }
   }
 }

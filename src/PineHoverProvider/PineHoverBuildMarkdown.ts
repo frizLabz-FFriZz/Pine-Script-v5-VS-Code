@@ -2,6 +2,7 @@ import { PineDocsManager } from '../PineDocsManager'
 import { PineHoverHelpers } from './PineHoverHelpers'
 import { Helpers } from '../PineHelpers'
 import { PineStrings } from '../PineStrings'
+// import { PineConsole } from '../PineConsole'
 
 /** Builds the markdown for the hover provider. */
 export class PineHoverBuildMarkdown {
@@ -78,14 +79,18 @@ export class PineHoverBuildMarkdown {
         return [key]
       }
 
+      if (keyedDocs && keyedDocs.thisType) {
+        regexId = 'method'
+      }
+
       let syntaxPrefix = this.getSyntaxPrefix(syntax, regexId) // fieldPropertyAddition
 
       if (regexId !== 'control' && regexId !== 'UDT') {
-        if (syntax.includes('\n')) {
+        if (syntax.includes('\n') && regexId !== 'param') {
           syntax = syntax
             .split('\n')
             .map((s: string) => syntaxPrefix + s)
-            .join('\n')
+            .join('\n\n')
         } else {
           syntax = syntaxPrefix + syntax.trim()
         }
@@ -112,7 +117,7 @@ export class PineHoverBuildMarkdown {
       for (const i of docs.args ?? docs.fields) {
         if (i?.default) {
           const argField = i.name
-          syntax = syntax.replace(RegExp(`${argField}(\\s*[,)])`), `${argField}=${i.default}$1`)
+          syntax = syntax.replace(RegExp(`${argField}(\\s*[,)])`, 'g'), `${argField}=${i.default}$1`)
         }
       }
     }
@@ -149,21 +154,23 @@ export class PineHoverBuildMarkdown {
    */
   static getSyntaxPrefix(syntax: string, regexId: string) {
     let prefix = ''
-    if (regexId === 'variable') {
+
+    if (syntax.includes('<?>') || syntax.includes('undetermined type')) {
+      return prefix
+      
+    } else if (regexId === 'variable') {
       if (
-        !/(?::\s*)(array|map|matrix|int|float|bool|string|color|line|label|box|table|linefill|polyline|undefined type|na|<\?>)\b/g.test(
+        !/(?::\s*)(array|map|matrix|int|float|bool|string|color|line|label|box|table|linefill|polyline|na)\b/g.test(
           syntax,
-        )
+        ) || (syntax.includes('chart.point') && !/chart\.point$/.test(syntax))
       ) {
         return '(object) '
-      } else {
-        if (syntax.includes('chart.point') && !/chart\.point$/.test(syntax)) {
-          return '(object) '
-        }
-        return '(variable) '
-      }
+      } 
 
+      return '(variable) '
+      
     } else if (regexId !== 'control' && regexId !== 'UDT') {
+
       return '(' + regexId + ') '
     }
     return prefix

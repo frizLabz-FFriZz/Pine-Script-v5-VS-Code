@@ -6,6 +6,7 @@ import { PineHoverMethod } from './PineHoverIsMethod'
 import { PineHoverFunction } from './PineHoverIsFunction'
 import { PineHoverParam } from './PineHoverIsParam'
 import { VSCode } from '../VSCode'
+// import { PineConsole } from '../PineConsole' 
 
 export class PineHoverProvider implements vscode.HoverProvider {
   document: vscode.TextDocument
@@ -74,18 +75,18 @@ export class PineHoverProvider implements vscode.HoverProvider {
       case 2:
         // console.log('controlsHover ProvideHoverFunctions')
         return this.controlsHover()
-      case 3:
+      case 3:        
         // console.log('fieldsHover ProvideHoverFunctions')
         return this.fieldsHover()
       case 4:
-        // console.log('paramsHover ProvideHoverFunctions')
-        return this.paramsHover()
-      case 5:
-        // console.log('variablesHover ProvideHoverFunctions')
-        return this.variablesHover()
-      case 6:
         // console.log('typesHover ProvideHoverFunctions')
         return this.typesHover()
+      case 5:
+        // console.log('paramsHover ProvideHoverFunctions')
+        return this.paramsHover()
+      case 6:
+        // console.log('variablesHover ProvideHoverFunctions')
+        return this.variablesHover()
       case 7:
         // console.log('constantsHover ProvideHoverFunctions')
         return this.constantsHover()
@@ -143,13 +144,13 @@ export class PineHoverProvider implements vscode.HoverProvider {
     return this.processWordRange(
       method,
       new RegExp(
-        '\\b(?:\\w+\\([^)]+\\)|([\\w.]+))\\s*.\\s*(' + PineHoverHelpers.replaceAlias(`${hoverRegex}`) + ')(?=\\s*\\()',
+        '\\s*.\\s*(' + PineHoverHelpers.replaceAlias(`${hoverRegex}`) + ')(?=\\s*\\()',
         'g',
       ),
       'method',
       (key) => key,
     )
-  }
+  }//\\b(?:([\\w.]+(?:\\([^)]*\\))?
 
   /** This function provides hover information for functions. */
   async functionsHover() {
@@ -242,7 +243,7 @@ export class PineHoverProvider implements vscode.HoverProvider {
           hoverRegex +
           '|<)?)(?!\\[)(?:(?!,\\s*[\\w\\[\\]<>.]+\\s+)\\b(?:' +
           hoverRegex +
-          ')\\b(?!\\s*[^)]+\\s+=>))(?!\\s*\\.|\\w|\\()\\b',
+          ')\\b(?!\\s*[^)]+\\s+=>))(?!\\w|\\()\\b',
         '',
       ),
       'variable',
@@ -253,11 +254,13 @@ export class PineHoverProvider implements vscode.HoverProvider {
   /** This function provides hover information for parameters. */
   async paramsHover(): Promise<vscode.Hover | undefined> {
     const regexes = [
-      /(?=[,\s]*)([\w]+?)\s*?(?=\s*=\s*[\w."'<>#]+\(?|,(?<!\.*?))/g,
-      /(?<=\(|,|[\w<>\[\].]*?)(\w+)(?:\s*=\s*[^\(,=>]+)?(?=(?=\)|,)|(?=\s*=>))/gm,
+      /(?<=\(|,)(?:.*?\s*)(\w+\s*(?==|,|\)))+(?=.*=>)/gm,
+      /(?<=[\w.]+\s*.*[\(,])\s*(?:[^(,]*?\s*)(?<!\n)(\w+\s*(?==))+(?=.+\))/gm,
+      // /(?=[,\s]*)([\w]+?)\s*?(?=\s*=\s*[\w."'<>#]+\(?|,(?<!\.*?))/g,
+      // /(?<=\(|,|[\w<>\[\].]*?)(\w+)(?:\s*=\s*[^\(,=>]+)?(?=(?=\)|,)|(?=\s*=>))/gm,
     ]
-    const paramHover = (regex: RegExp) =>
-      this.processWordRange(null, regex, 'param', (key) => key?.split('=')[0].trim() ?? key)
+    
+    const paramHover = (regex: RegExp) => this.processWordRange(null, regex, 'param', (key) => key.trim().split(' ').pop() ?? key)
     for (const regex of regexes) {
       const hover = await paramHover(regex)
       if (hover) {
@@ -303,13 +306,12 @@ export class PineHoverProvider implements vscode.HoverProvider {
     this.isType = regexId === 'UDT'
 
     // Get the position of the symbol in the document
-    const position = this.position
-    if (!position) {
+    if (!this.position) {
       return
     }
 
     // Get the range of the word at the position
-    let wordRange: vscode.Range | undefined = this.document.getWordRangeAtPosition(position, hoverRegex)
+    let wordRange: vscode.Range | undefined = this.document.getWordRangeAtPosition(this.position, hoverRegex)
     if (!wordRange) {
       return
     }
@@ -356,7 +358,7 @@ export class PineHoverProvider implements vscode.HoverProvider {
         return new PineHoverParam(key, wordRange).isParam()
       // If the symbol is a method, call isMethodMatch
       case this.isMethod:
-        return new PineHoverMethod(docs, key).isMethod()
+        return new PineHoverMethod(docs, key, wordRange).isMethod()
       // If the symbol is a function, call isFunctionMatch
       case this.isFunction:
         return new PineHoverFunction(docs, key).isFunction()

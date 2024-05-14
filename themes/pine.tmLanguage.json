@@ -69,21 +69,6 @@
       }
     },
     {
-      "comment": "signatureHelpProvider highlighting regex",
-      "match": "(\\w+)(\\??:)[^\\n=]+",
-      "captures": {
-        "0": {
-          "name": "keyword.operator.type"
-        },
-        "1": {
-          "name": "constant.variable"
-        },
-        "2": {
-          "name": "punctuation.pine"
-        }
-      }
-    },
-    {
       "comment": "map type",
       "match": "(?:^|\\||\\s*?|\\b)(map)\\s*(<([^,]+),([^>]+)>)\\s*?(?![\\=\\?\\:])",
       "captures": {
@@ -103,7 +88,7 @@
     },
     {
       "comment": "highlights [....] in the hover over following ) → [..,...,..]",
-      "match": "\\)\\s(\u2192\\s(?:\\[(?:[^,\\]]+,\\s*)+[\\w.]+\\])|\\w+)$",
+      "match": "\\)\\s(\u2192\\s(?:\\[(?:[^,\\]]+,\\s*)+[\\w.]+\\]|(?:\\w+\\.\\w+)|(?!void|na)[\\w.><\\[\\]]+))$",
       "captures": {
         "1": {
           "name": "keyword.operator.type"
@@ -111,7 +96,7 @@
       }
     },
     {
-      "match": "(?:^|\\s+|\\b)(and|or|not|by|if|else|while|for|to|in|switch|break|continue|as)\\s+",
+      "match": "(?:^|\\s+|\\b)(and|or|not|by|if|else|while|for|to|in|switch|break|continue|as)\\b",
       "name": "keyword.control.pine"
     },
     {
@@ -172,7 +157,7 @@
     },
     {
       "comment": "array functions (blocks ta and math due to conflicts with conflitcs with functions like min, max, sum, avg, etc.)",
-      "match": "(?!ta|math|matrix)(array)(\\s*\\.\\s*)(new_float|new_int|new_color|new_bool|new_string|new_line|new_box|new_table|new_label|new_linefill|copy|slice|size|get|min|max|push|range|sum|set|from|fill|insert|join|remove|pop|clear|sort|sort_indices|percentrank|percentile_nearest_rank|percentile_linear_interpolation|abs|binary_search|binary_search_leftmost|binary_search_rightmost|concat|avg|stdev|variance|covariance|mode|median|standardize|indexof|lastindexof|includes|shift|unshift|reverse|first|last|every|some)\\s*(?=\\()",
+      "match": "(?<!ta|math|matrix)\\b(array)(\\s*\\.\\s*)(new_float|new_int|new_color|new_bool|new_string|new_line|new_box|new_table|new_label|new_linefill|copy|slice|size|get|min|max|push|range|sum|set|from|fill|insert|join|remove|pop|clear|sort|sort_indices|percentrank|percentile_nearest_rank|percentile_linear_interpolation|abs|binary_search|binary_search_leftmost|binary_search_rightmost|concat|avg|stdev|variance|covariance|mode|median|standardize|indexof|lastindexof|includes|shift|unshift|reverse|first|last|every|some)\\s*(?=\\()",
       "captures": {
         "1": {
           "name": "entity.name.function"
@@ -232,7 +217,7 @@
     },
     {
       "comment": "matrix  functions",
-      "match": "(?!ta|math|array)(matrix)(\\s*\\.\\s*)(row|col|reshape|get|set|add_row|add_col|remove_row|remove_col|fill|submatrix|copy|columns|rows|elements_count|concat|swap_rows|swap_columns|reverse|sort|det|min|max|avg|median|mode|transpose|sum|diff|mult|pinv|inv|rank|trace|eigenvalues|eigenvectors|kron|pow|is_zero|is_identity|is_binary|is_symmetric|is_antisymmetric|is_diagonal|is_antidiagonal|is_triangular|is_stochastic|is_square)\\s*(?=\\()",
+      "match": "(?!ta|math|array)\\b(matrix)(\\s*\\.\\s*)(row|col|reshape|get|set|add_row|add_col|remove_row|remove_col|fill|submatrix|copy|columns|rows|elements_count|concat|swap_rows|swap_columns|reverse|sort|det|min|max|avg|median|mode|transpose|sum|diff|mult|pinv|inv|rank|trace|eigenvalues|eigenvectors|kron|pow|is_zero|is_identity|is_binary|is_symmetric|is_antisymmetric|is_diagonal|is_antidiagonal|is_triangular|is_stochastic|is_square)\\s*(?=\\()",
       "captures": {
         "1": {
           "name": "entity.name.function"
@@ -247,7 +232,7 @@
     },
     {
       "comment": "map functions",
-      "match": "(map)(\\s*\\.\\s*)(copy|size|get|contains|keys|values|put|put_all|remove|clear)\\s*(?=\\()",
+      "match": "\\b(map)(\\s*\\.\\s*)(copy|size|get|contains|keys|values|put|put_all|remove|clear)\\s*(?=\\()",
       "captures": {
         "1": {
           "name": "entity.name.function"
@@ -343,7 +328,7 @@
     {
       "todo": "There only needs to be one map, array, matrix type regex",
       "comment": "repeat of map, array, matrix type regex",
-      "match": "\\b(?:(array|matrix)(<([^>]+)>)|(map)(<([^,]+),([^>]+)>))\\s+",
+      "match": "(?<!(?:function|method).+)\\b(array|matrix)(<([^>]+)>)|(map)(<([^,]+),([^>]+)>)\\s+",
       "captures": {
         "1": {
           "name": "keyword.operator.type"
@@ -392,7 +377,7 @@
       "patterns": [
        {
           "comment": "attempt to prevent double highlighting if variable or argument has same name as type",
-          "match": "(?<!type|bool|box|color|float|int|label|line|linefill|string|table|polyline|strategy_direction|chart\\.point)\\s*(?:(,)\\s+)?\\b(type|bool|box|color|float|int|label|line|linefill|string|table|polyline|strategy_direction|chart\\.point)\\b(\\[\\])?(?:(?!:\\??|\\s*\\?|\\s*\\.|\\s*=|\\s*\\)|\\s*,|\\s*\\())",
+          "match": "(?<!array|matrix|tuple|type|bool|box|color|float|int|label|line|linefill|string|table|polyline|strategy_direction|chart\\.point)\\s*(?:(,)\\s+)?\\b(array|matrix|tuple|type|bool|box|color|float|int|label|line|linefill|string|table|polyline|strategy_direction|chart\\.point)\\b(\\[\\])?(?:(?!:\\??|\\s*\\?|\\s*\\.|\\s*=|\\s*\\)|\\s*,|\\s*\\())",
           "captures": {
             "1": {
               "name": "operator.pine"
@@ -1477,7 +1462,7 @@
         },
         {
           "comment": "",
-          "match": "\\b(bar_index|last_bar_index|last_bar_time|time|timenow|time_tradingday|time_close|close|high|hl2|hlc3|hlcc4|low|ohlc4|open|volume|abovebar|belowbar)\\b(?!\\s*(?:\\(|=|:=))",
+          "match": "\\b(?<!\\.\\s*)(bar_index|last_bar_index|last_bar_time|time|timenow|time_tradingday|time_close|close|high|hl2|hlc3|hlcc4|low|ohlc4|open|volume|abovebar|belowbar)\\b(?=:?)(?!\\s*(?:\\(|=(?!=)|:=))",
           "name": "variable.pine"
         },
         {
@@ -1526,7 +1511,7 @@
         },
         {
           "comment": "",
-          "match": "\\b(dayofmonth|dayofweek|second|hour|minute|month|weekofyear|year)(?!\\s*(?:=|:=))\\b",
+          "match": "\\b(dayofmonth|dayofweek|second|hour|minute|month|weekofyear|year)\\b(?=:?)(?!\\s*(?:=|:=))",
           "name": "variable.pine"
         },
         {
@@ -1579,10 +1564,25 @@
         },
         {
           "comment": "namespace regex",
-          "match": "(?!adjustment|alert|array|barmerge|barstate|box|chart|color|currency|dayofweek|display|dividends|earnings|error|extend|font|format|hline|input|label|line|linefill|location|log|map|math|matrix|order|other|plot|polyline|position|request|runtime|scale|session|shape|size|splits|str|strategy|syminfo|ta|table|text|ticker|timeframe|xloc|yloc)(\\w+)\\s*(\\.)\\s*",
+          "match": "(?<!adjustment|alert|array|barmerge|barstate|box|chart|color|currency|dayofweek|display|dividends|earnings|error|extend|font|format|hline|input|label|line|linefill|location|log|map|math|matrix|order|other|plot|polyline|position|request|runtime|scale|session|shape|size|splits|str|strategy|syminfo|ta|table|text|ticker|timeframe|xloc|yloc)(\\w+)\\s*(\\.)\\s*",
           "captures": {
             "1": {
               "name": "entity.name"
+            },
+            "2": {
+              "name": "punctuation.pine"
+            }
+          }
+        },
+        {
+          "comment": "signatureHelpProvider highlighting regex",
+          "match": "(\\w+)(\\??:)[^\\n=]+",
+          "captures": {
+            "0": {
+              "name": "keyword.operator.type"
+            },
+            "1": {
+              "name": "constant.variable"
             },
             "2": {
               "name": "punctuation.pine"
@@ -1600,7 +1600,7 @@
         },
         {
           "comment": "",
-          "match": "(?:^|\n)\\s*((?!var|varip|if|else|and|else\\s+if|true|false|import|while|export|method|[0-9])\\w+(?:\\.\\w+)?)\\s+\\w+(?:(,))?",
+          "match": "(?:^|\\n)\\s*((?!var|varip|if|else|and|else\\s+if|true|false|import|while|export|method|[0-9])\\w+(?:\\.\\w+)?(?!\\s*(?:or|and)))\\s+\\w+(,)?",
           "captures": {
             "1": {
               "name": "keyword.operator.type"

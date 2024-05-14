@@ -29,7 +29,7 @@ export class PineHoverFunction {
         return;
       }
 
-      const getDocs: any = await Class.PineDocsManager.getDocs('functions', 'completionFunctions');
+      const getDocs: any = Class.PineDocsManager.getDocs('functions', 'completionFunctions');
 
 
       this.processFunctionDocs(getDocs);

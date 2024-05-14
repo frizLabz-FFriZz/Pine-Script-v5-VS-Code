@@ -52,7 +52,7 @@
     "editor.wordHighlightStrongBackground": "#1449499d",
     "editor.wordHighlightStrongBorder": "#0f132b00",
 
-    "editorBracketHighlight.foreground1": "#1edbb5",
+    "editorBracketHighlight.foreground1": "#1EDBC5",
     "editorBracketHighlight.foreground2": "#ffffff",
     "editorBracketHighlight.foreground3": "#fdb603",
     "editorBracketHighlight.unexpectedBracket.foreground": "#ff0000",
@@ -2481,6 +2481,7 @@
         "fontStyle": ""
       }
     },
+    
     {
       "scope": "keyword.operator.ternary",
       "settings": {
@@ -2493,6 +2494,19 @@
       "settings": {
         "foreground": "#1EDBC5",
         "fontStyle": ""
+      }
+    },
+    {
+      "scope": "self.pine",
+      "settings": {
+        "foreground": "#b278ff",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "scope": "brackets.pine",
+      "settings": {
+        "foreground": "#1EDBC5"
       }
     },
     {
@@ -2556,6 +2570,13 @@
       "settings": {
         "foreground": "#FDCB03",
         "fontStyle": "italic"
+      }
+    },
+    {
+      "scope": "punctuation.pine",
+      "settings": {
+        "foreground": "#1EDBC5",
+        "fontStyle": ""
       }
     },
     {

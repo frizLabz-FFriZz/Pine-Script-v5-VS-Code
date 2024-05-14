@@ -361,9 +361,8 @@ export class PineDocsManager {
    * @param docs - The docs to set.
    * @returns The key.
   */
-  setImportDocs(docs: any): string {
+  setImportDocs(docs: any) {
     this.importsDocs = docs
-    return 'imports'
   }
 
 
@@ -373,46 +372,49 @@ export class PineDocsManager {
    * @param keyType - The key type to set the docs for.
    */
   setParsed(docs: any[], keyType: string) {
-    const key = keyType === 'args' ? 'functions2' : 'UDT';
-    const currentMap = this.getMap(key);
+    try {
+      const key = keyType === 'args' ? ['functions2', 'methods2', 'completionFunctions'] : ['UDT'];
+
+      for (const k of key) {
+        const currentMap = this.getMap(k);
   
-    for (const doc of docs) {
-      const name = doc.name;
-      let currentDocs = currentMap.get(name);
+        for (const doc of docs) {
+          const name = doc.name;
+          let currentDocs = currentMap.get(name);
   
-      if (currentDocs && doc[keyType] && doc[keyType].length > 0) {
-        // Ensure the currentDocs[keyType] exists and is an array.
-        if (!Array.isArray(currentDocs[keyType])) {
-          currentDocs[keyType] = [];
-        }
-  
-        for (let arg of doc[keyType]) {
-          const argName = arg.name;
-          let currentArg = currentDocs[keyType].find((a: any) => a.name === argName);
-  
-          if (currentArg) {
-            // Update properties of the existing argument.
-            currentArg.required = arg.required;
-            if (arg.default) {
-              currentArg.default = arg.default;
+          if (currentDocs && doc[keyType] && doc[keyType].length > 0) {
+            // Ensure the currentDocs[keyType] exists and is an array.
+            if (!Array.isArray(currentDocs[keyType])) {
+              currentDocs[keyType] = [];
             }
-            if (currentArg.type === 'undefined type') {
-              currentArg.type = arg.type;
+  
+            for (let arg of doc[keyType]) {
+              const argName = arg.name;
+              let currentArg = currentDocs[keyType].find((a: any) => a.name === argName);
+  
+              if (currentArg) {
+                // Update properties of the existing argument.
+                currentArg.required = arg.required;
+                if (arg.default) {
+                  currentArg.default = arg.default;
+                }
+                if (currentArg.type === 'undefined type') {
+                  currentArg.type = arg.type;
+                }
+              } 
             }
-          } else {
-            // If the argument doesn't exist, push the new argument to the array.
-            //console.log('Arg not found: ', argName);
+            // Update the map with the modified document.
+            currentMap.set(name, currentDocs);
           }
         }
-        // Update the map with the modified document.
-        //console.log('Setting docs for: ', name);
-        currentMap.set(name, currentDocs);
+        // Save the updated map.
+        this.setDocs([{ docs: Array.from(currentMap.values()) }], k);
       }
+    } catch (error) {
+      console.error(error)
     }
-  
-    // Save the updated map.
-    this.setDocs([ { docs: Array.from(currentMap.values()) } ], key);
   }
+  
   
   /** 
    * the setDocs function is used to set the docs for a given key
@@ -425,10 +427,8 @@ export class PineDocsManager {
       const currentDocs: any[] = this.getSwitch(key)
       const mergedDocs = this.mergeDocs(currentDocs, newDocs)
       this.setSwitch(key, mergedDocs)
-      return key
     } catch (error) {
       console.error(error)
-      return ''
     }
   }
 
@@ -465,7 +465,6 @@ export class PineDocsManager {
         } else {
           console.warn(`Expected an array for doc.docs, but received: ${typeof doc.docs}`, 'mergeDocs');
         }
-  
       }
       return [...new Set(mergedDocs)];
     } catch (error) {
@@ -496,7 +495,7 @@ export class PineDocsManager {
    * @returns The cleaned docs.
   */
   cleanDocs() {
-    const docs = ['methods2', 'variables2', 'completionFunctions', 'functions2', 'UDT', 'fields']
+    const docs = ['methods2', 'variables2', 'completionFunctions', 'functions2', 'UDT', 'fields2']
     for (const doc of docs) {
       this.setSwitch(doc, [])
     }

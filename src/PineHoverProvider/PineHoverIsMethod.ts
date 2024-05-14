@@ -1,164 +1,240 @@
 import { PineDocsManager } from '../PineDocsManager';
 import { Helpers } from '../PineHelpers';
 import { Class } from '../PineClass';
+import * as vscode from 'vscode';
+import { VSCode } from '../VSCode';
+import { PineHoverHelpers } from './PineHoverHelpers';
+// import { PineConsole } from '../PineConsole';
+// Ensure to adjust imports according to your actual structure
 
-/**
- * Represents a PineHoverMethod.
- */
 export class PineHoverMethod {
   private namespace: string = '';
   private functionName: string = '';
   private docs: PineDocsManager | undefined;
+  private wordRange: vscode.Range;
+  private line: string | undefined = undefined;
+  private varNamespace: string | null = null;
+  private funcNamespace: string | null = null;
 
-  /**
-   * Creates an instance of PineHoverMethod.
-   * @param {PineDocsManager} docs - The PineDocsManager instance.
-   * @param {string} key - The key.
-   */
-  constructor(docs: PineDocsManager, key: string) {
+  constructor(docs: PineDocsManager, key: string, wordRange: vscode.Range) {
     this.docs = docs;
     let splitKey = this.splitNamespaceAndFunction(key);
     this.namespace = splitKey.namespace;
     this.functionName = splitKey.functionName;
+    this.wordRange = wordRange;
+    // PineConsole.log('Constructor', `Namespace: ${this.namespace}, FunctionName: ${this.functionName}`);
   }
 
-  /**
-   * Checks if the key represents a method.
-   * @returns {Promise<[PineDocsManager | undefined, string | undefined, string | undefined] | undefined>} The result.
-   */
   public async isMethod(): Promise<[PineDocsManager | undefined, string | undefined, string | undefined] | undefined> {
     try {
+      this.line = VSCode.LineText(this.wordRange.start.line);
+      // PineConsole.log('isMethod', `Line text: ${this.line}`);
+      if (!this.line) {
+        return;
+      }
+
+      const match = this.line.match(RegExp(`(?:([\\w.]+)\\s*\\([^\\)]+\\)|(\\w+))\\s*\\.\\s*${this.functionName}`));
+      // PineConsole.log('isMethod', `Match result: ${match}`);
+      if (match) {
+        this.funcNamespace = match[1]
+        this.varNamespace = match[2];
+      }
+      
       if (!this.namespace && !this.functionName) {
         return [this.docs, this.functionName, undefined];
       }
       
       let docsAndKey = await this.locateUserTypeMethod();
+      // PineConsole.log('isMethod', `Docs and key: ${docsAndKey}`);
       if (docsAndKey) {
         return [...docsAndKey, this.namespace];
       }
 
       const methods = this.generatePossibleMethodNames();
       let matchedDocs = await this.findDocumentationForMethods(methods);
+      // PineConsole.log('isMethod', `Matched docs: ${matchedDocs}`);
       return matchedDocs;
 
-    } catch (e) {
+    } catch (e: any) {
+      console.error('isMethod', `Error: ${e.message}`);
       throw e;
     }
   }
 
-  /**
-   * Splits the key into namespace and function name.
-   * @param {string} key - The key.
-   * @returns {{ namespace: string; functionName: string }} The split result.
-   */
   private splitNamespaceAndFunction(key: string): { namespace: string; functionName: string } {
     try {
       const split: string[] = key.split('.');
-      if (split.length > 1) {
-        return {
-          namespace: split.slice(0, split.length - 1).join('.'),
-          functionName: split[split.length - 1],
-        };
-      } else {
-        return { namespace: '', functionName: key };
-      }
-    } catch (e) {
+      const functionName = split.pop();
+      const namespace = split.join('.');
+      const result = {
+        functionName: functionName ?? '',
+        namespace: namespace ?? '',
+      };
+      // PineConsole.log('splitNamespaceAndFunction', `Result: ${result.namespace}, ${result.functionName}`);
+      return result;
+    } catch (e: any) {
+      console.error('splitNamespaceAndFunction', `Error: ${e.message}`);
       throw e;
     }
   }
 
-  /**
-   * Locates the user type method.
-   * @returns {Promise<[PineDocsManager | undefined, string | undefined] | undefined>} The result.
-   */
+
   private async locateUserTypeMethod(): Promise<[PineDocsManager | undefined, string | undefined] | undefined> {
     try {
-      // Get the variables map
-      const docs = await Class.PineDocsManager.getMap('variables', 'variables2')
-      // Get the documentation for the first part of the split key
-      const varDocs = docs.get(this.namespace)
-      // If documentation is found, process it
-      if (varDocs) {
-        // Construct the key from the type or return type of the variable and the second part of the split key
-        const key: string = (varDocs?.type ?? varDocs?.returnType) + '.' + this.functionName
-        // Get the functions map
-        const funcMap = await Class.PineDocsManager.getMap('functions', 'completionFunctions')
-        // Get the documentation for the key
-        const funcDocs: PineDocsManager | undefined = funcMap.get(key)
-        // If documentation is found, return the key and documentation
-        if (funcDocs) {
-          return [funcDocs, key]
+      // PineConsole.log('locateUserTypeMethod', `Namespace: ${this.varNamespace}, FunctionNamespace: ${this.funcNamespace}`);
+      if (!this.varNamespace && !this.funcNamespace) {
+        return;
+      }
+  
+      let map: Map<string, any> | undefined;
+      let docs: PineDocsManager | undefined;
+
+      if (this.varNamespace) {
+        map = Class.PineDocsManager.getMap('variables', 'variables2');
+        if (map.has(this.varNamespace)) {
+          docs = map.get(this.varNamespace);
+        }
+
+      } else if (this.funcNamespace) {
+        map = Class.PineDocsManager.getMap('functions', 'completionFunctions');
+        if (map.has(this.funcNamespace)) {
+          docs = map.get(this.funcNamespace);
         }
       }
-      // If no documentation is found, return undefined
+
+      if (!docs) {
+        return;
+      }
+
+      let type: string | string[] = Helpers.returnTypeArrayCheck(docs);
+
+      if (type.includes('|')) {
+        type = type.split('|')
+      } else {
+        type = [type]
+      }
+
+      map = Class.PineDocsManager.getMap('methods', 'methods2');
+      // PineConsole.log('locateUserTypeMethod 0', `Type: ${type}`);
+
+      let matchDocs: PineDocsManager | undefined;
+      let matchKey: string | undefined;
+      Loop: for (let [key, value] of map.entries()) {
+
+        if (value.methodName === this.functionName) {
+          matchDocs = value;
+          matchKey = key;
+
+          let thisTypeValues: string | string[] = Helpers.returnTypeArrayCheck(value, ['thisType'])
+
+          if (thisTypeValues.includes('|')) {
+            thisTypeValues = thisTypeValues.split('|')
+          } else {
+            thisTypeValues = [thisTypeValues]
+          }
+
+          // PineConsole.log('locateUserTypeMethod 1', `Key: ${key}, Type: ${type}, ThisTypeValues: ${thisTypeValues}`);
+          for (const i of thisTypeValues) {
+
+            // PineConsole.log('locateUserTypeMethod 2 ', `Type includes: ${type.some((str: string) => str.includes(i))}`, `Type: ${type}, i: ${i}`);
+
+            if (PineHoverHelpers.includesHelper(type, i)) {
+              // PineConsole.log('locateUserTypeMethod 3 ', `Type includes: ${type.some((str: string) => str.includes(i))}`, `Type: ${type}, i: ${i}`);
+              matchDocs = value;
+              matchKey = key;
+              // PineConsole.log('locateUserTypeMethod 4', `Matched key: ${JSON.stringify(matchKey)}`, `Matched docs: ${JSON.stringify(matchDocs)}`);
+              break Loop; 
+            }
+          }
+        }
+      }
+
+      if (!matchDocs || !matchKey) {
+        return
+      }
+        
+      map = Class.PineDocsManager.getMap('functions', 'functionCompletions');
+      if (map.has(matchKey)) {
+        docs = map.get(matchKey)
+
+        if (docs) {
+          const copy = JSON.parse(JSON.stringify(docs))
+
+          if (copy?.syntax && copy.args && copy.args.length > 0) {
+            copy.syntax = copy.syntax.replace(/[\w.]*?(\w+\(.+)/, `${copy.args[0].name}.$1`)
+          }
+
+          return [copy, matchKey];
+        }
+      }
+
       return;
-    } catch (e) {
+    } catch (e: any) {
+      console.error('locateUserTypeMethod', `Error: ${e.message}`);
       throw e;
     }
   }
-  
-  /**
-   * Generates possible method names.
-   * @returns {string[]} The method names.
-   */
+
   private generatePossibleMethodNames(): string[] {
     try {
       const methods = Class.PineDocsManager.getAliases.map((alias: string) => `${alias}.${this.functionName}`);
       methods.push(this.functionName);
+      // PineConsole.log('generatePossibleMethodNames', `Generated Methods: ${methods.join(', ')}`);
       return methods;
-    } catch (e) {
+    } catch (e: any) {
+      console.error('generatePossibleMethodNames', `Error: ${e.message}`);
       throw e;
     }
   }
 
-  /**
-   * Finds documentation for methods.
-   * @param {string[]} methods - The methods.
-   * @returns {Promise<[PineDocsManager | undefined, string | undefined, string | undefined] | undefined>} The result.
-   */
   private async findDocumentationForMethods(methods: string[]): Promise<[PineDocsManager | undefined, string | undefined, string | undefined] | undefined> {
     try {
       let docsGet: PineDocsManager | undefined;
-      const funcMap = await Class.PineDocsManager.getMap('functions', 'completionFunctions');
-      const methodMap = await Class.PineDocsManager.getMap('completionFunctions');
-      let type = await Helpers.identifyType(this.namespace);
+      
+      let type = Helpers.identifyType(this.namespace);
+      // PineConsole.log('findDocumentationForMethods', `Type identified: ${type}`);
+      const funcMap = Class.PineDocsManager.getMap('functions', 'completionFunctions');
 
       if (type && typeof type === 'string') {
         docsGet = await this.getDocumentationFromFunctionMap(funcMap, type, this.functionName);
       }
-      docsGet ??= await this.getDocumentationFromMethodMap(methodMap, this.functionName);
+
+      // const methodMap = Class.PineDocsManager.getMap('completionFunctions');
+      // docsGet ??= await this.getDocumentationFromMethodMap(methodMap, this.functionName);
 
       for (const method of methods) {
-        if (docsGet) {break}
+        if (docsGet) { break }
 
         docsGet = await this.getDocumentationFromFunctionMap(funcMap, '', method);
       }
 
       if (docsGet) {
-        // Create a deep copy of the methodDocs object
         docsGet = JSON.parse(JSON.stringify(docsGet))
-        // If the method and namespace are defined, update the method documentation and return it
+
+        // PineConsole.log('findDocumentationForMethods', `First docsGet check: ${docsGet}`);
+
+        if (docsGet && docsGet.args[0].name && docsGet.args.length > 0) {
+          this.namespace = docsGet.args[0].name
+        }
+
         if (this.namespace) {
-          if (docsGet?.args && docsGet.args.length > 0) {
-            docsGet.args[0].name = this.namespace
+          if (docsGet?.syntax) {
+            docsGet.syntax = docsGet.syntax.replace(/[\w.]*?(\w+\(.+)/, `${this.namespace}.$1`)
           }
         }
+
+        // PineConsole.log('findDocumentationForMethods', `Second docsGet check: ${docsGet}`);
+
         return [docsGet, this.functionName, this.namespace];
       }
 
       return
-    } catch (e) {
+    } catch (e: any) {
+      console.error('findDocumentationForMethods', `Error: ${e.message}`);
       throw e;
     }
   }
 
-  /**
-   * Gets documentation from the function map.
-   * @param {Map<string, any>} funcMap - The function map.
-   * @param {string} type - The type.
-   * @param {string} functionName - The function name.
-   * @returns {Promise<PineDocsManager | undefined>} The documentation.
-   */
   private async getDocumentationFromFunctionMap(funcMap: Map<string, any>, type: string, functionName: string): Promise<PineDocsManager | undefined> {
     try {
       let docsGet: PineDocsManager | undefined;
@@ -167,25 +243,21 @@ export class PineHoverMethod {
         docsGet = funcMap.get(keyToSearch);
       }
       return docsGet;
-    } catch (e) {
+    } catch (e: any) {
+      console.error('getDocumentationFromFunctionMap', `Error: ${e.message}`);
       throw e;
     }
   }
 
-  /**
-   * Gets documentation from the method map.
-   * @param {Map<string, any>} methodMap - The method map.
-   * @param {string} functionName - The function name.
-   * @returns {Promise<PineDocsManager | undefined>} The documentation.
-   */
-  private async getDocumentationFromMethodMap(methodMap: Map<string, any>, functionName: string): Promise<PineDocsManager | undefined> {
-    try {
-      if (methodMap.has(`*.${functionName}`)) {
-        return methodMap.get(`*.${functionName}`);
-      }
-      return
-    } catch (e) {
-      throw e;
-    }
-  }
+  // private async getDocumentationFromMethodMap(methodMap: Map<string, any>, functionName: string): Promise<PineDocsManager | undefined> {
+  //   try {
+  //     if (methodMap.has(`*.${functionName}`)) {
+  //       return methodMap.get(`*.${functionName}`);
+  //     }
+  //     return
+  //   } catch (e: any) {
+  //     console.error('getDocumentationFromMethodMap', `Error: ${e.message}`);
+  //     throw e;
+  //   }
+  // }
 }

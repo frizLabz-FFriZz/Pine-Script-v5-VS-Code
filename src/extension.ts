@@ -25,6 +25,7 @@ export async function activate(context: vscode.ExtensionContext) {
   VSCode.setContext(context)
   Class.setContext(context)
   PineLint.initialLint()
+  let timerStart: number = 0
 
   // Push subscriptions to context
   context.subscriptions.push(
@@ -49,9 +50,11 @@ export async function activate(context: vscode.ExtensionContext) {
         PineLint.handleDocumentChange()
       }
     }),
+
     VSCode.Wspace.onDidChangeTextDocument(async (event) => {
       if (event.contentChanges.length > 0 && VSCode.ActivePineFile) {
         PineLint.handleDocumentChange()
+        timerStart = new Date().getTime()
       }
     }),
     VSCode.RegisterCommand('pine.docString', async () => new PineDocString().docstring()),
@@ -78,7 +81,21 @@ export async function activate(context: vscode.ExtensionContext) {
     // VSCode.RegisterCommand('pine.setSessionId', async () => Class.PineUserInputs.setSessionId()),
     // VSCode.RegisterCommand('pine.clearKEYS', async () => Class.PineUserInputs.clearAllInfo()),
 
+
+    // amke it so that if there is no change within 5 seconds it runs a lint
   )
+
+  setInterval(() => {
+    if (timerStart) {
+      let timerEnd = new Date().getTime()
+      if (timerEnd - timerStart > 5000) {
+        PineLint.handleDocumentChange()
+        timerStart = 0
+      }
+    }
+  }, 5000)
+
+
 }
 
 

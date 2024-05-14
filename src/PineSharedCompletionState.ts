@@ -91,13 +91,6 @@ export class PineSharedCompletionState {
     return PineSharedCompletionState.activeArg
   }
 
-  // /** Sets the last argument.
-  //  * @param lastArgument - The new last argument.
-  //  */
-  // static setLastArgNumber(lastArgument: number) {
-  //   PineSharedCompletionState.lastArg = lastArgument
-  // }
-
   /** Gets the current last argument.
    * @returns The current last argument.
    */

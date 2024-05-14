@@ -137,4 +137,30 @@ export class PineHoverHelpers {
       return syntaxContentKey
     }
   }
+
+  /**
+   * Checks if a type includes a specific type.
+   * @param type - The type to check.
+   * @param thisType - The type to check for.
+   * @returns True if the type includes the specific type, otherwise false.
+   */
+  static includesHelper(type: string[], thisType: string): boolean {
+    try {
+
+      if (thisType.includes('array')) {
+        if (this.includesHelper(type, '[]')) {
+          return true
+        }
+      }
+
+      if (type.some((str: string) => str.includes(thisType))) {
+        return true
+      }
+
+      return false;
+    } catch (e: any) {
+      console.error('includesHelper', `Error: ${e.message}`);
+      throw e;
+    }
+  }
 }

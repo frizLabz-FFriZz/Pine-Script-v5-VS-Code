@@ -17,7 +17,7 @@ export class PineDocString {
    */
   async generateDocstring(match: string): Promise<string | undefined> {
     // Match the function signature
-    const func: Map<string, Record<string, any>> = await Class.PineDocsManager.getMap('functions2')
+    const func: Map<string, Record<string, any>> = Class.PineDocsManager.getMap('functions2')
     const docsMatch = func.get(match)
 
     if (!docsMatch) {
@@ -25,7 +25,7 @@ export class PineDocString {
     }
 
     const isMethod = docsMatch.isMethod
-    const desc = docsMatch?.desc ?? docsMatch?.info ?? '..desc..'
+    const desc = docsMatch?.desc ?? docsMatch?.info ?? '...'
     let returnedType
     if (docsMatch?.returnedType || docsMatch?.returnedTypes) {
       returnedType = Helpers.returnTypeArrayCheck(docsMatch) ?? '?'
@@ -38,8 +38,8 @@ export class PineDocString {
     docsMatch.args.forEach((arg: any) => {
 
       let docStringParamBuild = `// @param ${arg.name} ${(
-        arg?.info ? arg?.info : '< ' + Helpers.replaceType(arg?.type ?? '').trim() + ' > ..desc..'//⋅⊸⊷
-      )} ${arg?.required ? '(Required)' : arg?.default ? '(' + arg?.default + ')' : '' ?? ''}`
+        arg?.info ? arg?.info : '*' + Helpers.replaceType(arg?.type ?? '').trim() + '* ...'
+      )} ${arg?.default ? '(' + arg?.default + ')' : '' ?? ''}`
 
       docStringBuild.push(docStringParamBuild)
     })
@@ -53,21 +53,20 @@ export class PineDocString {
    * @returns The generated docstring.
    */
   async generateTypeDocstring(match: string): Promise<string> {
-    const userType: Map<string, Record<string, any>> = await Class.PineDocsManager.getMap('UDT')
+    const userType: Map<string, Record<string, any>> = Class.PineDocsManager.getMap('UDT')
     const docsMatch = userType.get(match)
 
     if (!docsMatch) {
       return '// Invalid type match'
     }
 
-    const desc = docsMatch?.desc ?? docsMatch?.info ?? '..desc..'
+    const desc = docsMatch?.desc ?? docsMatch?.info ?? '...'
     const docStringBuild = [`// @type ${match} - ${desc}`]
-
 
     docsMatch.fields.forEach((field: any) => {
       docStringBuild.push(
-        `// @field ${field.name} \`${Helpers.replaceType(field?.type ?? '')}\` - ${
-          field?.desc ?? field?.info ?? '..desc..'
+        `// @field ${field.name} *${Helpers.replaceType(field?.type ?? '')}* - ${
+          field?.desc ?? field?.info ?? '...'
         } ${field.default ? ' (' + field.default + ')' : ''}`,
       )
     })
