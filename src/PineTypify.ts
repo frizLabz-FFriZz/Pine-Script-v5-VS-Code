@@ -103,7 +103,7 @@ export class PineTypify {
           if (lineText.startsWith('//')) {
             continue
           }
-          if (RegExp(`\\b(${type}|\\[\\])\\s+${name}\\b`, 'g').test(lineText)) {
+          if (RegExp(`\\b(${type}|\\s*\\[\\])\\s+${name}\\b`, 'g').test(lineText)) {
             continue
           }
           // Check and replace array type notation
