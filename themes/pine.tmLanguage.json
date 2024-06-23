@@ -264,12 +264,12 @@
     "strings": {
       "patterns": [
         {
-          "begin": "\"",
-          "end": "\"",
+          "begin": "(?<!\\\\)\"(?=[^\\n]*(?!=\\\\\"|\\n)[^\\n]*\")",
+          "end": "(?=[^\\\\])\"",
           "name": "string.quoted.double.pine",
           "patterns": [
             {
-              "match": "\\\\[^\"\\n]",
+              "match": "[\\\\][^\\n](?=[^\\n]*\")",
               "name": "constant.character.escape.pine"
             },
             {
@@ -289,12 +289,12 @@
           ]
         },
         {
-          "begin": "'(?=[^\n]+')",
-          "end": "'",
+          "begin": "(?<!\\\\)'(?=[^\\n]*(?!=\\\\'|\\n)[^\\n]*')",
+          "end": "(?=[^\\\\])'",
           "name": "string.quoted.double.pine",
           "patterns": [
             {
-              "match": "\\\\.",
+              "match": "[\\\\][^\\n](?=[^\\n]*')",
               "name": "constant.character.escape.pine"
             },
             {
@@ -312,6 +312,42 @@
               "captures": { "0": { "name": "string.quoted.double" } }
             }
           ]
+        }
+      ]
+    },
+    "escape-characters": {
+      "patterns": [
+        {
+          "match": "(\\\\)/",
+          "captures": { "1": { "name": "punctuation.definition.tag.json.tm" } }
+        },
+        {
+          "match": "(\\\\)[\\\\\"]",
+          "captures": { "1": { "name": "constant.character.escape.json.tm" } }
+        },
+        {
+          "match": "\\\\[bfnrt]",
+          "name": "constant.character.escape.json.tm"
+        },
+        {
+          "match": "(\\\\u)(?>(\\h{4})|([^\"].{,3}))",
+          "captures": {
+            "1": { "name": "constant.character.escape.tm" },
+            "2": { "name": "constant.numeric.json.tm" },
+            "3": {
+              "name": "constant.numeric.tm",
+              "patterns": [
+                {
+                  "match": "\\H+",
+                  "name": "invalid.illegal.regex.tm"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "match": "\\\\.?|[\"\\x-\\x1F\\x7F]",
+          "name": "invalid.illegal.json.tm markup.underline regex"
         }
       ]
     },
@@ -978,9 +1014,28 @@
     "operators": {
       "patterns": [
         {
-          "comment": "",
-          "match": "(={2}|=|\\?|:|!=|<=|>=|<|>|:=|\\-|\\+|\\*|/|%|\\-=|\\+=|\\*=|/=|%=|,|\\.)",
-          "name": "keyword.operator.pine"
+          "name": "keyword.control.pine",
+          "match": "(=>)"
+        },
+        {
+          "match": "(-\\=|\\+\\=|\\*\\=|\\/\\=|\\%=)",
+          "name": "keyword.operator.reassignment.pine"
+        },
+        {
+          "match": "(\\-|\\+|\\*|/|%)",
+          "name": "keyword.operator.arithmetic.pine"
+        },
+        {
+          "match": "(==|!=|<=|>=|<|>|:=)",
+          "name": "keyword.operator.comparison.pine"
+        },
+        {
+          "match": "(\\?|\\:)",
+          "name": "keyword.operator.conditional.pine"
+        },
+        {
+          "match": "(\\=)",
+          "name": "keyword.control.pine"
         },
         {
           "comment": "",
