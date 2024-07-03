@@ -115,3 +115,4 @@ Thank you to everyone who has contributed to this project. Your input and effort
 
 [<img src="https://github.com/frizLabz-FFriZz.png" width="60px;"/>](https://github.com/frizLabz-FFriZz)
 [<img src="https://github.com/slhsxcmy.png" width="60px;"/>](https://github.com/slhsxcmy)
+[<img src="https://github.com//kaigouthro.png" width="60px;"/>](https://github.com//kaigouthro)
