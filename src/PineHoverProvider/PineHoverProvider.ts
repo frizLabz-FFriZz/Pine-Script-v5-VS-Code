@@ -6,7 +6,7 @@ import { PineHoverMethod } from './PineHoverIsMethod'
 import { PineHoverFunction } from './PineHoverIsFunction'
 import { PineHoverParam } from './PineHoverIsParam'
 import { VSCode } from '../VSCode'
-// import { PineConsole } from '../PineConsole' 
+// import { PineConsole } from '../PineConsole'
 
 export class PineHoverProvider implements vscode.HoverProvider {
   document: vscode.TextDocument
@@ -24,6 +24,7 @@ export class PineHoverProvider implements vscode.HoverProvider {
   /**
    * @param {vscode.TextDocument} document - The active TextDocument in which the hover was invoked.
    * @param {vscode.Position} position - The Position at which the hover was invoked.
+   * @param {vscode.CancellationToken} CancellationToken - A cancellation token.
    * @return {Promise<vscode.Hover | undefined>} - A promise that resolves to a Hover object providing the hover information, or undefined if no hover information is available.
    */
   public async provideHover(
@@ -63,7 +64,9 @@ export class PineHoverProvider implements vscode.HoverProvider {
     return hoverReturn
   }
 
-  /** This function produces an array of hover functions. */
+  /** This function produces an array of hover functions.
+   * @param {number} num - The number of the hover function to provide.
+  */
   provideHoverFunctions(num: number = 0) {
     switch (num) {
       case 0:
@@ -75,7 +78,7 @@ export class PineHoverProvider implements vscode.HoverProvider {
       case 2:
         // console.log('controlsHover ProvideHoverFunctions')
         return this.controlsHover()
-      case 3:        
+      case 3:
         // console.log('fieldsHover ProvideHoverFunctions')
         return this.fieldsHover()
       case 4:
@@ -98,7 +101,10 @@ export class PineHoverProvider implements vscode.HoverProvider {
     }
   }
 
-  /** This function iterates through a list of hover functions and returns the first one that returns a truthy value. */
+  /** This function iterates through a list of hover functions and returns the first one that returns a truthy value.
+   * @param {any} isTestPosition - The position to test.
+   * @returns {Promise<vscode.Hover | undefined>} - A promise that resolves to a Hover object providing the hover information, or undefined if no hover information is available.
+  */
   async getFirstTruthyHover(isTestPosition?: any): Promise<vscode.Hover | undefined> {
     if (isTestPosition) {
       this.position = isTestPosition.Position
@@ -259,7 +265,7 @@ export class PineHoverProvider implements vscode.HoverProvider {
       // /(?=[,\s]*)([\w]+?)\s*?(?=\s*=\s*[\w."'<>#]+\(?|,(?<!\.*?))/g,
       // /(?<=\(|,|[\w<>\[\].]*?)(\w+)(?:\s*=\s*[^\(,=>]+)?(?=(?=\)|,)|(?=\s*=>))/gm,
     ]
-    
+
     const paramHover = (regex: RegExp) => this.processWordRange(null, regex, 'param', (key) => key.trim().split(' ').pop() ?? key)
     for (const regex of regexes) {
       const hover = await paramHover(regex)
@@ -374,7 +380,7 @@ export class PineHoverProvider implements vscode.HoverProvider {
   /** Creates a Markdown string for hover information using data from a PineDocsManager.
    * @param keyedDocs - The PineDocsManager instance containing the documentation data.
    * @param key - The key identifying the symbol for which to create the hover information.
-   * @param nameSpace - The namespace of the symbol, if any.
+   * @param namespace - The namespace of the symbol, if any.
    * @param regexId - The regular expression ID used to match the symbol in the documentation.
    * @return A promise that resolves to a MarkdownString providing the hover information.
    */

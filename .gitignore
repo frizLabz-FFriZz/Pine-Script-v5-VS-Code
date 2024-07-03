@@ -18,9 +18,6 @@ out
 # Ignore dist folder
 dist
 
-# Ignore coverage folder
-coverage
-
 # Ignore npm debug logs
 npm-debug.log*
 
@@ -31,7 +28,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Ignore package-lock.json to avoid conflicts (optional)
-# package-lock.json
+package-lock.json
 
 # Ignore .DS_Store on macOS
 .DS_Store

@@ -212,7 +212,6 @@
 		"titleBar.activeForeground": "#eeefff",
 		"titleBar.inactiveBackground": "#22262e",
 		"walkThrough.embeddedEditorBackground": "#22262e",
-
 	},
 	"tokenColors": [
 		{
@@ -669,6 +668,27 @@
 				"fontStyle": ""
 			}
 		},
+		{
+			"scope": "error.log.pine",
+			"settings": {
+				"foreground": "#FF0000",
+				"fontStyle": ""
+			}
+		},
+		{
+			"scope": "warning.log.pine",
+			"settings": {
+				"foreground": "#E3FF40",
+				"fontStyle": ""
+			}
+		},
+		{
+			"scope": "info.log.pine",
+			"settings": {
+				"foreground": "#E0E0E0",
+				"fontStyle": ""
+			}
+		}
 		// {"scope": "punctuation.separator", "settings":{"foreground": "#1edbb5","fontStyle": "bold"}},
 	]
 }

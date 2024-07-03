@@ -84,7 +84,7 @@ export class PineHoverHelpers {
           splitOpeningParen[0] = splitSyntax.join('.')
           buildSyntax.push(splitOpeningParen.join('('))
         } else if (isMethod && /^\w+\(/.test(syntax)) {
-          const syntaxJoin = `${namespace}.${syn}` 
+          const syntaxJoin = `${namespace}.${syn}`
           buildSyntax.push(syntaxJoin)
         }
       }
@@ -115,7 +115,7 @@ export class PineHoverHelpers {
     }
   }
 
-  static mapArrayMatrixType = /map<(?:type,type|keyType, valueType)>|matrix<type>|array<type>/g
+  static mapArrayMatrixType = /map<(?:type,type|keyType, valueType)>|matrix<type>|array<type>|type\[\]/g
   static mapArrayMatrixNew = /map\.new<(?:type,type|keyType, valueType)>|matrix\.new<type>|array\.new<type>/g
 
   /**

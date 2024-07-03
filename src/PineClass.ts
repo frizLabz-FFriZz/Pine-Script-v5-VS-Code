@@ -113,7 +113,6 @@ export class Class {
     if (!Class.pineSignatureHelpProvider) {
       Class.PineCompletionSignatureInitOrder()
     }
-    Class.pineSignatureHelpProvider.init()
     return Class.pineSignatureHelpProvider
   }
 
@@ -127,7 +126,7 @@ export class Class {
     }
     return Class.pineCompletionProvider
   }
-  
+
   /**
    * Lazy loads and returns an instance of PineInlineCompletionContext.
    * @returns {PineInlineCompletionContext} The PineInlineCompletionContext instance.
@@ -138,7 +137,7 @@ export class Class {
     }
     return Class.pineInlineCompletionContext
   }
-  
+
   /**
    * Initializes PineSignatureHelpProvider and PineCompletionProvider.
    */
@@ -273,7 +272,7 @@ export class Class {
     }
     return Class.pineParser
   }
-    
+
   /**
    * Disposes the specified class.
    * @param {any} ClassToDisposeOf - The class to dispose of.

@@ -46,7 +46,7 @@ export class PineHoverFunction {
       // } else {
       //   this.keyedDocs.syntax = [...new Set(syntax.split('\n'))].join('\n');
       //   return [this.keyedDocs, this.key, undefined];
-      
+
     } catch (error) {
       // Handle the error here
       console.error(error);
@@ -74,9 +74,6 @@ export class PineHoverFunction {
   /**
    * Processes the function documentation.
    * @param getDocs The array of function documentation.
-   * @param argsMap The map of function arguments.
-   * @param returnTypes The array of return types.
-   * @param syntax The array of syntax.
    */
   private processFunctionDocs(getDocs: any[]): void {
     try {

@@ -1981,6 +1981,27 @@
       }
     },
     {
+      "scope": "error.log.pine",
+      "settings": {
+        "foreground": "#FF0000",
+        "fontStyle": ""
+      }
+    },
+    {
+      "scope": "warning.log.pine",
+      "settings": {
+        "foreground": "#E3FF40",
+        "fontStyle": ""
+      }
+    },
+    {
+      "scope": "info.log.pine",
+      "settings": {
+        "foreground": "#E0E0E0",
+        "fontStyle": ""
+      }
+    },
+    {
       "name": "markup.italic.markdown",
       "scope": "markup.italic.markdown",
       "settings": {

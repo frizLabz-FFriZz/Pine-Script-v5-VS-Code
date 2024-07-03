@@ -35,9 +35,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
   newFunction: boolean = false
   keyValueMatchesSave: any = null
   lastSelection: string | null = null
-  docsToMatchSignatureCompletions?: Map<string | number, PineDocsManager> = Class.PineDocsManager.getMap('variables', 'constants', 'controls', 'types')
-
-  init() {}
+  docsToMatchArgumentCompletions?: Map<string | number, PineDocsManager> = Class.PineDocsManager.getMap('variables', 'constants', 'controls', 'types')
 
 
   /**
@@ -283,7 +281,6 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
    * This method is used to build the parameters for a Pine function.
    * @param docs - The Pine function for which parameters are to be built.
    * @param syn - The syntax of the Pine function.
-   * @param overload - Whether or not the function has multiple overloads.
    * @returns An array containing the parameter information, active signature help, and syntax.
    */
   private buildParameters(
@@ -397,6 +394,13 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
     }
   }
 
+  /**
+   * Checks the active argument.
+   * @param arg - The argument to check.
+   * @param index - The index of the argument.
+   * @param recursive - Flag indicating if the check is recursive.
+   * @returns The index of the active argument.
+   */
   private checkActiveArg(arg: string | null = this.activeArg, index: number = 0, recursive: boolean = false): number {
     if (recursive) {
       if (index) {
@@ -493,13 +497,11 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
     return this.activeParameter ?? 0
   }
 
- 
+
   /**
    * Calculates the active signature based on the current line, position, signature help, and active parameter.
-   * @param line - The current line of code.
-   * @param position - The current position within the line.
-   * @param signatureHelp - The signature help information.
-   * @param activeParameter - The index of the active parameter.
+   * Assumes there are class variables like `line`, `position`, `activeSignature`, `activeArg`, and a method `signatureHelp` available.
+   * @param activeSignatureHelper - The active signature helper data.
    * @returns The index of the active signature.
    */
   private calculateActiveSignature(activeSignatureHelper: Record<string, string>[][]): number {
@@ -620,8 +622,8 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
 
   /**
    * Sends completion suggestions based on the active parameter in the signature help.
-   * @param signatureHelp - The signature help information.
    * @param docs - The documentation for the function.
+   * @param activeSignatureHelper - The active signature helper data.
    */
   private async sendCompletions(docs: Record<string, any>, activeSignatureHelper: Record<string, string>[]) {
     try {
@@ -630,15 +632,15 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
 
       let paramArray = activeSignatureHelper.map((param: Record<string, string>): CompletionItem => {
         const obj: CompletionItem = {
-          name: param.arg + '=', 
+          name: param.arg + '=',
           kind: 'Parameter',
           desc: `Parameter ${param.arg}.`,
         };
-    
+
         if (param.arg === this.activeArg) {
           obj.preselect = true; // Assuming 'preselect' is a valid property
         }
-    
+
         return obj;
       });
 
@@ -687,8 +689,10 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
   /**
    * Extracts completions from the given array.
    * @param possibleValues - The array to extract completions from.
-   * @param argTypes - The types of the arguments.
-   * @param def - The default value of the argument.
+   * @param docs - The documentation for the argument.
+   * @param def - The default value for the argument.
+   * @param isString - Flag indicating if the argument is a string.
+   * @param paramArray - The array of parameters.
    * @returns An array of completions.
    */
   private async extractCompletions(
@@ -782,16 +786,16 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
             argTypes?.forEach((type: string) => {
               const docType =  Helpers.replaceType(doc.type)
               if (docType === type) {
-               
+
                 if (firstMap && doc.parent) {
-                  
+
                   completions.push({
                     ...doc,
                     syntax: `${doc.parent}.${doc.name}: ${docType}`,
                     name: `${doc.parent}.${doc.name}`,
                     kind: `${doc.kind} | ${type}`,
                   })
-                  
+
                 } else {
 
                   completions.push({
@@ -822,12 +826,12 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
    */
   async getCompletionDocs(argName: string | number): Promise<typeof Class.PineDocsManager | null> {
     try {
-      if (!this.docsToMatchSignatureCompletions) {
+      if (!this.docsToMatchArgumentCompletions) {
         return null
       }
 
-      if (this.docsToMatchSignatureCompletions?.has(argName)) {
-        return this.docsToMatchSignatureCompletions?.get(argName) ?? ({ name: argName, info: '' } as any)
+      if (this.docsToMatchArgumentCompletions?.has(argName)) {
+        return this.docsToMatchArgumentCompletions?.get(argName) ?? ({ name: argName, info: '' } as any)
       }
       return null
     } catch (e) {

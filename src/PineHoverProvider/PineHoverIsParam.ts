@@ -147,11 +147,11 @@ export class PineHoverParam {
 
       // Get the functions map from the PineDocsManager
       const map = Class.PineDocsManager.getMap('functions', 'functions2');
-      
+
       if (!map.has(this.functionName)) {
         return;
       }
-      
+
       this.mapDocs = map.get(this.functionName);
 
       const argDocs = this.mapDocs?.args.find((i: PineDocsManager) => i.name === this.argument) ?? undefined;
@@ -164,6 +164,7 @@ export class PineHoverParam {
 
   /**
    * Sets various properties based on the argument documentation.
+   * @returns A tuple containing the documentation manager, the argument, and undefined, or undefined if processing fails.
    */
   private setProperties() {
     try {
@@ -174,7 +175,7 @@ export class PineHoverParam {
       console.error(error);
     }
   }
-     
+
   /**
    * Processes the argument documentation to determine its display type and updates related properties.
    * @returns A tuple containing the documentation manager, the argument, and undefined, or undefined if processing fails.
@@ -233,15 +234,15 @@ export class PineHoverParam {
         }
       }
     }
-        
+
     // Update the syntax of the argument documentation
     if (this.argDocs) {
       this.argDocs.syntax = `${this.argument}${this.qm}${this.displayType !== '' ? ': ' : ' '}${this.displayType}${this.def}`
-    } 
+    }
 
     return [this.argDocs, this.argument, undefined]
   }
 }
-   
+
 
 
