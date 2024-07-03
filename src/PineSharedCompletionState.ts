@@ -43,7 +43,7 @@ export class PineSharedCompletionState {
    * @param args - The new arguments object.
    */
   static setArgs(args: any) {
-    PineSharedCompletionState.args = args 
+    PineSharedCompletionState.args = args
   }
 
   /** Sets the current completions object.
@@ -68,7 +68,7 @@ export class PineSharedCompletionState {
   static get getIsLastArg() {
     return PineSharedCompletionState.lastArg
   }
-  
+
   /** sets the last argument to 0. */
   static setIsLastArg(toSet: boolean = false) {
     PineSharedCompletionState.lastArg = toSet
@@ -115,14 +115,14 @@ export class PineSharedCompletionState {
   /** Gets the current sig completions flag.
    * @returns The current sig completions flag.
    */
-  static get getSignatureCompletionsFlag() {
+  static get getArgumentCompletionsFlag() {
     return PineSharedCompletionState.sigCompletionsFlag
   }
 
   /** Sets the current signature completions flag.
    * @param flag - The new signature completions flag.
    */
-  static setSignatureCompletionsFlag(flag: boolean) {
+  static setArgumentCompletionsFlag(flag: boolean) {
     PineSharedCompletionState.sigCompletionsFlag = flag
   }
 }

@@ -2,34 +2,41 @@
 
 <div style="background-color: #1d1f23; padding: 20px; text-align: center; border: 2px solid #d3d4d5; border-radius: 10px; box-shadow: inset 0px 0px 5px 5px black;">
   <div style="margin-bottom: 15px;">
-    <a href="https://github.com/FFriZ/Pine-Script-v5-VS-Code" target="_blank"><img src="https://img.shields.io/github/package-json/v/FFriZ/Pine-Script-v5-VS-Code?color=green&style=flat-square" alt="Version"></a>
-    <a href="https://github.com/FFriZ/Pine-Script-v5-VS-Code/issues" target="_blank"><img src="https://img.shields.io/github/issues/FFriZ/Pine-Script-v5-VS-Code?style=flat-square" alt="Issues"></a>
-    <a href="#" target="_blank"><img src="https://img.shields.io/visual-studio-marketplace/i/frizlabz.pinescript-v5-vscode?color=blue&style=flat-square" alt="Downloads"></a>
-    <a href="https://github.com/FFriZ/Pine-Script-v5-VS-Code/stargazers" target="_blank"><img src="https://img.shields.io/github/stars/FFriZ/Pine-Script-v5-VS-Code?color=green&style=flat-square" alt="Stars"></a>
-    <a href="https://github.com/FFriZ/Pine-Script-v5-VS-Code/graphs/contributors" target="_blank"><img src="https://img.shields.io/github/contributors/FFriZ/Pine-Script-v5-VS-Code?color=green&style=flat-square" alt="Contributors"></a>
-    <a href="https://github.com/FFriZ/Pine-Script-v5-VS-Code/blob/master/LICENSE" target="_blank"><img src="https://img.shields.io/github/license/FFriZ/Pine-Script-v5-VS-Code?color=magenta&style=flat-square" alt="License"></a>
+      <a><img src="https://img.shields.io/github/package-json/v/FFriZ/Pine-Script-v5-VS-Code?color=dodgerblue&style=flat-round" alt="Version"></a>
+  <a><img src="https://img.shields.io/github/issues/FFriZ/Pine-Script-v5-VS-Code?style=flat-round" alt="Issues"></a>
+  <a><img src="https://img.shields.io/visual-studio-marketplace/i/frizlabz.pinescript-v5-vscode?style=flat-round" alt="Downloads"></a>
+  <a><img src="https://img.shields.io/github/stars/FFriZ/Pine-Script-v5-VS-Code?color=gold&style=flat-round" alt="Stars"></a>
+  <a><img src="https://img.shields.io/github/contributors/FFriZ/Pine-Script-v5-VS-Code?color=purple&style=flat-round" alt="Contributors"></a>
+  <a><img src="https://img.shields.io/github/license/FFriZ/Pine-Script-v5-VS-Code?color=silver&style=flat-round" alt="License"></a>
+</p>
   </div>
-  <a href="https://marketplace.visualstudio.com/items?itemName=frizLabz.pinescript-v5-vscode&ssr=false#review-details" target="_blank"><img src="https://img.shields.io/badge/⭐⭐⭐⭐⭐-Leave_a_Rating_or_Review-brightgreen?style=flat-square" alt="Rate or Review"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=frizLabz.pinescript-v5-vscode&ssr=false#review-details" target="_blank"><img src="https://img.shields.io/badge/⭐⭐⭐⭐⭐-Leave_a_Rating_or_Review-brightgreen?style=flat-round" alt="Rate or Review"></a>
   <p><b>Thank You!</p>
   <p style="margin-top: -10px">Make a Suggestion!</b></p>
 <div style="display: flex; justify-content: center; align-items: center; margin-top: -20px">
   <!-- GitHub Rating or Review Badge -->
   <a href="https://github.com/FFriZ/Pine-Script-v5-VS-Code/issues" target="_blank">
-    <img src="https://img.shields.io/badge/GitHub-Here-white?style=flat-square" alt="Rate or Review on GitHub">
+    <img src="https://img.shields.io/badge/GitHub-Here-white?style=flat-round" alt="Rate or Review on GitHub">
   </a>
 
   <span style="margin: 0px 5px;"></span>
 
   <!-- TradingView Profile Badge -->
   <a href="https://www.tradingview.com/u/FFriZz/" target="_blank">
-    <img src="https://img.shields.io/badge/TradingView-Message Me-white?style=flat-square" alt="Message on TradingView">
+    <img src="https://img.shields.io/badge/TradingView-Message Me-white?style=flat-round" alt="Message on TradingView">
   </a>
 </div>
 </div>
 <br>
 
-  
+
 # Changelog
+**v0.1.6 - 0.1.7** - 2024-07-02
+- **Improvement**: Updated syntax highlighting to improve readability and accuracy for various Pine Script elements.
+- **Improvement**: Updated theme names and styles.
+- **Documentation**: Updated the README to show contributors.
+- **Documentation**: Updated various typedocs in the project.
+
 **v0.1.5** - 2024-05-13
 - **Bug Fix**: Fixed the Signature Provider and the completions for functions, which now displays recommended parameters and like-typed values.
 - **Bug Fix**: Fixed miscellaneous bugs in the Hover Provider, documentation strings, themes, highlighting, and images on the download page and other areas.
@@ -68,7 +75,7 @@
 - **Refactor**: Simplified PineDocString.ts and refactored PineHelpers.ts.
 
 **v0.1.0** - 2024-01-26
-- **New Feature**: Added F2 - Rename Symbol functionality. *(**if renaming symbol that shares a name with a function param, param may get renamed also. This is due to not using an AST(abstract syntax tree) so the exact locations of the symbols is fetched from matching the symbol with the document.**)* 
+- **New Feature**: Added F2 - Rename Symbol functionality. *(**if renaming symbol that shares a name with a function param, param may get renamed also. This is due to not using an AST(abstract syntax tree) so the exact locations of the symbols is fetched from matching the symbol with the document.**)*
 Requested by **@StaticNoiseLog**.
 - **Bug Fix**: Fixed mergeDocs function in PineDocsManager.ts.
 - **Bug Fix**: Fixed Hover Over Syntax Duplicating.
@@ -82,17 +89,17 @@ Requested by **@StaticNoiseLog**.
 
 **v0.0.2** - 2024-01-22
 - **Refactor**: Refactored PineSignatureHelpProvider.ts to handle default values correctly.
-- **Documentation**: Fixed function documentation and added completion support. 
+- **Documentation**: Fixed function documentation and added completion support.
 
 **v0.0.1** - 2024-01-22
 - **New Feature**: Extension Added to VSCode Marketplace.
 - **Initial Release**: First Commit.
 
----  
+---
 \
-Twitter:  
+Twitter:  \
 [![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/FrizLabz)](https://twitter.com/FrizLabz)
 
-Support my work:  
+Support my work:  \
 [![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/default-orange.png)](https://www.buymeacoffee.com/frizlabz)
 

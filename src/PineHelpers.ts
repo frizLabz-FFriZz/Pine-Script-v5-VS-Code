@@ -66,7 +66,7 @@ export class Helpers {
       // Special case for 'method'
       const methodBuild = []
       if (isMethod && typeof syntaxContent === 'string') {
-        let methodSplit = [] 
+        let methodSplit = []
         if (syntaxContent.includes('\n')) {
           methodSplit = syntaxContent.split('\n')
         } else {
@@ -192,9 +192,7 @@ export class Helpers {
 
   /**
     * Checks if the expression is a variable
-    * @param returns - The type of the expression
     * @param keyedDocs - The documentation object to check
-    * @param key - The key to check against
     * @returns The type of the expression if it is a variable, null otherwise
    */
   static getThisTypes(keyedDocs: any) {

@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/FFriZ/Pine-Script-v5-VS-Code"
   },
-  "version": "0.1.5",
+  "version": "0.1.7",
   "type": "commonjs",
   "engines": {
     "vscode": "^1.85.0",
@@ -16,7 +16,9 @@
   "categories": [
     "Language Packs",
     "Programming Languages",
-    "Themes"
+    "Themes",
+    "Snippets",
+    "Other"
   ],
   "keywords": [
     "pine",
@@ -34,131 +36,122 @@
     },
     "secrets": true
   },
- 
   "scripts": {
     "build-docs": "typedoc --name 'Pine Script v5'",
-    "vscode:prepublish": "npm run package",
+    "vscode:prepublish": "npm run compile",
     "compile": "webpack --devtool source-map --mode development",
     "watch": "webpack --watch",
-    "package": "webpack --devtool source-map --mode development",
-    "package2": "webpack --mode production --devtool hidden-source-map",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "npm run compile-tests && npm run compile",
     "lint": "eslint src --ext ts",
-    "tests": "node ./out/test/runTest.js",
-    "run-test": "npm run pretest && npm run tests",
-    "vsce-package": "vsce package -o pinescriptv5.vsix",
-    "watch-and-package": "nodemon --watch dist --exec npm run vsce-package"
+    "vsce-package": "vsce package -o pinescriptv5.vsix"
   },
-  
   "main": "./dist/extension.js",
   "contributes": {
     "themes": [
       {
+        "label": "Pine-*Preferred",
+        "id": "Dark Theme (*Preferred)",
+        "uiTheme": "vs-dark",
+        "path": "themes/Pine-Preferred.json"
+      },
+      {
         "label": "Pine-Original-Dark",
-        "id": "pine-original-dark",
+        "id": "Dark Theme (Original)",
         "uiTheme": "vs-dark",
         "path": "themes/Pine-Original.json"
       },
       {
         "label": "Pine-Basic",
-        "id": "Pine-Theme-Basic",
+        "id": "Dark Theme (Basic)",
         "uiTheme": "vs-dark",
         "path": "themes/Pine-Basic.json"
       },
       {
         "label": "Pine-Universal",
-        "id": "Pine-Theme-Universal",
+        "id": "Dark Theme (Universal)",
         "uiTheme": "vs-dark",
         "path": "themes/Pine-Universal.json"
       },
       {
-        "label": "Pine-Extended# 1",
-        "id": "Pine-Theme#1",
+        "label": "Pine-Cold",
+        "id": "Dark Theme (Cold)",
         "uiTheme": "vs-dark",
-        "path": "themes/Pine-Extended#1.json"
+        "path": "themes/Pine-Cold.json"
       },
       {
-        "label": "Pine-Extended# 2",
-        "id": "Pine-Theme#2",
+        "label": "Pine-Cool",
+        "id": "Dark Theme (Cool)",
         "uiTheme": "vs-dark",
-        "path": "themes/Pine-Extended#2.json"
+        "path": "themes/Pine-Cool.json"
       },
       {
-        "label": "Pine-Extended# 3",
-        "id": "Pine-Theme#3",
+        "label": "Pine-Dark #01",
+        "id": "Dark Theme (#1)",
         "uiTheme": "vs-dark",
-        "path": "themes/Pine-Extended#3.json"
+        "path": "themes/Pine-Dark#01.json"
       },
       {
-        "label": "Pine-Extended# 4",
-        "id": "Pine-Theme#4",
+        "label": "Pine-Dark #02",
+        "id": "Dark Theme (#2)",
         "uiTheme": "vs-dark",
-        "path": "themes/Pine-Extended#4.json"
+        "path": "themes/Pine-Dark#02.json"
       },
       {
-        "label": "Pine-Extended# 5",
-        "id": "Pine-Theme#5",
+        "label": "Pine-Dark #03",
+        "id": "Dark Theme (#3)",
         "uiTheme": "vs-dark",
-        "path": "themes/Pine-Extended#5.json"
+        "path": "themes/Pine-Dark#03.json"
       },
       {
-        "label": "Pine-Extended# 6",
-        "id": "Pine-Theme#6",
+        "label": "Pine-Dark #04",
+        "id": "Dark Theme (#4)",
         "uiTheme": "vs-dark",
-        "path": "themes/Pine-Extended#6.json"
+        "path": "themes/Pine-Dark#04.json"
       },
       {
-        "label": "Pine-Extended# 8",
-        "id": "Pine-Theme#8",
+        "label": "Pine-Dark #05",
+        "id": "Dark Theme (#5)",
         "uiTheme": "vs-dark",
-        "path": "themes/Pine-Extended#8.json"
+        "path": "themes/Pine-Dark#05.json"
       },
       {
-        "label": "Pine-Extended# 9",
-        "id": "Pine-Theme#9",
+        "label": "Pine-Dark #06",
+        "id": "Dark Theme (#6)",
         "uiTheme": "vs-dark",
-        "path": "themes/Pine-Extended#9.json"
+        "path": "themes/Pine-Dark#06.json"
       },
       {
-        "label": "Pine-Extended#10",
-        "id": "Pine-Theme#10",
+        "label": "Pine-Dark #07",
+        "id": "Dark Theme (#7)",
         "uiTheme": "vs-dark",
-        "path": "themes/Pine-Extended#10.json"
+        "path": "themes/Pine-Dark#07.json"
       },
       {
-        "label": "Pine-Extended#12",
-        "id": "Pine-Theme#12",
+        "label": "Pine-Dark #08",
+        "id": "Dark Theme (#8)",
         "uiTheme": "vs-dark",
-        "path": "themes/Pine-Extended#12.json"
+        "path": "themes/Pine-Dark#08.json"
       },
       {
-        "label": "Pine-Extended#13",
-        "id": "Pine-Theme#13",
+        "label": "Pine-Dark #09",
+        "id": "Dark Theme (#9)",
         "uiTheme": "vs-dark",
-        "path": "themes/Pine-Extended#13.json"
+        "path": "themes/Pine-Dark#09.json"
       },
       {
-        "label": "Pine-Extended#14",
-        "id": "Pine-Theme#14",
-        "uiTheme": "vs-dark",
-        "path": "themes/Pine-Extended#14.json"
-      },
-      {
-        "label": "Pine-Light#1",
-        "id": "Pine-Light#1",
+        "label": "Pine-Light #01",
+        "id": "Light Theme (#1)",
         "uiTheme": "vs",
-        "path": "themes/Pine-Light#1.json"
+        "path": "themes/Pine-Light#01.json"
       },
       {
-        "label": "Pine-Light#2",
-        "id": "Pine-Light#2",
+        "label": "Pine-Light #02",
+        "id": "Light Theme (#2)",
         "uiTheme": "vs",
-        "path": "themes/Pine-Light#2.json"
+        "path": "themes/Pine-Light#02.json"
       }
     ],
-
     "configuration": {},
     "submenus": [
       {
@@ -170,7 +163,6 @@
         "label": " Pine Script v5"
       }
     ],
-    
     "commands": [
       {
         "command": "pine.mysubmenuNonPineFile",

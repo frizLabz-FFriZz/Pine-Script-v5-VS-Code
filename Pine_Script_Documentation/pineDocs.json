@@ -84,14 +84,14 @@
           "name": "simple",
           "kind": "Type Keyword",
           "desc": "**simple** is a keyword that can be used in a library\\`s exported functions to specify the type form required for a function\\`s arguments.  \nBy default, all arguments of exported functions are automatically converted into the \"series\" type form.  \nIn some cases, this would make arguments unusable with those of built-in functions that do not support the \"series\" form.  \nFor these cases, the `simple` keyword can be used instead.",
-          "syntax": "export <functionName>([[simple] <type>] <arg1>[ = <default_value>])",
+          "syntax": "[simple] <type> <variable_name> = <value>",
           "examples": "//@version=5\n//@description Library of debugging functions.\nlibrary(\"Debugging_library\", overlay = true)\nexport emaWrong(float source, int length) =>\n\t// By default, both `source` and `length` will expect values of the `series` type form: `series float` for `source`, `series int` for `length`.\n\t// This function will not compile because `ema()` does not support a \"series int\" argument for `length`. A \"simple int\" is required.\n\tta.ema(source, length)\n\nexport emaRight(float source, simple int length) =>\n\t// This function requires an argument of \"simple int\" type for its `length` parameter.\n\tta.ema(source, length)"
         },
         {
           "name": "series",
           "kind": "Type Keyword",
           "desc": "**series** is a keyword that can be used in a library\\`s exported functions to specify the type form required for a function\\`s arguments.  \nExplicit use of the `series` keyword is usually unnecessary because all arguments of exported functions are automatically converted to the \"series\" form by default.",
-          "syntax": "export <functionName>([[series] <type>] <arg1>[ = <default_value>])",
+          "syntax": "[series] <type> <variable_name> = <value>",
           "examples": "//@version=5\n//@description Library of debugging functions.\nlibrary(\"Debugging_library\", overlay = true)\nexport smaCustom(series float source, series int length) =>\n\tta.sma(source, length)"
         },
         {
@@ -4823,7 +4823,7 @@
               ]
             }
           ],
-          "syntax": "array.percentile_linear_interpolation(id, percentage) → series float\narray.percentile_linear_interpolation(id, percentage) → series int",
+          "syntax": "array.percentile_linear_interpolation(id, percentage) → int|float",
           "remarks": "In statistics, the percentile is the percent of ranking items that appear at or below a certain score.  \nThis measurement shows the percentage of scores within a standard frequency distribution that is lower than the percentile rank you're measuring.  \nLinear interpolation estimates the value between two ranks.",
           "seeAlso": [
             "[array.new_float](#fun_array.new_float)",
@@ -4839,7 +4839,7 @@
           ],
           "methodName": "percentile_linear_interpolation",
           "originalName": "array.percentile_linear_interpolation",
-          "methodSyntax": "array.percentile_linear_interpolation(percentage) → series float\narray.percentile_linear_interpolation(id, percentage) → series int",
+          "methodSyntax": "array.percentile_linear_interpolation(percentage) → float|int",
           "returnedType": [
             "float",
             "int"
@@ -7886,7 +7886,7 @@
               "possibleValues": null
             }
           ],
-          "syntax": "matrix.mult(id1, id2) → matrix<int>\nmatrix.mult(id1, id2) → matrix<float>\nmatrix.mult(id1, id2) → array<int>\nmatrix.mult(id1, id2) → array<float>",
+          "syntax": "matrix.mult(id1, id2) → matrix<int|float>\nmatrix.mult(id1, id2) → array<int|float>",
           "returns": "A new matrix object containing the product of `id2` and `id1`.",
           "seeAlso": [
             "[matrix.new<type>](#fun_matrix.new%3Ctype%3E)",
@@ -7899,7 +7899,7 @@
           ],
           "methodName": "mult",
           "originalName": "matrix.mult",
-          "methodSyntax": "matrix.mult(id2) → matrix<int>\nmatrix.mult(id1, id2) → matrix<float>\nmatrix.mult(id1, id2) → array<int>\nmatrix.mult(id1, id2) → array<float>",
+          "methodSyntax": "matrix.mult(id2) → matrix<int|float>\nmatrix.mult(id2) → array<int|float>",
           "detailedDesc": [
             {
               "desc": "Product of two matrices",
@@ -7933,7 +7933,7 @@
           "kind": "Built-in Method",
           "desc": "The function returns the [pseudoinverse](https://en.wikipedia.org/wiki/Moore%E2%80%93Penrose_inverse) of a matrix.",
           "args": [],
-          "syntax": "matrix.pinv(id) → matrix<float>\nmatrix.pinv(id) → matrix<int>",
+          "syntax": "matrix.pinv(id) → matrix<float|int>",
           "remarks": "The function is calculated using a [Moore–Penrose](https://en.wikipedia.org/wiki/Moore%E2%80%93Penrose_inverse#Definition) inverse formula based on singular-value decomposition of a matrix.  \nFor non-singular square matrices this function returns the result of [matrix.inv](#fun_matrix.inv).",
           "returns": "A new matrix containing the pseudoinverse of the `id` matrix.",
           "seeAlso": [
@@ -7948,7 +7948,7 @@
           "examples": "//@version=5\nindicator(\"`matrix.pinv()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n\t// Create a 2x2 matrix. \n\tvar m1 = matrix.new<int>(2, 2, na)\n\t// Fill the matrix with values.\n\tmatrix.set(m1, 0, 0, 1)\n\tmatrix.set(m1, 0, 1, 2)\n\tmatrix.set(m1, 1, 0, 3)\n\tmatrix.set(m1, 1, 1, 4)\n\t\n\t// Pseudoinverse of the matrix.\n\tvar m2 = matrix.pinv(m1)\n\t\n\t// Display matrix elements.\n\tvar t = table.new(position.top_right, 2, 2, color.green)\n\ttable.cell(t, 0, 0, \"Original Matrix:\")\n\ttable.cell(t, 0, 1, str.tostring(m1))\n\ttable.cell(t, 1, 0, \"Pseudoinverse matrix:\")\n\ttable.cell(t, 1, 1, str.tostring(m2))",
           "methodName": "pinv",
           "originalName": "matrix.pinv",
-          "methodSyntax": "matrix.pinv() → matrix<float>\nmatrix.pinv(id) → matrix<int>",
+          "methodSyntax": "matrix.pinv() → matrix<float|int>",
           "returnedType": [
             "matrix<float>",
             "matrix<int>"
@@ -13703,6 +13703,7 @@
           "kind": "Built-in Constant",
           "desc": "A named constant for the [request.earnings](#fun_request.earnings) function.  \nIs used to request the earnings value as it was reported.",
           "type": "string",
+          "returns": "float",
           "seeAlso": [
             "[request.earnings](#fun_request.earnings)."
           ],
@@ -13713,6 +13714,7 @@
           "kind": "Built-in Constant",
           "desc": "A named constant for the [request.earnings](#fun_request.earnings) function.  \nIs used to request the estimated earnings value.",
           "type": "string",
+          "returns": "float",
           "seeAlso": [
             "[request.earnings](#fun_request.earnings)."
           ],
@@ -13723,6 +13725,7 @@
           "kind": "Built-in Constant",
           "desc": "A named constant for the [request.earnings](#fun_request.earnings) function.  \nIs used to request the standardized earnings value.",
           "type": "string",
+          "returns": "float",
           "seeAlso": [
             "[request.earnings](#fun_request.earnings)."
           ],
@@ -13733,14 +13736,15 @@
           "type": "series float",
           "desc": "Returns the payment amount of the upcoming dividend in the currency of the current instrument, or [na](#var_na) if this data isn't available.",
           "kind": "Built-in Constant",
-          "reamrks": "This value is only fetched once during the script's initial calculation. The variable will return the same value until the script is recalculated, even after the expected Payment date of the next dividend."
+          "reamrks": "This value is only fetched once during the script's initial calculation. The variable will return the same value until the script is recalculated, even after the expected Payment date of the next dividend.",
+          "returns": "float"
         },
         {
           "name": "dividends.future_ex_date",
           "type": "series int",
           "desc": "Returns the Ex-dividend date (Ex-date) of the current instrument's next dividend payment, or [na](#var_na) if this data isn't available. Ex-dividend date signifies when investors are no longer entitled to a payout from the most recent dividend. Only those who purchased shares before this day are entitled to the dividend payment.",
           "kind": "Built-in Constant",
-          "returns": "UNIX time.",
+          "returns": "int",
           "reamrks": "This value is only fetched once during the script's initial calculation. The variable will return the same value until the script is recalculated, even after the expected Payment date of the next dividend."
         },
         {
@@ -13748,7 +13752,7 @@
           "type": "series int",
           "desc": "Returns the Payment date (Pay date) of the current instrument's next dividend payment, or [na](#var_na) if this data isn't available. Payment date signifies the day when eligible investors will receive the dividend payment.",
           "kind": "Built-in Constant",
-          "returns": "UNIX time.",
+          "returns": "int",
           "reamrks": "This value is only fetched once during the script's initial calculation. The variable will return the same value until the script is recalculated, even after the expected Payment date of the next dividend."
         },
         {
@@ -13756,6 +13760,7 @@
           "kind": "Built-in Constant",
           "desc": "A named constant for the [request.dividends](#fun_request.dividends) function.  \nIs used to request the dividends return on a stock after deductions.",
           "type": "string",
+          "returns": "float",
           "seeAlso": [
             "[request.dividends](#fun_request.dividends)."
           ],
@@ -13766,6 +13771,7 @@
           "kind": "Built-in Constant",
           "desc": "A named constant for the [request.dividends](#fun_request.dividends) function.  \nIs used to request the dividends return on a stock before deductions.",
           "type": "string",
+          "returns": "float",
           "seeAlso": [
             "[request.dividends](#fun_request.dividends)."
           ],
@@ -13776,6 +13782,7 @@
           "kind": "Built-in Constant",
           "desc": "A named constant for the [request.splits](#fun_request.splits) function.  \nIs used to request the denominator (the number below the line in a fraction) of a splits.",
           "type": "string",
+          "returns": "int|float",
           "seeAlso": [
             "[request.splits](#fun_request.splits)."
           ],
@@ -13786,6 +13793,7 @@
           "kind": "Built-in Constant",
           "desc": "A named constant for the [request.splits](#fun_request.splits) function.  \nIs used to request the numerator (the number above the line in a fraction) of a splits.",
           "type": "string",
+          "returns": "int|float",
           "seeAlso": [
             "[request.splits](#fun_request.splits)."
           ],
@@ -17457,7 +17465,7 @@
               ]
             }
           ],
-          "syntax": "input(defval, title, tooltip, inline, group, display) → input bool\ninput(defval, title, tooltip, inline, group, display) → input color\ninput(defval, title, tooltip, inline, group, display) → input int\ninput(defval, title, tooltip, inline, group, display) → input float\ninput(defval, title, tooltip, inline, group, display) → input string\ninput(defval, title, inline, group, tooltip, display) → series float",
+          "syntax": "input(defval, title, tooltip, inline, group, display) → input bool|color|int|string|float",
           "remarks": "Result of [input](#fun_input) function always should be assigned to a variable, see examples above.",
           "returns": "Value of input variable.",
           "seeAlso": [
@@ -19342,7 +19350,7 @@
               ]
             }
           ],
-          "syntax": "fill(hline1|plot1, hline2|plot2, color, title, editable, fillgaps, display) → void\nfill(hline1|plot1, hline2|plot2, top_value, bottom_value, top_color, bottom_color, title, display, fillgaps, editable) → void",
+          "syntax": "fill(plot1, plot2, color, title, editable, fillgaps, display) → void\nfill(plot1, plot2, top_value, bottom_value, top_color, bottom_color, title, display, fillgaps, editable) → void\nfill(hline1, hline2, color, title, editable, fillgaps, display) → void\nfill(hline1, hline2, top_value, bottom_value, top_color, bottom_color, title, display, fillgaps, editable) → void",
           "seeAlso": [
             "[plot](#fun_plot)",
             "[barcolor](#fun_barcolor)",
@@ -20062,7 +20070,7 @@
               "possibleValues": null
             }
           ],
-          "syntax": "math.ceil(number) → simple int\nmath.ceil(number) → input int\nmath.ceil(number) → const int\nmath.ceil(number) → series int",
+          "syntax": "math.ceil(number) → int",
           "returns": "The smallest integer greater than or equal to the given number.",
           "seeAlso": [
             "[math.floor](#fun_math.floor)",
@@ -22990,7 +22998,7 @@
               ]
             }
           ],
-          "syntax": "ta.change(source) → series float|bool|int|float\nta.change(source, length) → series bool|int",
+          "syntax": "ta.change(source) → float|bool|int|float\nta.change(source, length) → bool|int",
           "remarks": "`na` values in the `source` series are included in calculations and will produce an `na` result.",
           "returns": "The difference between the values when they are numerical. When a 'bool' source is used, returns `true` when the current source is different from the previous source.",
           "seeAlso": [
@@ -27319,7 +27327,7 @@
               ]
             }
           ],
-          "syntax": "strategy.order(id, direction, qty, limit, stop, oca_name, oca_type, comment, alert_message, disable_alert) → void\nstrategy.order(id, direction, qty, limit, stop, oca_name, oca_type, comment, alert_message) → void",
+          "syntax": "strategy.order(id, direction, qty, limit, stop, oca_name, oca_type, comment, alert_message, disable_alert) → void",
           "seeAlso": [
             "[strategy.entry](#fun_strategy.entry)",
             "[strategy.exit](#fun_strategy.exit)",
@@ -34475,7 +34483,7 @@
               ]
             }
           ],
-          "syntax": "array.percentile_linear_interpolation(id, percentage) → series float\narray.percentile_linear_interpolation(id, percentage) → series int",
+          "syntax": "array.percentile_linear_interpolation(id, percentage) → series float|int",
           "remarks": "In statistics, the percentile is the percent of ranking items that appear at or below a certain score.  \nThis measurement shows the percentage of scores within a standard frequency distribution that is lower than the percentile rank you're measuring.  \nLinear interpolation estimates the value between two ranks.",
           "seeAlso": [
             "[array.new_float](#fun_array.new_float)",

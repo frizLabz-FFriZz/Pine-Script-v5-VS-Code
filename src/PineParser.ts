@@ -4,12 +4,6 @@ import { VSCode } from './VSCode'
 // import { PineConsole } from './PineConsole'
 
 
-type LibItem = {
-  id: number
-  alias: string
-  script: string
-}
-
 export class PineParser {
   changes: number | undefined
   libs: any
@@ -26,31 +20,45 @@ export class PineParser {
     this.libs = []
   }
 
+  /**
+   * Sets the library IDs
+   * @param {any} libIds - The library IDs
+   */
   setLibIds(libIds: any) {
     this.libIds = libIds
   }
 
+  /**
+   * Parses the libraries
+   */
   parseLibs() {
     // console.log('parseLibs')
     this.callLibParser()
   }
 
+  /**
+   * Parses the document
+   */
   parseDoc() {
     // console.log('parseDoc')
     this.callDocParser()
   }
 
 
+  /**
+   * Fetches the libraries
+   * @returns Array of lib items
+   */
   fetchLibs() {
     // console.log('fetchLibs', this.libIds)
-    const _lib: LibItem[] = []
+    const _lib: any[] = []
 
     for (const lib of this.libIds) {
       const libId = lib.id
       const alias = lib.alias
 
       // Check if this.libs already contains the libId and alias
-      const existingLib = this.libs.find((item: LibItem) => item.id === libId && item.alias === alias)
+      const existingLib = this.libs.find((item: any) => item.id === libId && item.alias === alias)
       if (existingLib) {
         _lib.push(existingLib)
         continue
@@ -86,10 +94,10 @@ export class PineParser {
     return _lib
   }
 
-
-
+  /**
+   * Calls the library parser
+   */
   callLibParser() {
-    // console.log('callLibParser$$$$$$$$$$$$$$$$$$$$$')
     this.libs = this.fetchLibs()
     let flag = false
     for (const lib of this.libs) {
@@ -110,6 +118,9 @@ export class PineParser {
     }
   }
 
+  /**
+   * Calls the document parser
+   */
   callDocParser() {
     // console.log('callDocParser')
     const editorDoc = VSCode.Text?.replace(/\r\n/g, '\n') ?? ''
@@ -120,18 +131,22 @@ export class PineParser {
   }
 
 
+  /**
+   * Parses the functions
+   * @param {any[]} documents - The documents
+   */
   parseFunctions(documents: any[]) {
     try {
       // console.log('parseFunctions');
       const func: any[] = [];
-  
+
       for (const data of documents) {
         const script = data.script;
         if (typeof script !== 'string') {
           // console.log('Script is not a string:', script);
           continue;
         }
-  
+
         let matches = script.matchAll(this.funcPattern);
         if (!matches) {
           // console.log('No function matches:', script);
@@ -155,17 +170,17 @@ export class PineParser {
             // console.log('Function name or parameters not matched:', funcMatch[3]);
             continue;
           }
-  
+
           for (const funcParam of funcParams) {
             let [_, __, funcArgType, funcArgName, funcArgValue] = funcParam; // eslint-disable-line
-            
+
             // PineConsole.log(funcArgValue, 'funcArgValue', funcArgType, 'funcArgType', funcArgName, 'funcArgName').show()
 
             if (funcArgType === '' || !funcArgType) {
               const checkDocsMatch = Helpers.checkDocsMatch(funcArgValue ?? '');
               funcArgType = checkDocsMatch && typeof checkDocsMatch === 'string' ? checkDocsMatch : funcArgType;
             }
-  
+
             const argsDict: Record<string, any> = {}
             argsDict.name = funcArgName
             if (funcArgValue) {
@@ -185,7 +200,7 @@ export class PineParser {
         if (data.alias) {
           this.parsedLibsFunctions[data.alias] = func;
         }
-        
+
         // PineConsole.log(func, 'func').show()
         Class.PineDocsManager.setParsed(func, 'args');
       }
@@ -193,40 +208,44 @@ export class PineParser {
       console.error('Error parsing function:', e);
     }
   }
-  
+
+  /**
+   * Parses the types
+   * @param {any[]} documents - The documents
+   */
   parseTypes(documents: any[]) {
     try {
       const type: any[] = [];
-  
+
       for (const data of documents) {
         const script = data.script;
-  
+
         if (typeof script !== 'string') {
           // console.log('Script is not a string:', script);
           continue;
         }
-  
+
         // Use matchAll for types
         const typeMatches = script.matchAll(this.typePattern);
         for (const typeMatch of typeMatches) {
           const typeName = typeMatch[1];
           const typeFields = typeMatch[2];
-  
+
           const name = (data.alias ? data.alias + '.' : '') + typeName;
-  
+
           const typeBuild: any = {
             name: name,
             fields: [],
             originalName: typeName,
           };
-  
+
           // Use matchAll for fields within each type
           if (typeFields) { // Ensure typeFieldsStr is not undefined
             const fieldMatches = typeFields.matchAll(this.fieldsPattern);
             for (const fieldMatch of fieldMatches) {
             const [_, fieldType, fieldName, fieldValue] = fieldMatch; // eslint-disable-line
 
-  
+
               const fieldsDict: Record<string, any> = {}
               fieldsDict.name = fieldName
               fieldsDict.type = fieldType
@@ -236,7 +255,7 @@ export class PineParser {
               typeBuild.fields.push(fieldsDict);
             }
           }
-  
+
           type.push(typeBuild);
         }
 
@@ -244,12 +263,12 @@ export class PineParser {
           this.parsedLibsUDT[data.alias] = type;
         }
       }
-    
+
       // console.log(JSON.stringify(type, null, 2))
       Class.PineDocsManager.setParsed(type, 'fields');
-  
+
     } catch (e) {
       console.error('Error parsing types:', e);
-    } 
+    }
   }
 }

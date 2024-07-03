@@ -10,9 +10,28 @@ import * as vscode from 'vscode'
 
 
 
-export function deactivate() {
+export function deactivate(context: vscode.ExtensionContext) {
+  PineLint.versionClear()
+  // Clean up all the subscriptions in
+  // the context.subscriptions array.
+  PineLint.handleDocumentChange()
   return undefined
 }
+
+
+let timerStart: number = 0
+// Make it so that if there is no change within 5 seconds it runs a lint
+function checkForChange() {
+  if (timerStart !== 0) {
+    let timerEnd: number = new Date().getTime()
+    if (timerEnd - timerStart > 5000) {
+      PineLint.handleDocumentChange()
+      timerStart = 0
+    }
+  }
+}
+
+setInterval(checkForChange, 1000)
 
 // Activate Function =============================================
 export async function activate(context: vscode.ExtensionContext) {
@@ -25,7 +44,6 @@ export async function activate(context: vscode.ExtensionContext) {
   VSCode.setContext(context)
   Class.setContext(context)
   PineLint.initialLint()
-  let timerStart: number = 0
 
   // Push subscriptions to context
   context.subscriptions.push(
@@ -34,9 +52,7 @@ export async function activate(context: vscode.ExtensionContext) {
       Class.PineDocsManager.cleanDocs()
       PineResponseFlow.resetDocChange()
       if (!VSCode.ActivePineFile) {
-        PineLint.DiagnosticCollection.clear()
-        PineLint.versionClear()
-        deactivate()
+        deactivate(context)
       } else {
         if (PineLint.diagnostics.length > 0 && VSCode.Uri) {
           PineLint.DiagnosticCollection.set(VSCode.Uri, PineLint.diagnostics)
@@ -57,6 +73,7 @@ export async function activate(context: vscode.ExtensionContext) {
         timerStart = new Date().getTime()
       }
     }),
+
     VSCode.RegisterCommand('pine.docString', async () => new PineDocString().docstring()),
     VSCode.RegisterCommand('pine.getStandardList', async () => Class.PineScriptList.showMenu('built-in')),
     VSCode.RegisterCommand('pine.typify', async () => new PineTypify().typifyDocument()),
@@ -82,18 +99,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // VSCode.RegisterCommand('pine.clearKEYS', async () => Class.PineUserInputs.clearAllInfo()),
 
 
-    // amke it so that if there is no change within 5 seconds it runs a lint
   )
-
-  setInterval(() => {
-    if (timerStart) {
-      let timerEnd = new Date().getTime()
-      if (timerEnd - timerStart > 5000) {
-        PineLint.handleDocumentChange()
-        timerStart = 0
-      }
-    }
-  }, 5000)
 
 
 }
