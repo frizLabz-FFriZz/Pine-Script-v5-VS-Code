@@ -32,9 +32,14 @@
          "name": "keyword.operator.logical.pine"
       },
       {
+         "comment": "highlights import, export, method, varip, var",
+         "match": "\\b(import|export|method|varip\\s+|var\\s+)(?!\\s*=)\\b",
+         "name": "keyword.control.pine"
+      },
+      {
          "comment": "syntax prefix regex",
-         "match": "\\(\\b(param|variable|function|annotation|method|type|UDT|constant|property|field|control|object)\\b\\)",
-         "captures": { "1": { "name": "keyword.operator.type.pine" } }
+         "match": "(?<=@|\\()\\b(param|variable|function|annotation|method|type|UDT|constant|property|field|control|object)\\b\\)",
+         "captures": { "1": { "name": "entity.name.tag" } }
       },
       {
          "comment": "export? type name regex",
@@ -63,12 +68,12 @@
          "match": "(var|varip)\\s+([\\d\\w_]+)\\s+(?:[\\d\\w_]+)\\s*(?=\\=)",
          "captures": {
             "1": { "name": "keyword.control.pine" },
-            "2": { "name": "keyword.operator.type.pine" }
+            "2": { "name": "keyword.type.pine" }
          }
       },
       {
          "comment": "map type",
-         "match": "(?:^|\\||\\s*?|\\b)(map)\\s*(<([^,]+),([^>]+)>)\\s*?(?![\\=\\?\\:])",
+         "match": "(?:^|\\|\\s*?|\\b)(map)\\s*(<([^,]+),([^>]+)>)\\s*?(?![\\=\\?\\:])",
          "captures": {
             "1": { "name": "keyword.operator.type.pine" },
             "2": { "name": "storage.modifier.pine" },
@@ -228,11 +233,6 @@
          }
       },
       {
-         "comment": "highlights import, export, method, varip, var",
-         "match": "\\b(import|export|method|varip\\s+|var\\s+)(?!\\s*=)\\b",
-         "name": "keyword.control.pine"
-      },
-      {
          "comment": "blocks built in namespaces, for highlighting built-in methods",
          "match": "(?!ta|str|matrix|array|box|line|map|polyline|table|label|linefill|chart(?:\\s*\\.\\s*)point|polyline|ta|math|str)\\.(sort_indices|percentrank|percentile_nearest_rank|percentile_linear_interpolation|abs|binary_search|binary_search_leftmost|binary_search_rightmost|concat|avg|stdev|variance|covariance|mode|median|standardize|indexof|lastindexof|includes|shift|unshift|reverse|first|last|every|some|row|col|reshape|add_row|add_col|remove_row|remove_col|submatrix|columns|rows|elements_count|swap_rows|swap_columns|det|transpose|diff|mult|pinv|inv|rank|trace|eigenvalues|eigenvectors|kron|pow|is_zero|is_identity|is_binary|is_symmetric|is_antisymmetric|is_diagonal|is_antidiagonal|is_triangular|is_stochastic|is_square|contains|keys|values|put_all|put|set_text|set_top_left_point|set_bottom_right_point|set_text_color|set_text_font_family|set_text_halign|set_text_size|set_text_valign|set_text_wrap|delete|get_bottom|get_left|get_right|get_top|set_bgcolor|set_border_color|set_border_style|set_border_width|set_bottom|set_extend|set_left|set_lefttop|set_right|set_rightbottom|set_top|set_point|get_text|get_x|get_y|set_color|set_size|set_style|set_textalign|set_textcolor|set_tooltip|set_x|set_xloc|set_xy|set_y|set_yloc|set_first_point|set_second_point|get_price|get_x1|get_x2|get_y1|get_y2|set_width|set_x1|set_x2|set_xy1|set_xy2|set_y1|set_y2|set|cell_set_tooltip|merge_cells|cell|cell_set_bgcolor|cell_set_text_font_family|cell_set_height|cell_set_text|cell_set_text_color|cell_set_text_halign|cell_set_text_size|cell_set_text_valign|cell_set_width|set_frame_color|set_frame_width|set_position|all|get_line1|get_line2|copy|slice|size|get|min|max|push|range|sum|from|set|fill|insert|join|remove|pop|clear|sort)(?=\\s*\\()",
          "captures": {
@@ -265,7 +265,7 @@
          "patterns": [
             {
                "comment": "attempt to prevent double highlighting if variable or argument has same name as type",
-               "match": "(?<!array|matrix|tuple|type|bool|box|color|float|int|label|line|linefill|string|table|polyline|strategy_direction|chart\\.point)\\s*(?:(,)\\s+)?\\b(array|matrix|tuple|type|bool|box|color|float|int|label|line|linefill|string|table|polyline|strategy_direction|chart\\.point)\\b(\\[\\])?(?:(?!:\\?|\\s*\\?|\\s*\\.|\\s*=|\\s*\\)|\\s*,|\\s*\\())",
+               "match": "(?<!array|matrix|tuple|type|bool|box|color|float|int|label|line|linefill|string|table|polyline|strategy_direction|chart\\.point)\\s*(?:(,)\\s+)?\\b(array|matrix|tuple|type|bool|box|color|float|int|label|line|linefill|string|table|polyline|strategy_direction|chart\\.point\\s+)\\b(\\[\\])?(?:(?!:\\?|\\s*\\?|\\s*\\.|\\s*=|\\s*\\)|\\s*,|\\s*\\())",
                "captures": {
                   "1": { "name": "operator.pine" },
                   "2": { "name": "keyword.operator.type.pine" },
@@ -273,7 +273,7 @@
                }
             },
             {
-               "match": "(?:var\\s+|varip\\s+|\\s+|^|(\\(| ))\\b(matrix|array|map|chart\\.point)\\s+(?:[^:\\?\\(\\)\"\\'\\=\\+\\-\\*]+|$)",
+               "match": "(?:\\s+|^|(\\(| ))\\b(matrix|array|map|chart\\.point)\\s+(?:[^:\\?\\(\\)\"\\'\\=\\+\\-\\*]+|$)",
                "captures": {
                   "1": { "name": "keyword.operator.type.pine" },
                   "2": { "name": "keyword.operator.type.pine" },
@@ -1205,7 +1205,7 @@
             },
             {
                "comment": "",
-               "match": "(?:^|\\n)\\s*((?!var|varip|if|else|and|else\\s+if|true|false|import|while|export|method|[0-9])\\w+(?:\\.\\w+)?(?!\\s*(?:or|and)))\\s+\\w+(,)?",
+               "match": "(?<=^)\\s*(?:(?!if|else|else\\s+if))",
                "captures": {
                   "1": { "name": "keyword.operator.type.pine" },
                   "2": { "name": "keyword.operator.pine" }
