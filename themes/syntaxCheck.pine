@@ -1126,3 +1126,272 @@ str.format('{0}, {1}, {2}', 'a', 'b', 'c')
 //@version=5
 
 
+// udt
+type MyType
+    int               x
+    chart.point       cp
+    float             y = 0.000
+    myimport.MyType   udt
+    MyType            self
+
+
+// Builtins
+varip  array<int>      arrayIntV 
+varip  int[]           arrayIntV2 
+var    array<int>      arrayInt 
+var    int[]           arrayInt2 
+array<int>             arrayInt_        = array.new<int>()
+
+varip  array<float>    arrayFloatV 
+varip  float[]         arrayFloatV2 
+var    array<float>    arrayFloat 
+var    float[]         arrayFloat2 
+array<float>           arrayFloat_      = array.new<float>()
+
+varip  array<string>   arrayStringV 
+varip  string[]        arrayStringV2 
+var    array<string>   arrayString 
+var    string[]        arrayString2 
+array<string>          arrayString_     = array.new<string>()
+
+varip  array<bool>     arrayBoolV 
+varip  bool[]          arrayBoolV2 
+var    array<bool>     arrayBool 
+var    bool[]          arrayBool2 
+array<bool>            arrayBool_       = array.new<bool>()
+
+varip  array<color>    arrayColorV 
+varip  color[]         arrayColorV2 
+var    array<color>    arrayColor 
+var    color[]         arrayColor2 
+array<color>           arrayColor_      = array.new<color>()
+
+varip  array<line>     arrayLineV 
+varip  line[]          arrayLineV2 
+var    array<line>     arrayLine 
+var    line[]          arrayLine2 
+array<line>            arrayLine_       = array.new<line>()
+
+varip  array<label>    arrayLabelV 
+varip  label[]         arrayLabelV2 
+var    array<label>    arrayLabel 
+var    label[]         arrayLabel2 
+array<label>           arrayLabel_      = array.new<label>()
+
+varip  array<box>      arrayBoxV 
+varip  box[]           arrayBoxV2 
+var    array<box>      arrayBox 
+var    box[]           arrayBox2 
+array<box>             arrayBox_        = array.new<box>()
+
+varip  map<string, int>    mapStringIntV
+var    map<string, int>    mapStringInt
+map<string, int>           mapStringInt_    = map.new<string, int>()
+
+varip  map<int, float>     mapIntFloatV
+var    map<int, float>     mapIntFloat
+map<int, float>            mapIntFloat_     = map.new<int, float>()
+
+varip  map<string, string> mapStringStringV
+var    map<string, string> mapStringString
+map<string, string>        mapStringString_ = map.new<string, string>()
+
+varip  matrix<int>         matrixIntV
+var    matrix<int>         matrixInt
+matrix<int>                matrixInt_       = matrix.new<int>(1,1,0)
+
+varip  matrix<float>       matrixFloatV
+var    matrix<float>       matrixFloat
+matrix<float>              matrixFloat_     = matrix.new<float>(1,1,0.0)
+
+varip  matrix<string>      matrixStringV
+var    matrix<string>      matrixString
+matrix<string>             matrixString_    = matrix.new<string>(1,1,"")
+
+varip  float      _floatV
+var    float      _float 
+float  _float_  =  float  (10)
+
+varip  array<MyType>    arrayMyTypeV 
+varip  MyType[]         arrayMyTypeV2 
+var    array<MyType>    arrayMyType 
+var    MyType[]         arrayMyType2 
+array<MyType>           arrayMyType_      = array.new<MyType>()
+
+MyType udtV = MyType.new()
+MyType udt_
+
+varip array<MyType> arrayUdtV
+varip MyType[]      arrayUdtV2
+
+varip array<MyType> arrayUdtV
+var  array<MyType>  arrayUdt
+array<MyType>       arrayUdt_ = array.new<MyType>(1,MyType.new())
+arrayUdt_                      = array.new<MyType>(1,MyType.new())
+
+varip map<string, MyType> mapStringUdtV
+var  map<string, MyType> mapStringUdt
+map<string, MyType> mapStringUdt_ = map.new<string, MyType>()
+mapStringUdt_          = map.new<string, MyType>()
+
+varip matrix<MyType> matrixUdtV
+var  matrix<MyType> matrixUdt
+matrix<MyType> matrixUdt_ = matrix.new<MyType>(1,1,MyType.new())
+matrixUdt_                 = matrix.new<MyType>(1,1,MyType.new())
+
+
+
+// with imported udt
+import mynam/mylib/10 as myimport
+
+varip myimport.MyType             udtV = this
+myimport.MyType                   udt
+myimport.MyType                   udt_ = myimport.MyType.new()
+
+varip array<myimport.MyType>      arrayUdtV
+varip myimport.MyType[]           arrayUdtV2
+
+varip array<myimport.MyType>      matrixUdtV
+var  array<myimport.MyType>       matrixUdt
+array<myimport.MyType>            matrixUdt_ = array.new<myimport.MyType>(1,myimport.MyType.new())
+                                  matrixUdt_ = array.new<myimport.MyType>(1,myimport.MyType.new())
+
+varip map<string,myimport.MyType> mapStringUdtV
+var  map<string,myimport.MyType>  mapStringUdt
+map<string,myimport.MyType>       mapStringUdt_ = map.new<string, myimport.MyType>()
+                                  mapStringUdt_ = map.new<string, myimport.MyType>()
+
+varip matrix<myimport.MyType>     matrixUdtV
+var  matrix<myimport.MyType>      matrixUdt
+matrix<myimport.MyType>           matrixUdt_ = matrix.new<myimport.MyType>(1,1,myimport.MyType.new())
+
+
+
+// indented 
+
+
+    // Builtins
+    varip  array<int>      arrayIntV 
+    varip  int[]           arrayIntV2 
+    var    array<int>      arrayInt 
+    var    int[]           arrayInt2 
+    array<int>             arrayInt_        = array.new<int>()
+
+    varip  array<float>    arrayFloatV 
+    varip  float[]         arrayFloatV2 
+    var    array<float>    arrayFloat 
+    var    float[]         arrayFloat2 
+    array<float>           arrayFloat_      = array.new<float>()
+
+    varip  array<string>   arrayStringV 
+    varip  string[]        arrayStringV2 
+    var    array<string>   arrayString 
+    var    string[]        arrayString2 
+    array<string>          arrayString_     = array.new<string>()
+
+    varip  array<bool>     arrayBoolV 
+    varip  bool[]          arrayBoolV2 
+    var    array<bool>     arrayBool 
+    var    bool[]          arrayBool2 
+    array<bool>            arrayBool_       = array.new<bool>()
+
+    varip  array<color>    arrayColorV 
+    varip  color[]         arrayColorV2 
+    var    array<color>    arrayColor 
+    var    color[]         arrayColor2 
+    array<color>           arrayColor_      = array.new<color>()
+
+    varip  array<line>     arrayLineV 
+    varip  line[]          arrayLineV2 
+    var    array<line>     arrayLine 
+    var    line[]          arrayLine2 
+    array<line>            arrayLine_       = array.new<line>()
+
+    varip  array<label>    arrayLabelV 
+    varip  label[]         arrayLabelV2 
+    var    array<label>    arrayLabel 
+    var    label[]         arrayLabel2 
+    array<label>           arrayLabel_      = array.new<label>()
+
+    varip  array<box>      arrayBoxV 
+    varip  box[]           arrayBoxV2 
+    var    array<box>      arrayBox 
+    var    box[]           arrayBox2 
+    array<box>             arrayBox_        = array.new<box>()
+
+    varip  map<string, int>    mapStringIntV
+    var    map<string, int>    mapStringInt
+    map<string, int>           mapStringInt_    = map.new<string, int>()
+
+    varip  map<int, float>     mapIntFloatV
+    var    map<int, float>     mapIntFloat
+    map<int, float>            mapIntFloat_     = map.new<int, float>()
+
+    varip  map<string, string> mapStringStringV
+    var    map<string, string> mapStringString
+    map<string, string>        mapStringString_ = map.new<string, string>()
+
+    varip  matrix<int>         matrixIntV
+    var    matrix<int>         matrixInt
+    matrix<int>                matrixInt_       = matrix.new<int>(1,1,0)
+
+    varip  matrix<float>       matrixFloatV
+    var    matrix<float>       matrixFloat
+    matrix<float>              matrixFloat_     = matrix.new<float>(1,1,0.0)
+
+    varip  matrix<string>      matrixStringV
+    var    matrix<string>      matrixString
+    matrix<string>             matrixString_    = matrix.new<string>(1,1,"")
+
+    varip  float      _floatV
+    var    float      _float 
+    float  _float_  =  float  (10)
+
+    varip  array<MyType>    arrayMyTypeV 
+    varip  MyType[]         arrayMyTypeV2 
+    var    array<MyType>    arrayMyType 
+    var    MyType[]         arrayMyType2 
+    array<MyType>           arrayMyType_      = array.new<MyType>()
+
+    MyType udtV = MyType.new()
+    MyType udt_
+
+    varip array<MyType> arrayUdtV
+    varip MyType[]      arrayUdtV2
+
+    varip array<MyType> arrayUdtV
+    var  array<MyType>  arrayUdt
+    array<MyType>       arrayUdt_     = array.new<MyType>(1,MyType.new())
+    arrayUdt_                         = array.new<MyType>(1,MyType.new())
+
+    varip map<string, MyType> mapStringUdtV
+    var  map<string, MyType> mapStringUdt
+    map<string, MyType> mapStringUdt_ = map.new<string, MyType>()
+    mapStringUdt_                     = map.new<string, MyType>()
+
+    varip matrix<MyType> matrixUdtV
+    var  matrix<MyType> matrixUdt
+    matrix<MyType> matrixUdt_         = matrix.new<MyType>(1,1,MyType.new())
+    matrixUdt_                        = matrix.new<MyType>(1,1,MyType.new())
+
+    varip myimport.MyType             udtV = this
+    myimport.MyType                   udt
+    myimport.MyType                   udt_ = myimport.MyType.new()
+
+    varip array<myimport.MyType>      arrayUdtV
+    varip myimport.MyType[]           arrayUdtV2
+
+    varip array<myimport.MyType>      matrixUdtV
+    var  array<myimport.MyType>       matrixUdt
+    array<myimport.MyType>            matrixUdt_ = array.new<myimport.MyType>(1,myimport.MyType.new())
+                                      matrixUdt_ = array.new<myimport.MyType>(1,myimport.MyType.new())
+
+    varip map<string,myimport.MyType> mapStringUdtV
+    var  map<string,myimport.MyType>  mapStringUdt
+    map<string,myimport.MyType>       mapStringUdt_ = map.new<string, myimport.MyType>()
+                                      mapStringUdt_ = map.new<string, myimport.MyType>()
+
+    varip matrix<myimport.MyType>     matrixUdtV
+    var  matrix<myimport.MyType>      matrixUdt
+    matrix<myimport.MyType>           matrixUdt_ = matrix.new<myimport.MyType>(1,1,myimport.MyType.new())
+                            
