@@ -128,7 +128,7 @@
          "patterns": [
             {
                "comment": "Improved type highlighting within <...>",
-               "match": "\\b(matrix|map|array)(?:<(?:([a-zA-Z_][a-zA-Z0-9_]*\\.)?([a-zA-Z_][a-zA-Z0-9_]*)\\,)?(?:([a-zA-Z_][a-zA-Z0-9_]*\\.)?([a-zA-Z_][a-zA-Z0-9_]*))>)",
+               "match": "\\b(matrix|map|array)(?:<(?:([a-zA-Z_][a-zA-Z0-9_]*\\.)?([a-zA-Z_][a-zA-Z0-9_]*)\\,\\s*)?(?:([a-zA-Z_][a-zA-Z0-9_]*\\.)?([a-zA-Z_][a-zA-Z0-9_]*))>)",
                "captures": { "1": { "name": "entity.name.class.pine" }, "2": { "name": "keyword.other.unit.pine" }, "3": { "name": "keyword.operator.type.pine" }, "4": { "name": "keyword.other.unit.pine" }, "5": { "name": "keyword.operator.pine" } }
             },
             {
@@ -602,7 +602,7 @@
             },
             {
                "comment": "",
-               "match": "([a-zA-Z_][a-zA-Z0-9_]*\\.)?([a-zA-Z_][a-zA-Z0-9_]*)(\\[\\])",
+               "match": "([a-zA-Z_][a-zA-Z0-9_]*\\.)?([a-zA-Z_][a-zA-Z0-9_]*)(\\[\\])(?=\\s+[\\n\\w\\/]|$)",
                "captures": { "1": { "name": "keyword.other.unit.pine" }, "2": { "name": "keyword.operator.type.pine" }, "3": { "name": "storage.modifier.pine" } }
             },
             { "comment": "", "match": "\\b(dayofmonth|dayofweek|second|hour|minute|month|weekofyear|year)\\b(?=:?)(?!\\s*(?:=|:=))", "name": "variable.language.pine" },
