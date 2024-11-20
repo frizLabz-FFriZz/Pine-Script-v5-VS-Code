@@ -32,7 +32,7 @@
         }
     },
     "indentationRules": {
-        "increaseIndentPattern": "(?<=^)(((\\s*(?:if|for|while|switch|\\s+(?:\\(.*\\))\\s*=>\\s*))|((?<=export|method)|(?>=^))?\\w+\\s*\\([^\\)]*?\\)\\s*=>(?=\\/\\/|$|\\n)|\\s+.*?=>\\s*(?=\\/\\/|$|\\n))|(?:export\\s+)?(?:enum|type))",
+        "increaseIndentPattern": "(?<=^)(((\\s*(\\w+(?:\\.\\w+)*\\s*[\\-+\\/%:*]?=\\s*)?(if|for|while|switch)\\b)|(?:(?<=export\\s|method\\s)|(?<=^)\\s*)?\\w+\\s*\\([^\\)]*?\\)\\s*=>(?=\\/\\/|$|\\n)|\\s+.*?=>\\s*(?=\\/\\/|$|\\n)|(?:export\\s+)?(?:enum|type)))",
         "decreaseIndentPattern": "^\\s*(else if.+|else)\\s*$"
     },
     "onEnterRules": [
