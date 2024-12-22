@@ -1008,7 +1008,7 @@ strategy.max_runup_percent
 strategy.netprofit_percent
 strategy.openprofit_percent
 strategy.grossprofit_percent
-strategy.max_drawdown_percent
+strategy.max_drawdown_percent              // needs adding
 strategy.oca.none
 strategy.oca.cancel
 strategy.oca.reduce
@@ -1033,7 +1033,7 @@ strategy.closedtrades.profit_percent()
 strategy.opentrades.max_drawdown_percent()
 strategy.opentrades.max_runup_percent()
 strategy.opentrades.profit_percent()
-strategy.default_entry_qty()
+strategy.default_entry_qty()               // needs fix
 strategy.close_all()
 strategy.close()
 strategy.risk.max_position_size()
@@ -1109,18 +1109,20 @@ method sldkfjslkdfj() =>
 switch false
 
 "THIS IS A STRING DQ"
-"THIS IS A STRING SQ"
+'THIS IS A STRING SQ'
+' broken str "
+" broken str '
 
 
-str.format('{0}, {1}, {2}', 'a', 'b', 'c')
+str.format('{0}, {1}, \'quote\' {2}', 'a', 10.10e10, syminfo.tickerid)
 
 // dfgsdfgsdfgs asdfasdfasf
 // @function asdfasdfasdf
-// @param
-// @returns
-// @variable
-// @type
-// @field
+// @param paramname (type) description
+// @returns (type) description
+// @variable name (type)
+// @type Name description
+// @field name (type) description
 // @strategy_alert_message
 
 //@version=5
