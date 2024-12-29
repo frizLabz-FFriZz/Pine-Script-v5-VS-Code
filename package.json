@@ -10,7 +10,7 @@
   "version": "0.1.7",
   "type": "commonjs",
   "engines": {
-    "vscode": "^1.85.0",
+    "vscode": "^1.93.0",
     "node": ">=16.0.0"
   },
   "categories": [
@@ -37,13 +37,14 @@
     "secrets": true
   },
   "scripts": {
-    "build-docs": "typedoc --name 'Pine Script v5'",
-    "vscode:prepublish": "npm run compile",
-    "compile": "webpack --devtool source-map --mode development",
-    "watch": "webpack --watch",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "lint": "eslint src --ext ts",
+    "webpack": "webpack --devtool source-map --mode development",
+    "compile": "pnpm run webpack",
+    "start": "pnpm run compile && code --extensionDevelopmentPath=.",
+    "build-docs": "pnpm run typedoc --name 'Pine Script v5'",
+    "vscode:prepublish": "pnpm run compile",
+    "compile-tests": "pnpm run tsc -p . --outDir out",
+    "watch-tests": "pnpm run tsc -p . -w --outDir out",
+    "lint": "pnpm run eslint src --ext ts",
     "vsce-package": "vsce package -o pinescriptv5.vsix"
   },
   "main": "./dist/extension.js",
@@ -156,11 +157,11 @@
     "submenus": [
       {
         "id": "pine.mysubmenuNonPineFile",
-        "label": " Pine Script v5"
+        "label": " Pine Script v5"
       },
       {
         "id": "pine.mysubmenu2",
-        "label": " Pine Script v5"
+        "label": " Pine Script v5"
       }
     ],
     "commands": [
@@ -316,31 +317,35 @@
     ]
   },
   "dependencies": {
-    "debounce": "^2.0.0",
+    "debounce": "^2.1.1",
     "lodash": "^4.17.21",
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "@types/debounce": "^1.2.4",
-    "@types/lodash": "^4.14.202",
-    "@types/node": "^20.10.6",
+    "@types/lodash": "^4.17.7",
+    "@types/node": "^22.5.4",
     "@types/source-map-support": "^0.5.10",
-    "@types/vscode": "^1.85.0",
-    "@typescript-eslint/eslint-plugin": "^6.16.0",
-    "@typescript-eslint/parser": "^6.16.0",
+    "@types/vscode": "^1.93.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "@vscode/vsce": "^3.1.0",
     "eslint": "^8.56.0",
     "eslint-config-airbnb": "^19.0.4",
-    "eslint-config-airbnb-typescript": "^17.1.0",
-    "eslint-plugin-import": "^2.29.1",
-    "eslint-plugin-jsx-a11y": "^6.8.0",
-    "eslint-plugin-react": "^7.33.2",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "nodemon": "^3.0.3",
+    "eslint-config-airbnb-typescript": "^18.0.0",
+    "eslint-plugin-import": "^2.30.0",
+    "eslint-plugin-jsx-a11y": "^6.10.0",
+    "eslint-plugin-react": "^7.35.2",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "nodemon": "^3.1.4",
+    "remark-preset-wooorm": "^9.0.0",
     "source-map-support": "^0.5.21",
     "ts-loader": "^9.5.1",
-    "typedoc": "^0.25.6",
-    "typescript": "^5.3.3",
-    "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4"
+    "type-coverage": "^2.0.0",
+    "typedoc": "^0.26.7",
+    "typescript": "^5.6.2",
+    "webpack": "^5.94.0",
+    "webpack-cli": "^5.1.4",
+    "xo": "^0.54.0"
   }
 }
