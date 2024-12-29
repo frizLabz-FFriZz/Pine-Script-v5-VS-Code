@@ -85,7 +85,7 @@ export class PineFormatResponse {
    */
   setFunctions() {
     // Get the functions from the response, or default to an empty array if no functions are present
-    let functions = this.response?.functions2 ?? this.response?.functions ?? []
+    let functions = this.response?.functions2 || this.response?.functions || []
     // Initialize methods, funcs, and funcsCompletions as arrays with one object that has an empty docs array
     let methods: any[] = [{ docs: [] }]
     let funcs: any[] = [{ docs: [] }]
@@ -98,7 +98,7 @@ export class PineFormatResponse {
         const match = /(?:\w+\.)?(\w+)\(.+\u2192\s*(.*)/g.exec(func.syntax)
         if (match) {
           // Set the returnedType property of the function
-          func.returnedType = `\`${match[2]}\`` ?? func.returnType
+          func.returnedType = `\`${match[2]}\`` || func.returnType
         }
         // If the function does not have a thisType property, add it to funcsCompletions
         if (!func?.thisType) {

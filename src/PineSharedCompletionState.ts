@@ -79,7 +79,7 @@ export class PineSharedCompletionState {
    */
   static setActiveArg(activeArgument: any) {
     PineSharedCompletionState.activeArg = activeArgument
-    if (PineSharedCompletionState.sigCompletions && (PineSharedCompletionState.sigCompletions[activeArgument].length > 0 ?? false)) {
+    if (PineSharedCompletionState.sigCompletions && PineSharedCompletionState.sigCompletions[activeArgument]?.length > 0) {
       vscode.commands.executeCommand('editor.action.triggerSuggest')
     }
   }

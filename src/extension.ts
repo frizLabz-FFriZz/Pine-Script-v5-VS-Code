@@ -1,4 +1,3 @@
-
 import { VSCode } from './VSCode'
 import { Class } from './PineClass'
 import { PineDocString } from './PineDocString'
@@ -8,8 +7,6 @@ import { PineLint } from './PineLint'
 import { checkForNewVersionAndShowChangelog } from './newVersionPopUp'
 import * as vscode from 'vscode'
 
-
-
 export function deactivate(context: vscode.ExtensionContext) {
   PineLint.versionClear()
   // Clean up all the subscriptions in
@@ -17,7 +14,6 @@ export function deactivate(context: vscode.ExtensionContext) {
   PineLint.handleDocumentChange()
   return undefined
 }
-
 
 let timerStart: number = 0
 // Make it so that if there is no change within 5 seconds it runs a lint
@@ -98,10 +94,11 @@ export async function activate(context: vscode.ExtensionContext) {
     // VSCode.RegisterCommand('pine.setSessionId', async () => Class.PineUserInputs.setSessionId()),
     // VSCode.RegisterCommand('pine.clearKEYS', async () => Class.PineUserInputs.clearAllInfo()),
 
-
+    vscode.commands.registerCommand('extension.forceLint', async () => {
+      const response = await Class.PineRequest.lint();
+      if (response) {
+        console.log(response);
+      }
+    }),
   )
-
-
 }
-
-

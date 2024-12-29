@@ -25,10 +25,10 @@ export class PineDocString {
     }
 
     const isMethod = docsMatch.isMethod
-    const desc = docsMatch?.desc ?? docsMatch?.info ?? '...'
+    const desc = docsMatch.desc || docsMatch.info || '...'
     let returnedType
     if (docsMatch?.returnedType || docsMatch?.returnedTypes) {
-      returnedType = Helpers.returnTypeArrayCheck(docsMatch) ?? '?'
+      returnedType = Helpers.returnTypeArrayCheck(docsMatch) || '?'
     } else {
       return
     }
@@ -36,10 +36,9 @@ export class PineDocString {
     const docStringBuild = [`// @function ${isMethod ? '(**method**) - ' : ''}${desc}`]
 
     docsMatch.args.forEach((arg: any) => {
-
-      let docStringParamBuild = `// @param ${arg.name} ${(
-        arg?.info ? arg?.info : '*' + Helpers.replaceType(arg?.type ?? '').trim() + '* ...'
-      )} ${arg?.default ? '(' + arg?.default + ')' : '' ?? ''}`
+      let docStringParamBuild = `// @param ${arg.name} ${
+        arg?.info ? arg.info : '*' + Helpers.replaceType(arg?.type || '').trim() + '* ...'
+      } ${arg?.default ? '(' + arg.default + ')' : ''}`
 
       docStringBuild.push(docStringParamBuild)
     })
@@ -60,13 +59,13 @@ export class PineDocString {
       return '// Invalid type match'
     }
 
-    const desc = docsMatch?.desc ?? docsMatch?.info ?? '...'
+    const desc = docsMatch.desc || docsMatch.info || '...'
     const docStringBuild = [`// @type ${match} - ${desc}`]
 
     docsMatch.fields.forEach((field: any) => {
       docStringBuild.push(
-        `// @field ${field.name} *${Helpers.replaceType(field?.type ?? '')}* - ${
-          field?.desc ?? field?.info ?? '...'
+        `// @field ${field.name} *${Helpers.replaceType(field?.type || '')}* - ${
+          field?.desc || field?.info || '...'
         } ${field.default ? ' (' + field.default + ')' : ''}`,
       )
     })
@@ -86,7 +85,7 @@ export class PineDocString {
     if (!selection) {
       return
     }
-    const code = VSCode?.SelectedText ?? ''
+    const code = VSCode?.SelectedText || ''
 
     let finishedDocstring: string | undefined
 
