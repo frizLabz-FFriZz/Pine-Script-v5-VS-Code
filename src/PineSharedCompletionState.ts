@@ -1,128 +1,171 @@
-// Shared state
-import * as vscode from 'vscode'
+import * as vscode from 'vscode';
 
-/** PineSharedCompletionState class is responsible for managing the state of code completion in Pine Script. */
-export class PineSharedCompletionState {
-  /** Holds the different args for the current completion */
-  private static args: any = null
-  /** Holds the active argument for code completion */
-  private static activeArg: string | number | null = null
-  /** Holds the active parameter index for code completion */
-  static activeParameter: number | null = null
-  /** Holds the last argument index for code completion */
-  static lastArg: boolean = false
-  /** A flag indicating whether signature completions are active */
-  private static sigCompletionsFlag: boolean = false
-  /** Holds the signature completions */
-  private static sigCompletions: Record<string | number, any> = []
-  /** Holds the currently selected completion */
-  private static selectedCompletion: string | undefined = undefined
+/**
+ * Manages the shared state for code completion in Pine Script.
+ *
+ * This class provides a centralized way to track and update the state
+ * of code completion features, including active arguments, parameters,
+ * and completion suggestions. It facilitates communication and
+ * synchronization between different parts of the extension that
+ * contribute to the code completion experience.
+ */
+export class PineCompletionState {
+  private static args: any = null;
+  private static activeArg: string | number | null = null;
+  private static activeParameter: number | null = null;
+  private static isLastArg: boolean = false;
+  private static signatureCompletionsActive: boolean = false;
+  private static signatureCompletions: Record<string | number, any> = [];
+  private static selectedCompletion: string | undefined = undefined;
 
-  /** Gets the currently selected completion.
-   * @returns The currently selected completion.
+  /**
+   * Retrieves the currently selected completion item.
+   *
+   * @returns The currently selected completion, or undefined if none.
    */
-  static get getSelectedCompletion() {
-    return PineSharedCompletionState.selectedCompletion
+  static get selectedCompletionItem(): string | undefined {
+    return PineCompletionState.selectedCompletion;
   }
 
-  /** Sets the currently selected completion.
-   * @param completion - The new selected completion.
+  /**
+   * Sets the currently selected completion item.
+   *
+   * @param completion - The completion item to set as selected.
    */
-  static setSelectedCompletion(completion: string | undefined) {
-    PineSharedCompletionState.selectedCompletion = completion
+  static set selectedCompletionItem(completion: string | undefined) {
+    PineCompletionState.selectedCompletion = completion;
   }
 
-  /** Gets the current arguments object.
+  /**
+   * Retrieves the current arguments object.
+   *
    * @returns The current arguments object.
    */
-  static get getArgs() {
-    return PineSharedCompletionState.args
+  static get currentArguments(): any {
+    return PineCompletionState.args;
   }
 
-  /** Sets the current arguments object.
-   * @param args - The new arguments object.
+  /**
+   * Sets the current arguments object.
+   *
+   * @param args - The arguments object to set.
    */
-  static setArgs(args: any) {
-    PineSharedCompletionState.args = args
+  static set currentArguments(args: any) {
+    PineCompletionState.args = args;
   }
 
-  /** Sets the current completions object.
-   * @param completions - The new completions object.
+  /**
+   * Sets the current completion suggestions.
+   *
+   * Activates signature completions and stores the provided suggestions.
+   *
+   * @param completions - The completion suggestions to set.
    */
-  static setCompletions(completions: Record<string, any>) {
-    if (!completions) {return}
-    PineSharedCompletionState.sigCompletionsFlag = true
-    PineSharedCompletionState.sigCompletions = completions
+  static set completionSuggestions(completions: Record<string, any>) {
+    if (!completions) return;
+    PineCompletionState.signatureCompletionsActive = true;
+    PineCompletionState.signatureCompletions = completions;
   }
 
-  /** Clears the current completions object. */
-  static clearCompletions() {
-    PineSharedCompletionState.sigCompletions = []
-    PineSharedCompletionState.sigCompletionsFlag = false
-    PineSharedCompletionState.activeArg = null
+  /**
+   * Clears the current completion suggestions.
+   *
+   * Deactivates signature completions and resets related state variables.
+   */
+  static clearCompletionSuggestions() {
+    PineCompletionState.signatureCompletions = [];
+    PineCompletionState.signatureCompletionsActive = false;
+    PineCompletionState.activeArg = null;
   }
 
-  /** Gets the current active argument.
-   * @returns The current active argument.
-    */
-  static get getIsLastArg() {
-    return PineSharedCompletionState.lastArg
+  /**
+   * Indicates whether the current argument is the last one.
+   *
+   * @returns True if the current argument is the last, false otherwise.
+   */
+  static get isCurrentArgumentLast(): boolean {
+    return PineCompletionState.isLastArg;
   }
 
-  /** sets the last argument to 0. */
-  static setIsLastArg(toSet: boolean = false) {
-    PineSharedCompletionState.lastArg = toSet
+  /**
+   * Sets whether the current argument is the last one.
+   *
+   * @param isLast - True to indicate the last argument, false otherwise.
+   */
+  static set isCurrentArgumentLast(isLast: boolean) {
+    PineCompletionState.isLastArg = isLast;
   }
 
-  /** Sets the active argument.
+  /**
+   * Sets the active argument and triggers suggestion display if applicable.
+   *
+   * If signature completions are active and the new active argument has
+   * associated suggestions, this method triggers the display of the
+   * suggestion widget.
+   *
    * @param activeArgument - The new active argument.
    */
-  static setActiveArg(activeArgument: any) {
-    PineSharedCompletionState.activeArg = activeArgument
-    if (PineSharedCompletionState.sigCompletions && (PineSharedCompletionState.sigCompletions[activeArgument].length > 0 ?? false)) {
-      vscode.commands.executeCommand('editor.action.triggerSuggest')
+  static set currentActiveArgument(activeArgument: any) {
+    PineCompletionState.activeArg = activeArgument;
+    if (
+      PineCompletionState.signatureCompletionsActive &&
+      PineCompletionState.signatureCompletions[activeArgument]?.length > 0
+    ) {
+      vscode.commands.executeCommand('editor.action.triggerSuggest');
     }
   }
 
-  /** Gets the current active argument.
+  /**
+   * Retrieves the current active argument.
+   *
    * @returns The current active argument.
    */
-  static get getActiveArg() {
-    return PineSharedCompletionState.activeArg
+  static get currentActiveArgument(): string | number | null {
+    return PineCompletionState.activeArg;
   }
 
-  /** Gets the current last argument.
-   * @returns The current last argument.
+  /**
+   * Sets the active parameter index.
+   *
+   * @param activeParameter - The index of the active parameter.
    */
-  static setActiveParameterNumber(activeParameter: number) {
-    PineSharedCompletionState.activeParameter = activeParameter
+  static set activeParameterIndex(activeParameter: number) {
+    PineCompletionState.activeParameter = activeParameter;
   }
 
-  /** Gets the active param argument.
-   * @returns The active param number.
+  /**
+   * Retrieves the active parameter index.
+   *
+   * @returns The index of the active parameter.
    */
-  static get getActiveParameterNumber() {
-    return PineSharedCompletionState.activeParameter
+  static get activeParameterIndex(): number | null {
+    return PineCompletionState.activeParameter;
   }
 
-  /** Gets the current completions object.
-   * @returns The current completions object.
+  /**
+   * Retrieves the current completion suggestions.
+   *
+   * @returns The current completion suggestions.
    */
-  static get getCompletions() {
-    return PineSharedCompletionState.sigCompletions
+  static get completionSuggestions(): Record<string | number, any> {
+    return PineCompletionState.signatureCompletions;
   }
 
-  /** Gets the current sig completions flag.
-   * @returns The current sig completions flag.
+  /**
+   * Indicates whether signature completions are currently active.
+   *
+   * @returns True if signature completions are active, false otherwise.
    */
-  static get getArgumentCompletionsFlag() {
-    return PineSharedCompletionState.sigCompletionsFlag
+  static get areArgumentCompletionsActive(): boolean {
+    return PineCompletionState.signatureCompletionsActive;
   }
 
-  /** Sets the current signature completions flag.
-   * @param flag - The new signature completions flag.
+  /**
+   * Sets whether signature completions are active.
+   *
+   * @param flag - True to activate signature completions, false to deactivate.
    */
-  static setArgumentCompletionsFlag(flag: boolean) {
-    PineSharedCompletionState.sigCompletionsFlag = flag
+  static set areArgumentCompletionsActive(flag: boolean) {
+    PineCompletionState.signatureCompletionsActive = flag;
   }
 }
