@@ -9,7 +9,7 @@ import * as vscode from 'vscode';
  * synchronization between different parts of the extension that
  * contribute to the code completion experience.
  */
-export class PineCompletionState {
+export class PineSharedCompletionState {
   private static args: any = null;
   private static activeArg: string | number | null = null;
   private static activeParameter: number | null = null;
@@ -24,7 +24,7 @@ export class PineCompletionState {
    * @returns The currently selected completion, or undefined if none.
    */
   static get selectedCompletionItem(): string | undefined {
-    return PineCompletionState.selectedCompletion;
+    return PineSharedCompletionState.selectedCompletion;
   }
 
   /**
@@ -33,7 +33,7 @@ export class PineCompletionState {
    * @param completion - The completion item to set as selected.
    */
   static set selectedCompletionItem(completion: string | undefined) {
-    PineCompletionState.selectedCompletion = completion;
+    PineSharedCompletionState.selectedCompletion = completion;
   }
 
   /**
@@ -42,7 +42,7 @@ export class PineCompletionState {
    * @returns The current arguments object.
    */
   static get currentArguments(): any {
-    return PineCompletionState.args;
+    return PineSharedCompletionState.args;
   }
 
   /**
@@ -51,7 +51,7 @@ export class PineCompletionState {
    * @param args - The arguments object to set.
    */
   static set currentArguments(args: any) {
-    PineCompletionState.args = args;
+    PineSharedCompletionState.args = args;
   }
 
   /**
@@ -63,8 +63,8 @@ export class PineCompletionState {
    */
   static set completionSuggestions(completions: Record<string, any>) {
     if (!completions) return;
-    PineCompletionState.signatureCompletionsActive = true;
-    PineCompletionState.signatureCompletions = completions;
+    PineSharedCompletionState.signatureCompletionsActive = true;
+    PineSharedCompletionState.signatureCompletions = completions;
   }
 
   /**
@@ -73,9 +73,9 @@ export class PineCompletionState {
    * Deactivates signature completions and resets related state variables.
    */
   static clearCompletionSuggestions() {
-    PineCompletionState.signatureCompletions = [];
-    PineCompletionState.signatureCompletionsActive = false;
-    PineCompletionState.activeArg = null;
+    PineSharedCompletionState.signatureCompletions = [];
+    PineSharedCompletionState.signatureCompletionsActive = false;
+    PineSharedCompletionState.activeArg = null;
   }
 
   /**
@@ -84,7 +84,7 @@ export class PineCompletionState {
    * @returns True if the current argument is the last, false otherwise.
    */
   static get isCurrentArgumentLast(): boolean {
-    return PineCompletionState.isLastArg;
+    return PineSharedCompletionState.isLastArg;
   }
 
   /**
@@ -93,7 +93,7 @@ export class PineCompletionState {
    * @param isLast - True to indicate the last argument, false otherwise.
    */
   static set isCurrentArgumentLast(isLast: boolean) {
-    PineCompletionState.isLastArg = isLast;
+    PineSharedCompletionState.isLastArg = isLast;
   }
 
   /**
@@ -106,10 +106,10 @@ export class PineCompletionState {
    * @param activeArgument - The new active argument.
    */
   static set currentActiveArgument(activeArgument: any) {
-    PineCompletionState.activeArg = activeArgument;
+    PineSharedCompletionState.activeArg = activeArgument;
     if (
-      PineCompletionState.signatureCompletionsActive &&
-      PineCompletionState.signatureCompletions[activeArgument]?.length > 0
+      PineSharedCompletionState.signatureCompletionsActive &&
+      PineSharedCompletionState.signatureCompletions[activeArgument]?.length > 0
     ) {
       vscode.commands.executeCommand('editor.action.triggerSuggest');
     }
@@ -121,7 +121,7 @@ export class PineCompletionState {
    * @returns The current active argument.
    */
   static get currentActiveArgument(): string | number | null {
-    return PineCompletionState.activeArg;
+    return PineSharedCompletionState.activeArg;
   }
 
   /**
@@ -130,7 +130,7 @@ export class PineCompletionState {
    * @param activeParameter - The index of the active parameter.
    */
   static set activeParameterIndex(activeParameter: number) {
-    PineCompletionState.activeParameter = activeParameter;
+    PineSharedCompletionState.activeParameter = activeParameter;
   }
 
   /**
@@ -139,7 +139,7 @@ export class PineCompletionState {
    * @returns The index of the active parameter.
    */
   static get activeParameterIndex(): number | null {
-    return PineCompletionState.activeParameter;
+    return PineSharedCompletionState.activeParameter;
   }
 
   /**
@@ -148,7 +148,7 @@ export class PineCompletionState {
    * @returns The current completion suggestions.
    */
   static get completionSuggestions(): Record<string | number, any> {
-    return PineCompletionState.signatureCompletions;
+    return PineSharedCompletionState.signatureCompletions;
   }
 
   /**
@@ -157,7 +157,7 @@ export class PineCompletionState {
    * @returns True if signature completions are active, false otherwise.
    */
   static get areArgumentCompletionsActive(): boolean {
-    return PineCompletionState.signatureCompletionsActive;
+    return PineSharedCompletionState.signatureCompletionsActive;
   }
 
   /**
@@ -166,6 +166,6 @@ export class PineCompletionState {
    * @param flag - True to activate signature completions, false to deactivate.
    */
   static set areArgumentCompletionsActive(flag: boolean) {
-    PineCompletionState.signatureCompletionsActive = flag;
+    PineSharedCompletionState.signatureCompletionsActive = flag;
   }
 }
