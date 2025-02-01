@@ -37,8 +37,7 @@ export class Helpers {
   static replaceSyntax(str: string) {
     try {
       if (!str || typeof str !== 'string') { return str }
-      const out = this.regexToReplace.reduce((acc, [regex, replacement]) => acc.replace(regex, replacement), str)
-      return out
+      return this.regexToReplace.reduce((acc, [regex, replacement]) => acc.replace(regex, replacement), str);
     } catch (e) {
       console.error(e, 'replaceSyntax')
       return str

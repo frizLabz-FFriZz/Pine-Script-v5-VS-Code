@@ -60,8 +60,7 @@ export class PineHoverProvider implements vscode.HoverProvider {
       return this.annotationHover()
     }
 
-    const hoverReturn = await this.getFirstTruthyHover()
-    return hoverReturn
+    return await this.getFirstTruthyHover();
   }
 
   /** This function produces an array of hover functions.
@@ -128,8 +127,8 @@ export class PineHoverProvider implements vscode.HoverProvider {
       type,
       new RegExp(
         '(?<!(?:int|float|bool|string|color|line|label|box|table|linefill|map|matrix|array)\\s+)(?:\\b' +
-          hoverRegex +
-          ')(?!>)(?!\\s*\\.|\\w|\\()(?:\\[\\])?',
+        hoverRegex +
+        ')(?!>)(?!\\s*\\.|\\w|\\()(?:\\[\\])?',
         'g',
       ),
       'type',
@@ -246,10 +245,10 @@ export class PineHoverProvider implements vscode.HoverProvider {
       variable,
       new RegExp(
         '(?<=(?:' +
-          hoverRegex +
-          '|<)?)(?!\\[)(?:(?!,\\s*[\\w\\[\\]<>.]+\\s+)\\b(?:' +
-          hoverRegex +
-          ')\\b(?!\\s*[^)]+\\s+=>))(?!\\w|\\()\\b',
+        hoverRegex +
+        '|<)?)(?!\\[)(?:(?!,\\s*[\\w\\[\\]<>.]+\\s+)\\b(?:' +
+        hoverRegex +
+        ')\\b(?!\\s*[^)]+\\s+=>))(?!\\w|\\()\\b',
         '',
       ),
       'variable',
@@ -299,10 +298,8 @@ export class PineHoverProvider implements vscode.HoverProvider {
     transformKey: (key: string) => string,
   ): Promise<vscode.Hover | undefined> {
     // If the regexId is not 'param' and either docs or hoverRegex is not defined, return undefined
-    if (regexId !== 'param') {
-      if (!docs) {
-        return
-      }
+    if (regexId !== 'param' && !docs) {
+      return
     }
 
     // Set the type of the symbol based on the regexId
@@ -341,9 +338,7 @@ export class PineHoverProvider implements vscode.HoverProvider {
     const markdown = await this.createHoverMarkdown(resolvedKeyedDocs, resolvedKey, resolvedNamespace, regexId)
 
     // Create a new hover with the markdown and word range
-    const hover = new vscode.Hover(markdown, wordRange)
-    // this.hoverCache.set([key, regexId], hover)
-    return hover
+    return new vscode.Hover(markdown, wordRange);
   }
 
   /** Determines whether the documentation matches a parameter, method, or function.

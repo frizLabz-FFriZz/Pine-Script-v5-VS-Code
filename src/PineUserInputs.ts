@@ -8,7 +8,7 @@ export class PineUserInputs {
   private readonly USERNAME_KEY = 'username'
   private secrets!: vscode.SecretStorage
   context!: vscode.ExtensionContext
-  
+
   constructor(context: vscode.ExtensionContext | undefined) {
     if (context) {
       this.context = context
@@ -31,7 +31,7 @@ export class PineUserInputs {
       return
     }
     if (!username) {
-      username = await VSCode.Window.showInputBox({ 
+      username = await VSCode.Window.showInputBox({
         prompt: 'Pine: Enter your username',
       })
     }

@@ -55,9 +55,7 @@ export class PineHoverMethod {
       }
 
       const methods = this.generatePossibleMethodNames();
-      let matchedDocs = await this.findDocumentationForMethods(methods);
-      // PineConsole.log('isMethod', `Matched docs: ${matchedDocs}`);
-      return matchedDocs;
+      return await this.findDocumentationForMethods(methods);
 
     } catch (e: any) {
       console.error('isMethod', `Error: ${e.message}`);
@@ -76,12 +74,10 @@ export class PineHoverMethod {
       const split: string[] = key.split('.');
       const functionName = split.pop();
       const namespace = split.join('.');
-      const result = {
+      return {
         functionName: functionName ?? '',
         namespace: namespace ?? '',
       };
-      // PineConsole.log('splitNamespaceAndFunction', `Result: ${result.namespace}, ${result.functionName}`);
-      return result;
     } catch (e: any) {
       console.error('splitNamespaceAndFunction', `Error: ${e.message}`);
       throw e;
@@ -240,10 +236,8 @@ export class PineHoverMethod {
           this.namespace = docsGet.args[0].name
         }
 
-        if (this.namespace) {
-          if (docsGet?.syntax) {
-            docsGet.syntax = docsGet.syntax.replace(/[\w.]*?(\w+\(.+)/, `${this.namespace}.$1`)
-          }
+        if (this.namespace && docsGet?.syntax) {
+          docsGet.syntax = docsGet.syntax.replace(/[\w.]*?(\w+\(.+)/, `${this.namespace}.$1`)
         }
 
         // PineConsole.log('findDocumentationForMethods', `Second docsGet check: ${docsGet}`);
