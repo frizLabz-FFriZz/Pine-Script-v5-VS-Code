@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/FFriZ/Pine-Script-v5-VS-Code"
   },
-  "version": "0.1.7",
+  "version": "0.1.8",
   "type": "commonjs",
   "engines": {
     "vscode": "^1.93.0",
@@ -61,6 +61,12 @@
         "id": "Dark Theme (Original)",
         "uiTheme": "vs-dark",
         "path": "themes/Pine-Original.json"
+      },
+      {
+        "label": "Pine-V4-Classic",
+        "id": "Dark V4 Theme (Deep Coverage)",
+        "uiTheme": "vs-dark",
+        "path": "themes/Pine-classic-v4.json"
       },
       {
         "label": "Pine-Basic",
@@ -312,7 +318,7 @@
       {
         "language": "pine",
         "scopeName": "source.pine",
-        "path": "themes/pine.tmLanguage.json"
+        "path": "syntaxes/pine.tmLanguage.json"
       }
     ]
   },

@@ -79,7 +79,7 @@ export class PineFormatResponse {
       Class.PineDocsManager.setImportDocs(imports)
     }
   }
-    
+
   /**
    * Set functions in PineDocsManager.
    */
@@ -91,7 +91,7 @@ export class PineFormatResponse {
     let funcs: any[] = [{ docs: [] }]
     let funcsCompletions: any[] = [{ docs: [] }]
 
-   
+
     for (const doc of functions) { // Iterate over each doc in functions
       for (let func of doc.docs) {  // Iterate over each function in doc.docs
         // Match the function syntax to extract the returned type
@@ -174,7 +174,7 @@ export class PineFormatResponse {
             buildFields.push(field) // Add the field to the buildFields array
             fields[0].docs.push(field) // Add the field to the docs array of the first object in fields
           })
-          
+
           type.syntax = syntax.join('\n    ') // Join the syntax array into a string and set the syntax property of the type
           type.fields = buildFields  // Set the fields property of the type to the buildFields array
           UDT[0].docs.push(type) // Add the type to the docs array of the first object in UDT
@@ -203,15 +203,15 @@ export class PineFormatResponse {
 
       this.response = response.result
     }
-    if (this.shouldRunConversion()) {    
+    if (this.shouldRunConversion()) {
       this.setAliases()
       this.setImports()
       this.setFunctions()
       this.setVariables()
-      this.setUDT() 
-      this.getLibData()  
+      this.setUDT()
+      this.getLibData()
       Class.PineParser.parseDoc()
-      Class.PineParser.parseLibs() 
+      Class.PineParser.parseLibs()
     }
 
     return this.confirmed

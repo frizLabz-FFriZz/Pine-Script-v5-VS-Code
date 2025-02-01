@@ -21,7 +21,7 @@ export class PineDocsManager {
     'polyline',
     'chart.point',
   ]
-  
+
   importAliases: string[] = []
   aliases: string[] = []
   Docs: Record<string, any>
@@ -185,14 +185,14 @@ export class PineDocsManager {
   getFields2(): Record<string, any>[] {
     return this.fields2Docs;
   }
-  
+
 
   /**
    * Retrieves the typedocs for the getSwitch function.
    * @param key - The key to switch on.
    * @returns The typedocs for the getSwitch function.
    */
-  getSwitch(key: string): Record<string, any>[]  {
+  getSwitch(key: string): Record<string, any>[] {
     switch (key) {
       case 'types':
         return this.getTypes()
@@ -344,9 +344,9 @@ export class PineDocsManager {
 
           result = [...result, ...docsForKey]
         } else {
-        // Handle the case where docsForKey is not an array
+          // Handle the case where docsForKey is not an array
           console.error(`Expected an array for key ${key}, but got:`, docsForKey)
-        // Depending on your needs, you might throw an error, continue, or apply a default value
+          // Depending on your needs, you might throw an error, continue, or apply a default value
         }
       }
       return [...new Set(result)]
@@ -377,21 +377,21 @@ export class PineDocsManager {
 
       for (const k of key) {
         const currentMap = this.getMap(k);
-  
+
         for (const doc of docs) {
-          const name = doc.name;
+          const { name } = doc;
           let currentDocs = currentMap.get(name);
-  
+
           if (currentDocs && doc[keyType] && doc[keyType].length > 0) {
             // Ensure the currentDocs[keyType] exists and is an array.
             if (!Array.isArray(currentDocs[keyType])) {
               currentDocs[keyType] = [];
             }
-  
+
             for (let arg of doc[keyType]) {
               const argName = arg.name;
               let currentArg = currentDocs[keyType].find((a: any) => a.name === argName);
-  
+
               if (currentArg) {
                 // Update properties of the existing argument.
                 currentArg.required = arg.required;
@@ -401,7 +401,7 @@ export class PineDocsManager {
                 if (currentArg.type === 'undefined type') {
                   currentArg.type = arg.type;
                 }
-              } 
+              }
             }
             // Update the map with the modified document.
             currentMap.set(name, currentDocs);
@@ -414,8 +414,8 @@ export class PineDocsManager {
       console.error(error)
     }
   }
-  
-  
+
+
   /** 
    * the setDocs function is used to set the docs for a given key
    * @param newDocs - The new docs to set.
@@ -445,7 +445,7 @@ export class PineDocsManager {
       if (!newDocs || newDocs.length === 0) {
         //console.log('No new docs to merge')
         return currentDocs;
-      } 
+      }
 
       let mergedDocs: any[] = [];
       for (const doc of newDocs) {

@@ -50,7 +50,7 @@ export class PineSharedCompletionState {
    * @param completions - The new completions object.
    */
   static setCompletions(completions: Record<string, any>) {
-    if (!completions) {return}
+    if (!completions) { return }
     PineSharedCompletionState.sigCompletionsFlag = true
     PineSharedCompletionState.sigCompletions = completions
   }

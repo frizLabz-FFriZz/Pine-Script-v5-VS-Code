@@ -161,9 +161,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         const wordBoundaryRegexArgs = /(?:\(|,)?\s*\b[\w.]+$/
         const argStartMatch = wordBoundaryRegexArgs.exec(textBeforeCursor)
         let argStart = argStartMatch ? position.character - argStartMatch[0].length : position.character
-        if (argStart < 0) {
-          argStart = 0
-        }
+        argStart = Math.max(argStart, 0)
 
         if (!PineSharedCompletionState.getIsLastArg) {
           insertText += ''
@@ -178,9 +176,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         const wordBoundaryRegex = /\b[\w.]+$/
         const wordStartMatch = wordBoundaryRegex.exec(textBeforeCursor)
         let wordStart = wordStartMatch ? position.character - wordStartMatch[0].length : position.character
-        if (wordStart < 0) {
-          wordStart = 0
-        }
+        wordStart = Math.max(wordStart, 0)
 
         // Set the replacement range and insert text of the completion item
         completionItem.insertText = insertText
@@ -317,10 +313,14 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
 
             if (foundIndex === -1) {
               typoTrack++;
-              if (typoTrack > 1) break;
+              if (typoTrack > 1) {
+                break;
+              }
             } else if (foundIndex !== matchIndex) {
               minorTypoCount++;
-              if (minorTypoCount >= 3) break;
+              if (minorTypoCount >= 3) {
+                break;
+              }
               matchIndex = foundIndex + 1;
             } else {
               matchIndex++;
@@ -402,7 +402,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         'controls',
         'annotations',
         'fields',
-        'fields2'
+        'fields2',
       );
 
       const lowerMatch = match.toLowerCase();
@@ -421,10 +421,14 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
 
             if (foundIndex === -1) {
               majorTypoCount++;
-              if (majorTypoCount > 1) break;
+              if (majorTypoCount > 1) {
+                break;
+              }
             } else if (foundIndex !== matchIndex) {
               minorTypoCount++;
-              if (minorTypoCount >= 3) break;
+              if (minorTypoCount >= 3) {
+                break;
+              }
               matchIndex = foundIndex + 1;
             } else {
               matchIndex++;

@@ -8,7 +8,7 @@ export class PineRenameProvider implements vscode.RenameProvider {
     if (!wordRange) {
       throw new Error('No word selected.');
     }
-  
+
     const oldName = document.getText(wordRange);
     const wordPattern = new RegExp(`\\b${oldName}\\b(?=\\s*(?:\\?|=|:=|\\.)?)`, 'g');
 
@@ -23,7 +23,7 @@ export class PineRenameProvider implements vscode.RenameProvider {
         edit.replace(document.uri, matchRange, newName);
       }
     }
-  
+
     return edit;
   }
 }

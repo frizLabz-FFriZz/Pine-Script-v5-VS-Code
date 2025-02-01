@@ -10,33 +10,31 @@ interface CompletionItem {
   preselect?: boolean; // Make preselect an optional property
 }
 
-
 /**
  * Provides signature help for Pine functions.
  */
 export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
-  signatureHelp: vscode.SignatureHelp = new vscode.SignatureHelp()
-  line: string = ''
-  lineLength: number = 0
-  position: vscode.Position = new vscode.Position(0, 0)
-  document: vscode.TextDocument | undefined
-  paramIndexes: string[][] = []
-  activeArg: string | null = null
-  activeSignature: number = 0
-  activeFunction: string | null = null
-  activeParameter: number | null = null
-  commaSwitch: number = 0
-  lastIndex: number = 0
-  hasEqual: boolean = false
-  usedParams: string[] = []
-  isParamOrArg: boolean = false
-  argsLength: number = 0
-  offset: number = 0
-  newFunction: boolean = false
-  keyValueMatchesSave: any = null
-  lastSelection: string | null = null
-  docsToMatchArgumentCompletions?: Map<string | number, PineDocsManager> = Class.PineDocsManager.getMap('variables', 'constants', 'controls', 'types')
-
+  private signatureHelp: vscode.SignatureHelp = new vscode.SignatureHelp()
+  private line: string = ''
+  private lineLength: number = 0
+  private position: vscode.Position = new vscode.Position(0, 0)
+  private document: vscode.TextDocument | undefined
+  private paramIndexes: string[][] = []
+  private activeArg: string | null = null
+  private activeSignature: number = 0
+  private activeFunction: string | null = null
+  private activeParameter: number | null = null
+  private commaSwitch: number = 0
+  private lastIndex: number = 0
+  private hasEqual: boolean = false
+  private usedParams: string[] = []
+  private isParamOrArg: boolean = false
+  private argsLength: number = 0
+  private offset: number = 0
+  private newFunction: boolean = false
+  private keyValueMatchesSave: any = null
+  private lastSelection: string | null = null
+  private docsToMatchArgumentCompletions?: Map<string | number, PineDocsManager> = Class.PineDocsManager.getMap('variables', 'constants', 'controls', 'types')
 
   /**
    * Provides signature help for a Pine function.
@@ -53,647 +51,511 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
     _context: vscode.SignatureHelpContext, // eslint-disable-line @typescript-eslint/no-unused-vars
   ): Promise<vscode.SignatureHelp | null> {
     try {
-      // Get the current line of text
-      this.line = document.lineAt(position).text
-      this.position = position
-      this.document = document
-      this.signatureHelp = new vscode.SignatureHelp()
+      this.initializeState(document, position);
 
-      // Create a new SignatureHelp object
-      // Find the last opening and closing parentheses before the current position
-      const lastOpeningParenIndex = this.line.lastIndexOf('(', this.position.character)
-      let lastCloseParenIndex = this.line.lastIndexOf(')', this.position.character)
-      if (lastCloseParenIndex < 0) {
-        lastCloseParenIndex = 0
-      }
-      // If the current position is after the last closing parenthesis, return null
-      if (this.position.isAfter(new vscode.Position(this.position.line, lastCloseParenIndex))) {
-        this.activeFunction = null
-        this.commaSwitch = 0
-        this.argsLength = 0
-        this.activeSignature = 0
-        this.activeParameter = 0
-        this.offset = 0
-        this.activeArg = null
-        this.newFunction = true
-        this.lastSelection = null
-        PineSharedCompletionState.clearCompletions()
-        return null
-      }
-      // Extract the function name from the line
-      const trim = this.line.slice(0, lastOpeningParenIndex)
-      const trimMatch = trim.match(/([\w.]+)$/g)
-      const functionMatch = /.*?([\w.]+)\s*\(/.exec(this.line)
-
-      // If new function detected, reset active signature and parameter
-      if (functionMatch && functionMatch?.[1] !== this.activeFunction) {
-        this.activeFunction = functionMatch?.[1] ?? null
-        this.activeSignature = 0
-        this.activeParameter = 0
-        this.commaSwitch = 0
-        this.argsLength = 0
-        this.offset = 0
-        this.activeArg = null
-        this.newFunction = true
-        this.lastSelection = null
+      if (this.shouldReturnEarly()) {
+        this.resetState();
+        return null;
       }
 
-      // Get the function documentation
-      let toGet = trimMatch?.[0]
-
-      if (!toGet) {
-        return null
+      if (this.detectNewFunction()) {
+        this.resetFunctionState();
       }
 
-      let isMethod = false
-      let funcMapFlag = false
-      let methodMapFlag = false
-      let map: Map<string, PineDocsManager> | null = null
-
-      map = Class.PineDocsManager.getMap('functions', 'functions2')
-      if (map.has(toGet)) {
-        funcMapFlag = true
+      const functionName = this.extractFunctionName();
+      if (!functionName) {
+        return null;
       }
 
-      if (!funcMapFlag) {
-        map = Class.PineDocsManager.getMap('methods', 'methods2')
-        let memKey = null
-        for (const key of map.keys()) {
-          let keySplit = key
-          if (key.includes('.')) {
-            const split = key.split('.')
-            keySplit = split[1]
-            // console.log(namespace, 'namespace')
-            // console.log(keySplit, 'keySplit')
-          }
-          const split = toGet.split('.')
-          const trimSplit = split[1]
-          const trimSplitNamespace = split[0]
-          // console.log(trimSplit, 'trimSplit')
-          // console.log(trimSplitNamespace, 'trimSplitNamespace')
-          let trimSplitType = null
-          // console.log(keySplit, 'keySplit', trimSplit, 'trimSplit')
-          if (keySplit === trimSplit) {
-            trimSplitType = Helpers.identifyType(trimSplitNamespace)
-            // console.log(trimSplitType, 'trimSplitType')
-            if (!memKey) {
-              memKey = key
-            }
-            toGet = key
-            if (map.has(key)) {
-              if (trimSplitType) {
-                const docs = map.get(key)
-                if (typeof trimSplitType === 'string') {
-                  // console.log(docs?.thisType, 'docs?.thisType')
-                  if (!docs?.thisType.includes(Helpers.replaceType(trimSplitType).replace(/<[^>]+>|\[\]/g, ''))) {
-                    // console.log('no match')
-                    continue
-                  } else {
-                    // console.log('match')
-                  }
-                }
-              }
-
-              isMethod = true
-              methodMapFlag = true
-              break
-            }
-          } else if (memKey) {
-            // console.log(memKey, 'else if memKey')
-            if (map.has(memKey)) {
-              // console.log('has memKey')
-              isMethod = true
-              methodMapFlag = true
-              break
-            }
-          }
-        }
+      const { isMethod, map } = this.determineFunctionType(functionName);
+      if (!map) {
+        return null;
       }
 
-      if (!funcMapFlag && !methodMapFlag) {
-        return null
-      }
-
-      if (!toGet) {
-        return null
-      }
-
-      // If the function name is not the same as the active function, reset the active signature and parameter
-      PineSharedCompletionState.clearCompletions()
-      // Early return if no function match
-      const docs: any = map.get(toGet)
+      const docs = map.get(functionName);
       if (!docs) {
-        return null
+        return null;
       }
 
-      let methodString = null
-      if (isMethod) {
-        methodString = trimMatch?.[0]
-        if (!docs.thisType && !docs.methodString) {
-          isMethod = false
-        }
-      }
-      // Build the signatures for the function
-      const [buildSignatures, activeSignatureHelper, paramIndexes] = this.buildSignatures(docs, isMethod, methodString)
-      this.paramIndexes = paramIndexes
-      this.signatureHelp.signatures = buildSignatures
+      const methodString = isMethod ? this.extractMethodString(docs) : null;
+      const [buildSignatures, activeSignatureHelper, paramIndexes] = this.buildSignatures(docs, isMethod, methodString);
+      this.paramIndexes = paramIndexes;
+      this.signatureHelp.signatures = buildSignatures;
 
-      // Calculate the active parameter and signature
-      this.signatureHelp.activeParameter = this.calculateActiveParameter()
-      this.signatureHelp.activeSignature = this.calculateActiveSignature(activeSignatureHelper)
+      this.signatureHelp.activeParameter = this.calculateActiveParameter();
+      this.signatureHelp.activeSignature = this.calculateActiveSignature(activeSignatureHelper);
 
-      PineSharedCompletionState.setActiveParameterNumber(this.signatureHelp.activeParameter)
+      PineSharedCompletionState.setActiveParameterNumber(this.signatureHelp.activeParameter);
 
-      await this.sendCompletions(docs, activeSignatureHelper[this.signatureHelp.activeSignature])
-      await this.setActiveArg(this.signatureHelp)
+      await this.sendCompletions(docs, activeSignatureHelper[this.signatureHelp.activeSignature]);
+      await this.setActiveArg(this.signatureHelp);
 
-      // Return the signature help
-      return this.signatureHelp
-    } catch (e) {
-      // If an error occurs, reset the active signature and return null
-      console.error('signatureProvider error', e, '')
-      this.activeSignature = 0
-      return null
+      return this.signatureHelp;
+    } catch (error) {
+      console.error('signatureProvider error', error);
+      this.activeSignature = 0;
+      return null;
     }
   }
 
   /**
-   * Simplifies building signatures for a Pine function, focusing on readability.
-   * @param docs - Documentation manager with Pine function details.
-   * @param isMethod - Flag indicating if the target is a method.
-   * @param methodString - Optional method string for namespace extraction.
-   * @returns Tuple with signature information, active signature helper data, and parameter indexes.
+   * Initializes the state of the provider.
+   * @param document - The current document.
+   * @param position - The current position.
+   */
+  private initializeState(document: vscode.TextDocument, position: vscode.Position): void {
+    this.line = document.lineAt(position).text;
+    this.position = position;
+    this.document = document;
+    this.signatureHelp = new vscode.SignatureHelp();
+  }
+
+  /**
+   * Determines if the provider should return early.
+   * @returns True if the provider should return early, false otherwise.
+   */
+  private shouldReturnEarly(): boolean {
+    const lastCloseParenIndex = this.line.lastIndexOf(')', this.position.character) > -1 ? this.line.lastIndexOf(')', this.position.character) : 0;
+    return this.position.isAfter(new vscode.Position(this.position.line, lastCloseParenIndex));
+  }
+
+  /**
+   * Resets the state of the provider.
+   */
+  private resetState(): void {
+    this.activeFunction = null;
+    this.commaSwitch = 0;
+    this.argsLength = 0;
+    this.activeSignature = 0;
+    this.activeParameter = 0;
+    this.offset = 0;
+    this.activeArg = null;
+    this.newFunction = true;
+    this.lastSelection = null;
+    PineSharedCompletionState.clearCompletions();
+  }
+
+  /**
+   * Detects if a new function is being typed.
+   * @returns True if a new function is detected, false otherwise.
+   */
+  private detectNewFunction(): boolean {
+
+    const functionMatch = /.*?([\w.]+)\s*\(/.exec(this.line);
+    return !!functionMatch && functionMatch[1] !== this.activeFunction;
+  }
+
+  /**
+   * Resets the state related to the current function.
+   */
+  private resetFunctionState(): void {
+    this.activeFunction = /.*?([\w.]+)\s*\(/.exec(this.line)?.[1] ?? null;
+    this.activeSignature = 0;
+    this.activeParameter = 0;
+    this.commaSwitch = 0;
+    this.argsLength = 0;
+    this.offset = 0;
+    this.activeArg = null;
+    this.newFunction = true;
+    this.lastSelection = null;
+  }
+
+  /**
+   * Extracts the function name from the current line.
+   * @returns The function name or null if not found.
+   */
+  private extractFunctionName(): string | null {
+    const lastOpeningParenIndex = this.line.lastIndexOf('(', this.position.character);
+    const trim = this.line.slice(0, lastOpeningParenIndex);
+    const trimMatch = trim.match(/([\w.]+)$/g);
+    return trimMatch?.[0] || null;
+  }
+
+  /**
+   * Determines if the function is a method and gets the appropriate documentation map.
+   * @param functionName - The name of the function.
+   * @returns An object containing whether it's a method and the relevant map.
+   */
+  private determineFunctionType(functionName: string): { isMethod: boolean; map: Map<string, PineDocsManager> | null } {
+    let isMethod = false;
+    let map: Map<string, PineDocsManager> | null = null;
+
+    const funcMap = Class.PineDocsManager.getMap('functions', 'functions2');
+    if (funcMap.has(functionName)) {
+      return { isMethod, map: funcMap };
+    }
+
+    const methodMap = Class.PineDocsManager.getMap('methods', 'methods2');
+    for (const key of methodMap.keys()) {
+      const keySplit = key.includes('.') ? key.split('.')[1] : key;
+      const [namespace, methodName] = functionName.split('.');
+
+      if (keySplit === methodName) {
+        const type = Helpers.identifyType(namespace);
+        const docs = methodMap.get(key);
+
+        if (!type || !docs || (typeof type === 'string' && !docs.thisType.includes(Helpers.replaceType(type).replace(/<[^>]+>|\[\]/g, '')))) {
+          continue;
+        }
+
+        isMethod = true;
+        return { isMethod, map: methodMap };
+      }
+    }
+
+    return { isMethod, map };
+  }
+
+  /**
+   * Extracts the method string if the function is a method.
+   * @param docs - The documentation for the function.
+   * @returns The method string or null if not found.
+   */
+  private extractMethodString(docs: PineDocsManager): string | null {
+    const trimMatch = this.line.slice(0, this.line.lastIndexOf('(', this.position.character)).match(/([\w.]+)$/g);
+    const methodString = trimMatch?.[0] || null;
+    return (methodString && docs.thisType) ? methodString : null;
+  }
+
+  /**
+   * Builds the signature information for the function.
+   * @param docs - The documentation for the function.
+   * @param isMethod - Whether the function is a method.
+   * @param methodString - The method string if applicable.
+   * @returns The signature information, active signature helper, and parameter indexes.
    */
   private buildSignatures(
     docs: PineDocsManager,
     isMethod: boolean = false,
     methodString: string | null = null,
   ): [vscode.SignatureInformation[], Record<string, string>[][], string[][]] {
-    // Initialize an array to hold the signature information
-    const signatureInfo: vscode.SignatureInformation[] = []
-    // Initialize an array to hold the active signature help
-    const activeSignatureHelper: Record<string, string>[][] = []
-    let signatureParamIndexes: string[][] = []
+    const signatureInfo: vscode.SignatureInformation[] = [];
+    const activeSignatureHelper: Record<string, string>[][] = [];
+    let signatureParamIndexes: string[][] = [];
 
-    // Extract the syntax from the function
-    // If the syntax includes a newline, split it into multiple lines
-    let syntax = (isMethod ? docs.methodSyntax : docs.syntax) ?? docs.syntax
+    let syntax = (isMethod ? docs.methodSyntax : docs.syntax) ?? docs.syntax;
+    syntax = Array.isArray(syntax) ? syntax : [syntax];
 
-    if (syntax.includes('\n')) {
-      syntax = syntax.split('\n')
-    } else {
-      syntax = [syntax]
+    if (isMethod && methodString) {
+      const namespace = methodString.split('.')[0];
+      syntax = syntax.map((line: string) => {
+        return line.includes('(') ? `${namespace}.${line}` : line.replace(/(?:[^.]+\.)?(.+)/, `${namespace}.$1`);
+      });
     }
 
-    if (isMethod) {
-      const namespace = methodString?.split('.')[0]
-      syntax = syntax.map((i: string) => {
-        if (/^\w+\([^)]+\)/.test(i)) {
-          return `${namespace}.${i}`
-        } else {
-          return i.replace(/(?:[^.]+\.)?(.+)/, `${namespace}.$1`)
-        }
-      })
+    for (const syn of syntax) {
+      const sanitizedSyntax = Helpers.replaceFunctionSignatures(Helpers.replaceType(syn));
+      const [parameters, paramIndexes, activeSignatureHelp, updatedSyntax] = this.buildParameters(docs, sanitizedSyntax);
+
+      const signatureInformation = new vscode.SignatureInformation(updatedSyntax);
+      signatureInformation.parameters = parameters;
+      signatureParamIndexes.push(paramIndexes);
+      signatureInfo.push(signatureInformation);
+      activeSignatureHelper.push(activeSignatureHelp);
     }
-    // For each line of syntax...
-    for (let syn of syntax) {
-      // Remove the series, simple, const, literal, input type descriptors
-      syn = Helpers.replaceType(syn)
-      syn = Helpers.replaceFunctionSignatures(syn)
-      // Build the parameters for the function
-      const [parametersOut, paramIndexesOut, activeSignatureHelpOut, synOut] = this.buildParameters(docs, syn)
-      // add overload number to syntax display
-      const signatureInformation = new vscode.SignatureInformation(synOut)
-      // Assign the parameters to the SignatureInformation object
-      signatureInformation.parameters = parametersOut
-      // Add the parameter indexes to the paramIndexes array
-      signatureParamIndexes.push(paramIndexesOut)
-      // Add the SignatureInformation object to the signature info array
-      signatureInfo.push(signatureInformation)
-      // Add the active signature help to the active signature help array
-      activeSignatureHelper.push(activeSignatureHelpOut)
-    }
-    // Return the signature info and active signature help
-    return [signatureInfo, activeSignatureHelper, signatureParamIndexes]
+
+    return [signatureInfo, activeSignatureHelper, signatureParamIndexes];
   }
 
   /**
-   * This method is used to build the parameters for a Pine function.
-   * @param docs - The Pine function for which parameters are to be built.
-   * @param syn - The syntax of the Pine function.
-   * @returns An array containing the parameter information, active signature help, and syntax.
+   * Builds the parameter information for the function.
+   * @param docs - The documentation for the function.
+   * @param syntax - The syntax of the function.
+   * @returns The parameter information, parameter indexes, active signature helper, and updated syntax.
    */
   private buildParameters(
-    docs: any,
-    syn: string,
+    docs: PineDocsManager,
+    syntax: string,
   ): [vscode.ParameterInformation[], string[], Record<string, string>[], string] {
-    try {
-      // Initialize an array to hold the parameter information
-      const parameters: vscode.ParameterInformation[] = []
-      const paramIndexes: string[] = []
-      // Initialize an array to hold the active signature help
-      const activeSignatureHelper = []
-      // Initialize an array to hold the argument names
-      const args = []
-      // Extract the argument list from the function syntax
-      const syntax = syn.replace(/[\w.]+\s*\(/g, '').replace(/\)\s*(=>|\u2192).*/g, '')
+    const parameters: vscode.ParameterInformation[] = [];
+    const paramIndexes: string[] = [];
+    const activeSignatureHelper: Record<string, string>[] = [];
+    const args: string[] = [];
 
-      // Split the argument list into individual arguments
-      let split
-      if (syntax.includes(',')) {
-        split = syntax.split(',')
-      } else {
-        split = [syntax]
+    const syntaxArgs = syntax.replace(/[\w.]+\s*\(/g, '').replace(/\)\s*(=>|\u2192).*/g, '').split(',').filter(Boolean);
+
+    for (const arg of syntaxArgs) {
+      const trimmedArg = arg.trim();
+      const argName = trimmedArg.includes(' ') ? trimmedArg.split(' ').shift() : trimmedArg;
+      if (argName) {
+        args.push(argName);
       }
-
-      // For each argument...
-      for (const i of split) {
-        // Extract the argument name
-        let arg = null
-
-        if (i.trim().includes(' ')) {
-          arg = i.trim().split(' ').shift()
-        } else {
-          arg = i.trim()
-        }
-
-        if (!arg) {
-          continue
-        }
-        args.push(arg.trim())
-      }
-
-      // For each argument...
-      for (const arg of args) {
-        // Find the argument in the function's argument list
-        const argDocs = docs.args.find((argFind: any) => argFind.name === arg)
-
-        if (!argDocs) {
-          continue
-        }
-
-        // Extract the argument name, description, and type
-        const argName = argDocs.name
-        const argDesc = argDocs?.info ?? argDocs?.desc ?? ''
-        let argType = argDocs?.displayType ?? argDocs?.type ?? ''
-        argType = argType.replace(/(series|simple|input|literal|const)\s*/g, '') ?? ''
-
-        // Build the parameter label
-        const paramLabel = `${argType !== '' ? ' ' : ''}${argName}`
-
-        let defaultValue = ''
-        let questionMark = ''
-        let required = 'Required'
-
-        if (argDocs.default && (argDocs.default === null || argDocs.default === 'null')) {
-          defaultValue = `${' = na'}`
-        } else if (!argDocs.default || argDocs.default === undefined || argDocs.default === 'undefined') {
-          defaultValue = ''
-        } else if (argDocs.default) {
-          defaultValue = ` = ${argDocs.default}`
-        } else {
-          defaultValue = ''
-        }
-
-        if (!argDocs?.required) {
-          if (defaultValue !== '') {
-            questionMark = '?'
-            required = 'Optional'
-            syn = syn.replace(RegExp(`\\b${argName}\\b`), `${argName}?`)
-          }
-        }
-
-        // Build the parameter documentation
-        const paramDocumentation = new vscode.MarkdownString(
-          `**${required}**\n\`\`\`pine\n${paramLabel}${questionMark}: ${argType}${defaultValue}\n\`\`\`\n${argDesc.trim()}`,
-        )
-
-        // Add the argument to the active signature help
-        activeSignatureHelper.push({ arg: argName, type: argType })
-        // find match position (doing it this way prevents matching the namespace or function if the argument name is the same)
-        // example: str.contains(source, str) → bool, the str arg would highlight the str namespace
-        const startEnd = this.findRegexMatchPosition(syn, argName)
-
-        // Add the parameter information to the parameters array
-        if (!startEnd) {
-          continue
-        }
-        const paramInfo = new vscode.ParameterInformation(startEnd)
-        if (paramDocumentation) {
-          // console.log(paramDocumentation, 'paramDocumentation')
-          paramInfo.documentation = paramDocumentation
-        }
-        parameters.push(paramInfo)
-        paramIndexes.push(argName)
-      }
-      // console.log(JSON.stringify(parameters, null, 2), 'parameters in function')
-      return [parameters, paramIndexes, activeSignatureHelper, syn]
-    } catch (e) {
-      console.error('buildParameters error', e)
-      return [[], [], [], syn]
     }
+
+    let updatedSyntax = syntax;
+
+    for (const argName of args) {
+      const argDocs = docs.args.find((arg: any) => arg.name === argName);
+      if (!argDocs) {
+        continue;
+      }
+
+      const { name, desc, type } = argDocs;
+      const argType = argDocs?.displayType ?? argDocs?.type ?? '';
+
+      const paramLabel = `${argType !== '' ? ' ' : ''}${name}`;
+      const { defaultValue, required } = this.getParameterDetails(argDocs);
+      const questionMark = !required && defaultValue !== '' ? '?' : '';
+
+      if (!required && defaultValue !== '') {
+        updatedSyntax = updatedSyntax.replace(RegExp(`\\b${name}\\b`), `${name}?`);
+      }
+
+      const paramDocumentation = new vscode.MarkdownString(
+        `**${required ? 'Required' : 'Optional'}**\n\`\`\`pine\n${paramLabel}${questionMark}: ${argType}${defaultValue}\n\`\`\`\n${desc.trim()}`,
+      );
+
+      activeSignatureHelper.push({ arg: name, type: argType });
+      const startEnd = this.findRegexMatchPosition(updatedSyntax, name);
+
+      if (!startEnd) {
+        continue;
+      }
+
+      const paramInfo = new vscode.ParameterInformation(startEnd, paramDocumentation);
+      parameters.push(paramInfo);
+      paramIndexes.push(name);
+    }
+
+    return [parameters, paramIndexes, activeSignatureHelper, updatedSyntax];
   }
 
   /**
-   * Checks the active argument.
-   * @param arg - The argument to check.
-   * @param index - The index of the argument.
-   * @param recursive - Flag indicating if the check is recursive.
-   * @returns The index of the active argument.
+   * Gets the details of a parameter.
+   * @param argDocs - The documentation for the argument.
+   * @returns The default value and whether the parameter is required.
    */
-  private checkActiveArg(arg: string | null = this.activeArg, index: number = 0, recursive: boolean = false): number {
-    if (recursive) {
-      if (index) {
-        arg = this.paramIndexes[this.activeSignature][index] ?? null
-      }
+  private getParameterDetails(argDocs: any): { defaultValue: string; required: boolean } {
+    let defaultValue = '';
+    if (argDocs.default === null || argDocs.default === 'null') {
+      defaultValue = ' = na';
+    } else if (argDocs.default !== undefined && argDocs.default !== 'undefined') {
+      defaultValue = ` = ${argDocs.default}`;
     }
 
-    const checkUsedParams = this.usedParams.includes(arg ?? '')
-
-    if (!checkUsedParams) {
-      if (this.lastIndex === index) {
-        return this.lastIndex
-      }
-    } else {
-      index = this.checkActiveArg(null, index, true)
-    }
-
-    return index
+    const required = argDocs?.required ?? (defaultValue === '');
+    return { defaultValue, required };
   }
 
   /**
-   * Calculates the active parameter based on the current line, position, and signatures.
-   * Assumes there are class variables like `line`, `position`, `activeSignature`, `paramIndexes`, and a method `signatureHelp` available.
-   * @returns The index of the active parameter.
+   * Calculates the active parameter index.
+   * @returns The active parameter index.
    */
   private calculateActiveParameter(): number {
-    // Find the last opening parenthesis before the current position
-    const lastOpeningParenthesisIndex = this.line.lastIndexOf('(', this.position.character - 1)
+    const lastOpeningParenthesisIndex = this.line.lastIndexOf('(', this.position.character - 1);
     if (lastOpeningParenthesisIndex === -1) {
-      console.error('No opening parenthesis found, unable to determine active parameter.')
-      return 0 // No opening parenthesis found, unable to determine active parameter
+      console.error('No opening parenthesis found, unable to determine active parameter.');
+      return 0;
     }
 
-    this.usedParams = []
+    this.usedParams = [];
+    const substringToPosition = this.line.substring(lastOpeningParenthesisIndex + 1, this.position.character);
+    const args = substringToPosition.split(',');
+    this.activeParameter = args.length - 1;
 
-    // Extract the relevant substring
-    const substringToPosition = this.line.substring(lastOpeningParenthesisIndex + 1, this.position.character)
+    let highestIndex = -1;
+    let flag = false;
+    this.hasEqual = false;
 
-    // Split substring by commas to isolate arguments
-    const args = substringToPosition.split(',')
-    this.activeParameter = args.length - 1
-
-    let highestIndex = -1
-    let flag = false
-    this.hasEqual = false
-
-    const selectedParam = PineSharedCompletionState.getSelectedCompletion
+    const selectedParam = PineSharedCompletionState.getSelectedCompletion;
 
     for (const split of args) {
       if (split.includes('=')) {
-        const splitEq = split.split('=')[0].trim()
-        const paramIndex = this.paramIndexes[this.activeSignature].findIndex((param) => param === splitEq)
+        const splitEq = split.split('=')[0].trim();
+        const paramIndex = this.paramIndexes[this.activeSignature].findIndex((param) => param === splitEq);
         if (paramIndex > -1) {
-          if (paramIndex > highestIndex) {
-            highestIndex = paramIndex
-          }
-          this.activeParameter = paramIndex
-          this.usedParams.push(splitEq)
-          flag = false
-          this.hasEqual = true
+          highestIndex = Math.max(highestIndex, paramIndex);
+          this.activeParameter = paramIndex;
+          this.usedParams.push(splitEq);
+          flag = false;
+          this.hasEqual = true;
         }
       } else {
-        highestIndex = highestIndex + 1
-        this.usedParams.push(this.paramIndexes[this.activeSignature][highestIndex])
-        this.activeParameter = highestIndex
-        flag = true
-        this.hasEqual = false
+        highestIndex++;
+        this.usedParams.push(this.paramIndexes[this.activeSignature][highestIndex]);
+        this.activeParameter = highestIndex;
+        flag = true;
+        this.hasEqual = false;
       }
     }
 
     if (selectedParam) {
       const selectedParamIndex = this.paramIndexes[this.activeSignature].findIndex(
         (param) => param === selectedParam.replace('=', '').trim(),
-      )
+      );
       if (selectedParamIndex > -1) {
-        this.activeParameter = selectedParamIndex
-        this.usedParams.push(selectedParam.replace('=', '').trim())
-        flag = false
+        this.activeParameter = selectedParamIndex;
+        this.usedParams.push(selectedParam.replace('=', '').trim());
+        flag = false;
       }
     }
 
-    this.activeArg = this.paramIndexes[this.activeSignature][this.activeParameter]
+    this.activeArg = this.paramIndexes[this.activeSignature][this.activeParameter];
 
-    // If no valid index found, log error and return 0
     if (this.activeParameter >= this.paramIndexes[this.activeSignature].length) {
-      console.error('Unable to determine active parameter, returning 0.')
-      return 0
+      console.error('Unable to determine active parameter, returning 0.');
+      return 0;
     }
 
-    this.usedParams = [...new Set(this.usedParams)]
+    this.usedParams = [...new Set(this.usedParams)];
     if (flag) {
-      this.usedParams.pop()
+      this.usedParams.pop();
     }
-    return this.activeParameter ?? 0
+    return this.activeParameter ?? 0;
   }
 
-
   /**
-   * Calculates the active signature based on the current line, position, signature help, and active parameter.
-   * Assumes there are class variables like `line`, `position`, `activeSignature`, `activeArg`, and a method `signatureHelp` available.
+   * Calculates the active signature index.
    * @param activeSignatureHelper - The active signature helper data.
-   * @returns The index of the active signature.
+   * @returns The active signature index.
    */
   private calculateActiveSignature(activeSignatureHelper: Record<string, string>[][]): number {
-    // console.log('calculateActiveSignature called with activeSignatureHelper:', activeSignatureHelper)
     try {
-      // console.log('Checking if activeSignatureHelper length is less than or equal to 1 or activeSignature is not 0')
-      if ((activeSignatureHelper.length <= 1, this.activeSignature !== 0)) {
-        // console.log('Returning current activeSignature:', this.activeSignature)
-        return this.activeSignature
+      if (activeSignatureHelper.length <= 1 && this.activeSignature === 0) {
+        return this.activeSignature;
       }
 
-      // console.log('Extracting function call from the line up to the current position')
-      const startToCursor = this.line.slice(0, this.position.character)
-      const openingParenIndex = startToCursor.lastIndexOf('(', this.position.character) + 1
-      const openingParenToCursor = startToCursor.slice(openingParenIndex, this.position.character)
-      const closingParenIndex = openingParenToCursor.lastIndexOf(')')
-      const functionCallNoParens = openingParenToCursor.slice(
-        0,
-        closingParenIndex > -1 ? closingParenIndex : openingParenToCursor.length,
-      )
-      // console.log('Function call without parentheses:', functionCallNoParens)
-      const matchEq = functionCallNoParens.match(/(\b\w+)\s*=/g)
+      const startToCursor = this.line.slice(0, this.position.character);
+      const openingParenIndex = startToCursor.lastIndexOf('(', this.position.character) + 1;
+      const openingParenToCursor = startToCursor.slice(openingParenIndex, this.position.character);
+      const closingParenIndex = openingParenToCursor.lastIndexOf(')');
+      const functionCallNoParens = openingParenToCursor.slice(0, closingParenIndex > -1 ? closingParenIndex : openingParenToCursor.length);
+      const matchEq = functionCallNoParens.match(/(\b\w+)\s*=/g);
 
-      let count: number = 0
-      let sigMatch: number[] = []
+      let count = 0;
+      let sigMatch: number[] = [];
 
       if (matchEq) {
-        // console.log('Matching named arguments in the function call')
-        matchEq?.shift()
+        matchEq.shift();
         for (const eq of matchEq) {
-          for (const help of activeSignatureHelper) {
-            let match = false
-            for (const h of help) {
-              if (h.arg === eq.trim()) {
-                sigMatch.push(count)
-                match = true
-                break
-              }
-              if (match) {
-                break
-              }
-              count++
+          for (const [index, help] of activeSignatureHelper.entries()) {
+            if (help.some((h) => h.arg === eq.trim())) {
+              sigMatch.push(index);
+              break;
             }
           }
         }
       }
 
       if (sigMatch.length === 1) {
-        // console.log('Only one matching signature found. Setting it as the active signature')
-        this.activeSignature = sigMatch[0]
-        return this.activeSignature
+        this.activeSignature = sigMatch[0];
+        return this.activeSignature;
       }
 
-      const match = functionCallNoParens.replace(/\(.*\)|\[.*\]/g, '').match(/([^,]+)+/g)
+      const match = functionCallNoParens.replace(/\(.*\)|\[.*\]/g, '').match(/([^,]+)+/g);
       if (!match) {
-        // console.log('No match found. Returning current activeSignature:', this.activeSignature)
-        return this.activeSignature
+        return this.activeSignature;
       }
 
-      count = 0
-      sigMatch = []
-      const popMatch = match.pop()?.trim()
+      const popMatch = match.pop()?.trim();
       if (!popMatch) {
-        // console.log('No popMatch found. Returning current activeSignature:', this.activeSignature)
-        return this.activeSignature
+        return this.activeSignature;
       }
 
-      const iType = Helpers.identifyType(popMatch)
+      const iType = Helpers.identifyType(popMatch);
 
-      // console.log('Checking if the type of the last argument matches any of the signature help argument types')
-      for (const help of activeSignatureHelper) {
-        const helpType = help[this.signatureHelp.activeParameter]?.type
-        if (helpType === iType) {
-          sigMatch.push(count)
+      count = 0;
+      sigMatch = [];
+      for (const [index, help] of activeSignatureHelper.entries()) {
+        if (help[this.signatureHelp.activeParameter]?.type === iType) {
+          sigMatch.push(index);
         }
-        count++
       }
 
       if (sigMatch.length === 1) {
-        // console.log('Only one matching signature found. Setting it as the active signature')
-        this.activeSignature = sigMatch[0]
-        return this.activeSignature
+        this.activeSignature = sigMatch[0];
+        return this.activeSignature;
       }
 
-      // console.log('Returning current activeSignature:', this.activeSignature)
-      return this.activeSignature
-    } catch (e) {
-      console.error('Error occurred:', e)
-      return this.activeSignature
+      return this.activeSignature;
+    } catch (error) {
+      console.error('Error occurred:', error);
+      return this.activeSignature;
     }
   }
 
   /**
    * Gets the types of the arguments.
    * @param argDocs - The documentation for the arguments.
-   * @returns An array of argument types.
+   * @returns An array of argument types or null if no types are found.
    */
-  private getArgTypes(argDocs: Record<string, any>) {
+  private getArgTypes(argDocs: Record<string, any>): string[] | null {
     try {
-      let type = argDocs?.allowedTypeIDs ?? [argDocs?.displayType ?? argDocs?.type]
+      let type = argDocs?.allowedTypeIDs ?? [argDocs?.displayType ?? argDocs?.type];
       if (!type || type.length === 0) {
-        return null
+        return null;
       }
 
       if (Array.isArray(type) && !type.includes(null)) {
-        type = Helpers.formatTypesArray(type)
+        type = Helpers.formatTypesArray(type);
       }
 
-      return type
-    } catch (e) {
-      console.error('getArgTypes error', e)
-      return null
+      return type;
+    } catch (error) {
+      console.error('getArgTypes error', error);
+      return null;
     }
   }
 
-
-
-
   /**
-   * Sends completion suggestions based on the active parameter in the signature help.
+   * Sends completion suggestions based on the active parameter.
    * @param docs - The documentation for the function.
    * @param activeSignatureHelper - The active signature helper data.
    */
-  private async sendCompletions(docs: Record<string, any>, activeSignatureHelper: Record<string, string>[]) {
+  private async sendCompletions(docs: Record<string, any>, activeSignatureHelper: Record<string, string>[]): Promise<void> {
     try {
-      const buildCompletions: Record<string, any> = {}
-      const args = Array.from(docs.args.map((i: Record<string, any>) => i.name))
+      const buildCompletions: Record<string, any> = {};
+      const args = Array.from(docs.args.map((arg: Record<string, any>) => arg.name));
 
-      let paramArray = activeSignatureHelper.map((param: Record<string, string>): CompletionItem => {
-        const obj: CompletionItem = {
-          name: param.arg + '=',
+      let paramArray = activeSignatureHelper
+        .map((param: Record<string, string>): CompletionItem => ({
+          name: `${param.arg}=`,
           kind: 'Parameter',
           desc: `Parameter ${param.arg}.`,
-        };
-
-        if (param.arg === this.activeArg) {
-          obj.preselect = true; // Assuming 'preselect' is a valid property
-        }
-
-        return obj;
-      });
-
-      for (const p of this.usedParams) {
-        paramArray = paramArray.filter((i: Record<string, any>) => !(i.name === p + '='))
-      }
+          preselect: param.arg === this.activeArg,
+        }))
+        .filter((item: CompletionItem) => !this.usedParams.includes(item.name.replace('=', '')));
 
       for (const argDocs of docs.args) {
-        const argName = argDocs?.name ?? null
-        let match = false
-        for (const i of activeSignatureHelper) {
-          if (i.arg === argName) {
-            match = true
-            break
-          }
-        }
+        const argName = argDocs?.name ?? null;
+        const match = activeSignatureHelper.some((param) => param.arg === argName);
 
         if (!match) {
-          buildCompletions[argName] = []
-          continue
+          buildCompletions[argName] = [];
+          continue;
         }
 
-        let possibleValues = argDocs?.possibleValues ?? []
+        const possibleValues = argDocs?.possibleValues ?? [];
         if (possibleValues.length === 0 && !argDocs) {
-          buildCompletions[argName] = []
-          continue
+          buildCompletions[argName] = [];
+          continue;
         }
 
-        const def = argDocs?.default ?? null
+        const def = argDocs?.default ?? null;
+        const isString = argDocs.isString ?? false;
 
-        const isString = argDocs.isString ?? false
+        const completions = [
+          ...(await this.extractCompletions(possibleValues, argDocs, def, isString, paramArray)),
+        ];
 
-        // Merge completions from different sources
-        const completions = [...(await this.extractCompletions(possibleValues, argDocs, def, isString, paramArray))]
-
-        buildCompletions[argName] = [...new Set(completions)]
+        buildCompletions[argName] = [...new Set(completions)];
       }
-      // If there are completions, set them and trigger the suggest command
-      PineSharedCompletionState.setCompletions(buildCompletions)
-      PineSharedCompletionState.setArgs(args)
-    } catch (e) {
-      console.error('sendCompletions error', e)
+
+      PineSharedCompletionState.setCompletions(buildCompletions);
+      PineSharedCompletionState.setArgs(args);
+    } catch (error) {
+      console.error('sendCompletions error', error);
     }
   }
 
   /**
-   * Extracts completions from the given array.
-   * @param possibleValues - The array to extract completions from.
-   * @param docs - The documentation for the argument.
-   * @param def - The default value for the argument.
-   * @param isString - Flag indicating if the argument is a string.
-   * @param paramArray - The array of parameters.
-   * @returns An array of completions.
+   * Extracts completion items from various sources.
+   * @param possibleValues - Possible values for the argument.
+   * @param docs - Documentation for the argument.
+   * @param def - Default value for the argument.
+   * @param isString - Whether the argument is a string type.
+   * @param paramArray - Array of parameter completion items.
+   * @returns An array of completion items.
    */
   private async extractCompletions(
     possibleValues: string[],
@@ -703,140 +565,96 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
     paramArray: Record<string, any>[],
   ): Promise<any[]> {
     try {
-      let completions: any[] = []
+      let completions: any[] = [];
 
-      // Handle default value completion
       if (def) {
-        const defDocs = await this.getCompletionDocs(def)
+        const defDocs = await this.getCompletionDocs(def);
         if (defDocs) {
-          completions.push({ ...defDocs, default: true })
+          completions.push({ ...defDocs, default: true });
         }
       }
 
-      // Handle predefined color completions
-      if (possibleValues && possibleValues.includes('colors')) {
+      if (possibleValues.includes('colors')) {
         possibleValues = [
-          'color.black',
-          'color.silver',
-          'color.gray',
-          'color.white',
-          'color.maroon',
-          'color.red',
-          'color.purple',
-          'color.fuchsia',
-          'color.green',
-          'color.lime',
-          'color.olive',
-          'color.yellow',
-          'color.navy',
-          'color.blue',
-          'color.teal',
-          'color.orange',
-          'color.aqua',
-        ]
+          'color.black', 'color.silver', 'color.gray', 'color.white',
+          'color.maroon', 'color.red', 'color.purple', 'color.fuchsia',
+          'color.green', 'color.lime', 'color.olive', 'color.yellow',
+          'color.navy', 'color.blue', 'color.teal', 'color.orange', 'color.aqua'
+        ];
       }
 
-      // Process each possible value
-      for (let name of possibleValues) {
+      for (const name of possibleValues) {
         if (!name || name === def) {
-          continue
+          continue;
         }
 
-        let nameEdit = name
-
-        if (typeof nameEdit !== 'number') {
-          if (nameEdit.includes('(')) {
-            nameEdit = nameEdit.split('(')[0]
-          } else if (nameEdit.includes('[')) {
-            nameEdit = nameEdit.split('[')[0]
-          }
-        }
+        let nameEdit = typeof name === 'number' ? name : name.split(/[[(]/)[0];
 
         if (isString) {
-          nameEdit = ('"' + nameEdit.toString() + '"').replace(/""/g, '"')
+          nameEdit = `"${nameEdit.toString()}"`.replace(/""/g, '"');
         }
 
-        const completionDocs = await this.getCompletionDocs(nameEdit)
-        completions.push(
-          completionDocs || {
-            name: name,
-            kind: isString ? 'Literal String' : 'Other',
-            desc: `${isString ? 'String' : 'Value'} ${nameEdit}.`,
-            type: isString ? 'string' : 'unknown',
-            default: false,
-          },
-        )
+        const completionDocs = await this.getCompletionDocs(nameEdit);
+        completions.push(completionDocs || {
+          name: name,
+          kind: isString ? 'Literal String' : 'Other',
+          desc: `${isString ? 'String' : 'Value'} ${nameEdit}.`,
+          type: isString ? 'string' : 'unknown',
+          default: false,
+        });
       }
 
       if (paramArray.length > 0 && !this.hasEqual) {
-        completions.push(...paramArray)
+        completions.push(...paramArray);
       }
-      // Handle completions from documentation if docs are provided
+
       if (docs) {
-        const argTypes = this.getArgTypes(docs)
+        const argTypes = this.getArgTypes(docs);
         const maps = [
           Class.PineDocsManager.getMap('fields2'),
           Class.PineDocsManager.getMap('variables2'),
           Class.PineDocsManager.getMap('variables', 'constants'),
-        ]
+        ];
 
-        let firstMap = true
-        maps.forEach((map) => {
+        for (const [index, map] of maps.entries()) {
           map.forEach((doc) => {
             argTypes?.forEach((type: string) => {
-              const docType =  Helpers.replaceType(doc.type)
+              const docType = Helpers.replaceType(doc.type);
               if (docType === type) {
-
-                if (firstMap && doc.parent) {
-
-                  completions.push({
-                    ...doc,
-                    syntax: `${doc.parent}.${doc.name}: ${docType}`,
-                    name: `${doc.parent}.${doc.name}`,
-                    kind: `${doc.kind} | ${type}`,
-                  })
-
-                } else {
-
-                  completions.push({
-                    ...doc,
-                    syntax: `${doc.name}: ${docType}`,
-                    kind: `${doc?.kind ?? 'User Defined'} | ${type}`,
-                  })
-                }
+                completions.push({
+                  ...doc,
+                  syntax: index === 0 && doc.parent ? `${doc.parent}.${doc.name}: ${docType}` : `${doc.name}: ${docType}`,
+                  name: index === 0 && doc.parent ? `${doc.parent}.${doc.name}` : doc.name,
+                  kind: `${doc.kind} | ${type}`,
+                });
               }
-            })
-          })
-
-          firstMap = false
-        })
+            });
+          });
+        }
       }
 
-      return completions.filter((c) => c) // Filter out undefined or null completions
-    } catch (e) {
-      console.error('extractCompletions error', e)
-      return []
+      return completions.filter((completion) => completion);
+    } catch (error) {
+      console.error('extractCompletions error', error);
+      return [];
     }
   }
 
   /**
-   * Gets the documentation for the given argument name.
+   * Retrieves completion documentation for a given argument name.
    * @param argName - The name of the argument.
-   * @returns The documentation for the argument.
+   * @returns Completion documentation or null if not found.
    */
-  async getCompletionDocs(argName: string | number): Promise<typeof Class.PineDocsManager | null> {
+  private async getCompletionDocs(argName: string | number): Promise<typeof Class.PineDocsManager | null> {
     try {
       if (!this.docsToMatchArgumentCompletions) {
-        return null
+        return null;
       }
 
-      if (this.docsToMatchArgumentCompletions?.has(argName)) {
-        return this.docsToMatchArgumentCompletions?.get(argName) ?? ({ name: argName, info: '' } as any)
-      }
-      return null
-    } catch (e) {
-      console.error('getCompletionDocs error', e)
-      return null
+      return this.docsToMatchArgumentCompletions.get(argName) ?? ({ name: argName, info: '' } as any);
+    } catch (error) {
+      console.error('getCompletionDocs error', error);
+      return null;
     }
   }
 
@@ -844,58 +662,54 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
    * Sets the active argument in the shared completion state.
    * @param signatureHelp - The signature help information.
    */
-  private async setActiveArg(signatureHelp: vscode.SignatureHelp) {
+  private async setActiveArg(signatureHelp: vscode.SignatureHelp): Promise<void> {
     try {
-      // Get the label of the active parameter
-      const activeSig = signatureHelp.signatures[signatureHelp.activeSignature]
+      const activeSig = signatureHelp.signatures[signatureHelp.activeSignature];
+      this.activeSignature = signatureHelp.activeSignature;
 
-      this.activeSignature = signatureHelp.activeSignature
+      const sigLabel = activeSig?.label;
+      const index = signatureHelp.activeParameter;
+      let activeArg = activeSig?.parameters[index]?.label ?? null;
 
-      const sigLabel = activeSig?.label
-      let index = signatureHelp.activeParameter
-      let activeArg: string | number | [number, number] | null = activeSig?.parameters[index]?.label ?? null
       if (this.offset === 0) {
-        this.offset += 1
+        this.offset += 1;
       }
+
       if (!activeArg) {
-        return
+        return;
       }
-      // this is nessesary to prevent the active arg from being set to the function name if the
-      // arg is found within the function name
+
       if (typeof activeArg !== 'string' && typeof activeArg !== 'number') {
-        activeArg = sigLabel.substring(activeArg[0], activeArg[1])
+        activeArg = sigLabel.substring(activeArg[0], activeArg[1]);
       }
-      PineSharedCompletionState.setActiveArg(activeArg)
-    } catch (e) {
-      console.error('setActiveArg error', e)
+
+      PineSharedCompletionState.setActiveArg(activeArg);
+    } catch (error) {
+      console.error('setActiveArg error', error);
     }
   }
 
   /**
-   * Finds the position of the given argument in the given string.
-   * @param syntax - The string to search.
+   * Finds the position of an argument in the syntax using a regular expression.
+   * @param syntax - The syntax string to search in.
    * @param arg - The argument to find.
-   * @returns The position of the argument in the string.
+   * @returns The start and end positions of the argument or null if not found.
    */
-  private findRegexMatchPosition(
-    syntax: string,
-    arg: string,
-    // isMethod: boolean = false,
-  ): string | [number, number] | null {
+  private findRegexMatchPosition(syntax: string, arg: string): string | [number, number] | null {
     try {
-      const regex = RegExp(`\\b(${arg})(?!\\.|\\()\\b`)
-      const match = regex.exec(syntax)
+      const regex = new RegExp(`\\b(${arg})(?!\\.|\\()\\b`);
+      const match = regex.exec(syntax);
 
       if (match && match[1]) {
-        const startIndex = match.index
-        const endIndex = startIndex + match[1].length
-        return [startIndex, endIndex]
+        const startIndex = match.index;
+        const endIndex = startIndex + match[1].length;
+        return [startIndex, endIndex];
       }
-      // No match found
-      return null
-    } catch (e) {
-      console.error('findRegexMatchPosition error', e)
-      return null
+
+      return null;
+    } catch (error) {
+      console.error('findRegexMatchPosition error', error);
+      return null;
     }
   }
 }

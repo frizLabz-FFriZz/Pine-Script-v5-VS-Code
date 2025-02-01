@@ -62,7 +62,7 @@ export class PineScriptList {
               return
             }
             // If a matching script is found
-            const version = selectedDict.version // Get the version of the script
+            const { version } = selectedDict
             const versionItems: vscode.QuickPickItem[] = [] // Initialize an empty array to hold the version items
             for (let i = 1; i <= version; i++) {
               // Populate the version items array with the versions of the script
@@ -177,7 +177,7 @@ export class PineScriptList {
  * @param {any} response - The response object containing the script details.
  */
   async handlePineScript(response: any): Promise<void> {
-  // Check if there is at least one workspace folder
+    // Check if there is at least one workspace folder
     if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
       const workspaceFolder = vscode.workspace.workspaceFolders[0].uri.fsPath;
       const scriptDir = path.join(workspaceFolder, 'PineScripts');
@@ -200,7 +200,7 @@ export class PineScriptList {
         await this.openDocument(existingFileUri);
       }
     } else {
-    // No workspace folder is open, so we'll save the file in a temporary location
+      // No workspace folder is open, so we'll save the file in a temporary location
       const tempFolderPath = os.tmpdir();
       const tempFilePath = path.join(tempFolderPath, `${response.scriptName}.pine`);
       const tempFileUri = vscode.Uri.file(tempFilePath);
@@ -244,7 +244,7 @@ export class PineScriptList {
     let counter = 1;
     let newFileName = `${name}_${counter}.pine`;
     let newFilePath = path.join(previousScriptsDir, newFileName);
-  
+
     // Loop to find a unique file name
     while (fs.existsSync(newFilePath)) {
       counter++;

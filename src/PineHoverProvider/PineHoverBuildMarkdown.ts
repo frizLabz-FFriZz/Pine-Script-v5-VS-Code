@@ -99,7 +99,7 @@ export class PineHoverBuildMarkdown {
       if (['UDT', 'field', 'function', 'method'].includes(regexId)) {
         syntax = this.addDefaultArgsToSyntax(syntax, keyedDocs)
       }
-      
+
       return [this.cbWrap(syntax), '***  \n']
     } catch (error) {
       console.error(error)
@@ -131,8 +131,8 @@ export class PineHoverBuildMarkdown {
   static buildUDTDefaultSyntax(keyedDocs: PineDocsManager) {
     try {
       if (keyedDocs?.syntax && keyedDocs?.fields) {
-        const fields = keyedDocs.fields
-        let syntax = keyedDocs.syntax
+        const { fields } = keyedDocs
+        let { syntax } = keyedDocs
         for (const field of fields) {
           if (field?.name && field.type) {
             const regex = RegExp(`    ${field.name}: [^\\n]+`)
@@ -157,7 +157,7 @@ export class PineHoverBuildMarkdown {
 
     if (syntax.includes('<?>') || syntax.includes('undetermined type')) {
       return prefix
-      
+
     } else if (regexId === 'variable') {
       if (
         !/(?::\s*)(array|map|matrix|int|float|bool|string|color|line|label|box|table|linefill|polyline|na)\b/g.test(
@@ -165,10 +165,10 @@ export class PineHoverBuildMarkdown {
         ) || (syntax.includes('chart.point') && !/chart\.point$/.test(syntax))
       ) {
         return '(object) '
-      } 
+      }
 
       return '(variable) '
-      
+
     } else if (regexId !== 'control' && regexId !== 'UDT') {
 
       return '(' + regexId + ') '
@@ -224,8 +224,7 @@ export class PineHoverBuildMarkdown {
     try {
       const returnType = Helpers.returnTypeArrayCheck(keyedDocs)
       if (returnType) {
-        const syntax = `${keyedDocs?.name ?? key}: ${returnType || '<?>'} `
-        return syntax
+        return `${keyedDocs?.name ?? key}: ${returnType || '<?>'} `;
       } else {
         return key
       }
@@ -242,12 +241,10 @@ export class PineHoverBuildMarkdown {
    */
   static namespaceCheck(syntax: string, keyedDocs: PineDocsManager, isMethod: boolean = false) {
     try {
-      if (/^\w+\([^)]*\)/.test(syntax) && isMethod) {
-        if (keyedDocs.args) {
-          const namespace = keyedDocs.args[0]?.name ?? null
-          if (namespace) {
-            return `${namespace}.${syntax}`
-          }
+      if (/^\w+\([^)]*\)/.test(syntax) && isMethod && keyedDocs.args) {
+        const namespace = keyedDocs.args[0]?.name ?? null
+        if (namespace) {
+          return `${namespace}.${syntax}`
         }
       }
       return syntax
@@ -256,7 +253,7 @@ export class PineHoverBuildMarkdown {
       return syntax
     }
   }
-  
+
   /** 
    * Appends the description to the markdown.
    * @param keyedDocs - The PineDocsManager instance.
@@ -356,12 +353,10 @@ export class PineHoverBuildMarkdown {
           }
           e2 = null
         }
-        if (e1) {
-          if (p.includes(e1)) {
-            e1 = null
-            flag = true
-            continue
-          }
+        if (e1 && p.includes(e1)) {
+          e1 = null
+          flag = true
+          continue
         }
         if (p.includes(endingType)) {
           flag = true
@@ -372,8 +367,7 @@ export class PineHoverBuildMarkdown {
         }
         count++
       }
-      const buildStr = flag ? paramInfo : `${paramInfo} \`${endingType}\``
-      return buildStr
+      return flag ? paramInfo : `${paramInfo} \`${endingType}\``;
     } catch (error) {
       console.error(error)
       return ''
@@ -402,10 +396,8 @@ export class PineHoverBuildMarkdown {
   static appendDetails(detail: string, detailType: string) {
     try {
       let build: string[] = []
-      if (detail) {
-        if (detailType.toLowerCase() !== 'examples') {
-          build = [`  \n${Helpers.boldWrap(detailType)} - ${Helpers.formatUrl(detail)}`]
-        }
+      if (detail && detailType.toLowerCase() !== 'examples') {
+        build = [`  \n${Helpers.boldWrap(detailType)} - ${Helpers.formatUrl(detail)}`]
       }
       return build
     } catch (error) {
@@ -434,7 +426,7 @@ export class PineHoverBuildMarkdown {
             const split = details[0].split(' - ')
             // If the return type is a user type, add backticks around it
             split[1] = '`' + split[1]
-            split[split.length - 1] = split[split.length - 1] + '`'
+            split[split.length - 1] += '`'
             // Join the parts of the syntax back together and return the result
             details[0] = split.join(' - ')
             // Return the syntax with the return type added
@@ -442,7 +434,7 @@ export class PineHoverBuildMarkdown {
           }
           if (Array.isArray(details)) {
             return details
-          } 
+          }
           return [details]
         }
         return ['']

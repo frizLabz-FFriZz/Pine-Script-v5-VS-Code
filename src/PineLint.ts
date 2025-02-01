@@ -38,7 +38,7 @@ export class PineLint {
     await PineLint.checkVersion()
     return PineLint.fileName
   }
-  
+
   /**
    * Formats the incoming PineRequest.
    * @param incomming - The incoming PineRequest to be formatted.
@@ -46,7 +46,7 @@ export class PineLint {
   static async format(incomming: typeof Class.PineRequest) {
     Class.PineFormatResponse.format(incomming)
   }
-  
+
   /**
    * Sets the diagnostics for a given URI.
    * @param uri - The URI to set the diagnostics for.
@@ -56,14 +56,14 @@ export class PineLint {
     PineLint.DiagnosticCollection.set(uri, diagnostics)
     PineLint.diagnostics = diagnostics
   }
-  
+
   /** Gets the diagnostics if they exist. */
   static getDiagnostics() {
     if (PineLint.diagnostics.length > 0) {
       return PineLint.diagnostics
     }
   }
-  
+
   /** Performs initial linting if the initialFlag is true. */
   static async initialLint() {
     if (PineLint.initialFlag) {
@@ -83,7 +83,7 @@ export class PineLint {
       }
     }
   }
-  
+
   /** Debounced version of the lintDocument method. */
   public static lint = debounce(
     async () => {
@@ -95,13 +95,13 @@ export class PineLint {
       trailing: true,
     },
   )
-  
+
   /**
  * Updates the diagnostics for the active document.
  * @param {...any[][]} dataGroups - The groups of data to update the diagnostics with.
  */
   static async updateDiagnostics(...dataGroups: any[][]) {
-  // Initialize an empty array to hold the diagnostics
+    // Initialize an empty array to hold the diagnostics
     const diagnostics: vscode.Diagnostic[] = []
     let i = 1
     // Iterate over each group in the data groups
@@ -113,7 +113,7 @@ export class PineLint {
       }
       // Iterate over each data item in the group
       for (const data of group) {
-      // Destructure the start, end, and message properties from the data item
+        // Destructure the start, end, and message properties from the data item
         const { start, end, message } = data
         // Create a new range from the start and end properties
         const range = new vscode.Range(start.line - 1, start.column - 1, end.line - 1, end.column)
@@ -134,7 +134,7 @@ export class PineLint {
       PineLint.setDiagnostics(uri, diagnostics)
     }
   }
-  
+
   /**
    * Handles the response from the linting process.
    * @param response - The response from the linting process.
@@ -149,7 +149,7 @@ export class PineLint {
       )
     }
   }
-  
+
   /** Handles changes to the active document. */
   static async handleDocumentChange() {
     await PineLint.lint()
@@ -178,7 +178,7 @@ export class PineLint {
     const match = regex.exec(replaced)
     // If no match is found or the version is not found, return false
     if (!match || !match[1]) {
-      return false 
+      return false
     }
     // If a match is found
     if (match) {
@@ -189,46 +189,43 @@ export class PineLint {
       // Set the version of PineLint to the matched version
       PineLint.version = match[1]
       // If the version is 5
-      if (match[1] === '5') {
+      if (match[1] === '5'|| match[1] === '6') {
         // Perform initial linting
         PineLint.initialLint()
         // Return true
         return true
-      } else {
-        // If the match has an index
-        if (match.index) {
-          // Get the position of the match in the document
-          const matchPosition = document?.positionAt(match.index)
-          // Get the end position of the match in the document
-          const matchEndPosition = document?.positionAt(match.index + 12)
-          // Define an error message
-          let versionMsg = `Must be v5 for linting with this extension. Can convert v${match[1]} to v5 with the Pine Script Editor on ![TV](www.tradingview.com/pine)`
-          // If the match has a position and an end position
-          if (matchPosition && matchEndPosition) {
-            // Define an error object
-            const errorObj = {
-              result: {
-                errors2: [
-                  {
-                    start: { line: matchPosition?.line + 1, column: matchPosition?.character + 1 },
-                    end: { line: matchEndPosition?.line + 1, column: matchEndPosition?.character + 1 },
-                    message: versionMsg,
-                  },
-                ],
-              },
-            }
-            // Handle the error
-            PineLint.handleResponse(errorObj)
+      } else if (match.index) {
+        // Get the position of the match in the document
+        const matchPosition = document?.positionAt(match.index)
+        // Get the end position of the match in the document
+        const matchEndPosition = document?.positionAt(match.index + 12)
+        // Define an error message
+        let versionMsg = `Must be v5+ for linting with this extension. Can convert v${match[1]} to v5 with the Pine Script Editor on ![TV](www.tradingview.com/pine)`
+        // If the match has a position and an end position
+        if (matchPosition && matchEndPosition) {
+          // Define an error object
+          const errorObj = {
+            result: {
+              errors2: [
+                {
+                  start: { line: matchPosition?.line + 1, column: matchPosition?.character + 1 },
+                  end: { line: matchEndPosition?.line + 1, column: matchEndPosition?.character + 1 },
+                  message: versionMsg,
+                },
+              ],
+            },
           }
-          // Return false
-          return false
+          // Handle the error
+          PineLint.handleResponse(errorObj)
         }
+        // Return false
+        return false
       }
     }
     // If no match is found, return false
     return false
   }
-  
+
   /** Clears the script version for PineLint. */
   static versionClear() {
     PineLint.version = null
