@@ -319,6 +319,13 @@
         "language": "pine",
         "scopeName": "source.pine",
         "path": "syntaxes/pine.tmLanguage.json"
+      },
+      {
+        "scopeName": "source.markdown",
+        "path": "syntaxes/pine-embedded.tmLanguage.json",
+        "injectTo": [
+          "text.html.markdown"
+        ]
       }
     ]
   },
@@ -349,7 +356,7 @@
     "ts-loader": "^9.5.1",
     "type-coverage": "^2.0.0",
     "typedoc": "^0.26.7",
-    "typescript": "^5.6.2",
+    "typescript": "^5.7.3",
     "webpack": "^5.94.0",
     "webpack-cli": "^5.1.4",
     "xo": "^0.54.0"

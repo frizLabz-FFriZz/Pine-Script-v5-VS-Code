@@ -7,35 +7,76 @@ import * as vscode from 'vscode'
  * Context for Pine Inline Completion.
  * Provides necessary information for generating inline completions in Pine Script.
  */
-export class PineInlineCompletionContext implements vscode.InlineCompletionItemProvider {
-  selectedCompletionText: string | undefined;
-
+export class PineInlineCompletionHandler {
   /**
-   * Provides inline completion items for the current position in the document.
-   * @param document - The current document.
-   * @param position - The current position within the document.
+   * Handles the selection of an inline completion item.
    * @param context - The inline completion context.
-   * @returns null
    */
-  provideInlineCompletionItems(document: vscode.TextDocument, position: vscode.Position, context: vscode.InlineCompletionContext): vscode.ProviderResult<vscode.InlineCompletionItem[] | vscode.InlineCompletionList> {
-    const selectedCompletionText = context.selectedCompletionInfo?.text
+  handleInlineCompletionSelection(context: vscode.InlineCompletionContext): void {
+    const selectedCompletionText = context.selectedCompletionInfo?.text;
 
     if (selectedCompletionText) {
-      this.selectedCompletionText = selectedCompletionText
-      PineSharedCompletionState.setSelectedCompletion(context.selectedCompletionInfo?.text)
-      vscode.commands.executeCommand('editor.action.triggerParameterHints')
+      PineSharedCompletionState.setSelectedCompletion(selectedCompletionText);
+      vscode.commands.executeCommand('editor.action.triggerParameterHints');
     }
+  }
 
-    // console.log(context.selectedCompletionInfo?.text, 'selectedCompletionInfo')
-    return null
+  provideInlineCompletionItems(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+    context: vscode.InlineCompletionContext,
+    token: vscode.CancellationToken
+  ): vscode.ProviderResult<vscode.InlineCompletionItem[] | vscode.InlineCompletionList> {
+    // Implement your inline completion logic here
+    return [];
   }
 
   /**
    * Clears the selected completion text.
    */
-  clearSelectedCompletion() {
-    PineSharedCompletionState.setSelectedCompletion(undefined)
+  clearSelectedCompletion(): void {
+    PineSharedCompletionState.setSelectedCompletion(undefined);
   }
+
+  /**
+   * Registers the completion handler.
+   * @param context - The extension context.
+   */
+  public static register(context: vscode.ExtensionContext): void {
+    const completionHandler = new PineInlineCompletionHandler();
+
+    context.subscriptions.push(
+      vscode.window.onDidChangeTextEditorSelection(event => {
+        const editor = event.textEditor;
+        if (editor) {
+          const position = editor.selection.active;
+          const document = editor.document;
+          const range = new vscode.Range(position, position);
+          let selectedInfo = undefined;
+
+          // Check if the selection change was triggered by an inline completion
+          if (event.kind === vscode.TextEditorSelectionChangeKind.Mouse) {
+            const lastCompletion = PineSharedCompletionState.getLastCompletion();
+            if (lastCompletion && lastCompletion.range.contains(position)) {
+              selectedInfo = {
+                range: lastCompletion.range,
+                text: lastCompletion.insertText as string
+              };
+            }
+          }
+
+          const context: vscode.InlineCompletionContext = {
+            selectedCompletionInfo: selectedInfo,
+            triggerKind: vscode.InlineCompletionTriggerKind.Automatic
+          };
+
+          completionHandler.handleInlineCompletionSelection(context);
+        }
+      })
+    );
+  }
+
+
 }
 
 export class PineCompletionProvider implements vscode.CompletionItemProvider {

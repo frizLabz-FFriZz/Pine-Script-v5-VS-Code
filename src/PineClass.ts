@@ -7,7 +7,7 @@ import { PineUserInputs } from './PineUserInputs'
 import { PineHoverProvider } from './PineHoverProvider/PineHoverProvider'
 import { PineLibCompletionProvider } from './PineLibCompletionProvider'
 import { PineLibHoverProvider } from './PineLibHoverProvider'
-import { PineInlineCompletionContext, PineCompletionProvider } from './PineCompletionProvider'
+import { PineInlineCompletionHandler, PineCompletionProvider } from './PineCompletionProvider'
 import { PineFormatResponse } from './PineFormatResponse'
 import { PineScriptList } from './PineScriptList'
 import { PineTemplates } from './PineTemplates'
@@ -28,7 +28,7 @@ export class Class {
   public static pineLibHoverProvider: PineLibHoverProvider
   public static pineLibCompletionProvider: PineLibCompletionProvider
   public static pineSignatureHelpProvider: PineSignatureHelpProvider
-  public static pineInlineCompletionContext: PineInlineCompletionContext
+  public static pineInlineCompletionContext: PineInlineCompletionHandler
   public static pineCompletionProvider: PineCompletionProvider
   public static pineColorProvider: PineColorProvider
   public static pineScriptList: PineScriptList
@@ -131,7 +131,7 @@ export class Class {
    * Lazy loads and returns an instance of PineInlineCompletionContext.
    * @returns {PineInlineCompletionContext} The PineInlineCompletionContext instance.
    */
-  static get PineInlineCompletionContext(): PineInlineCompletionContext {
+  static get PineInlineCompletionContext(): PineInlineCompletionHandler {
     if (!Class.pineInlineCompletionContext) {
       Class.PineCompletionSignatureInitOrder()
     }
@@ -148,7 +148,7 @@ export class Class {
     }
     if (!Class.pineCompletionProvider) {
       // console.log('PineCompletionProvider initializing')
-      Class.pineInlineCompletionContext = new PineInlineCompletionContext()
+      Class.pineInlineCompletionContext = new PineInlineCompletionHandler()
       Class.pineCompletionProvider = new PineCompletionProvider()
     }
   }

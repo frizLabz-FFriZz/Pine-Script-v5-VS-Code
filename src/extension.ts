@@ -1,3 +1,7 @@
+
+import { PineSignatureHelpProvider } from './PineSignatureHelpProvider';
+import { PineCompletionProvider } from './PineCompletionProvider';
+import { PineLibCompletionProvider } from './PineLibCompletionProvider';
 import { VSCode } from './VSCode'
 import { Class } from './PineClass'
 import { PineDocString } from './PineDocString'
@@ -29,8 +33,10 @@ function checkForChange() {
 
 setInterval(checkForChange, 1000)
 
+
 // Activate Function =============================================
 export async function activate(context: vscode.ExtensionContext) {
+
   console.log('Pine Language Server Activate')
 
   // Check for new version
@@ -41,7 +47,7 @@ export async function activate(context: vscode.ExtensionContext) {
   Class.setContext(context)
   PineLint.initialLint()
 
-  // Push subscriptions to context
+  // Register providers and commands
   context.subscriptions.push(
     PineLint.DiagnosticCollection,
     vscode.window.onDidChangeActiveTextEditor(async () => {
@@ -71,6 +77,7 @@ export async function activate(context: vscode.ExtensionContext) {
     }),
 
     VSCode.RegisterCommand('pine.docString', async () => new PineDocString().docstring()),
+
     VSCode.RegisterCommand('pine.getStandardList', async () => Class.PineScriptList.showMenu('built-in')),
     VSCode.RegisterCommand('pine.typify', async () => new PineTypify().typifyDocument()),
     VSCode.RegisterCommand('pine.getIndicatorTemplate', async () => Class.PineTemplates.getIndicatorTemplate()),
