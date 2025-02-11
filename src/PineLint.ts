@@ -109,7 +109,7 @@ export class PineLint {
     const diagnostics: vscode.Diagnostic[] = [];
 
     for (const group of dataGroups) {
-      if (!group || group.length === 0) continue;
+      if (!group || group.length === 0) {
 
       for (const data of group) {
         const { start, end, message } = data;
