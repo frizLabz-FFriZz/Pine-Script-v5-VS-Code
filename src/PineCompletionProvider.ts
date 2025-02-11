@@ -50,7 +50,7 @@ export class PineInlineCompletionHandler {
         const editor = event.textEditor;
         if (editor) {
           const position = editor.selection.active;
-          const document = editor.document;
+          const {document} = editor;
           const range = new vscode.Range(position, position);
           let selectedInfo = undefined;
 
