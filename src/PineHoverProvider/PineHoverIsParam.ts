@@ -14,14 +14,14 @@ export class PineHoverParam {
   private mapDocs: PineDocsManager | undefined;
   private wordRange: vscode.Range;
   private line: string | undefined;
-  private functionName: string  = ''
-  private argType: string  = ''
-  private argument: string  = ''
-  private eqSign: string  = ''
-  private argVal: string  = ''
-  private comma: string  = ''
-  private closingParen: string  = ''
-  private arrow: string  = ''
+  private functionName: string = ''
+  private argType: string = ''
+  private argument: string = ''
+  private eqSign: string = ''
+  private argVal: string = ''
+  private comma: string = ''
+  private closingParen: string = ''
+  private arrow: string = ''
   private displayType: string = ''
   private def: string = ''
   private qm: string = ''
@@ -71,8 +71,7 @@ export class PineHoverParam {
       }
 
       this.setProperties();
-      const result = await this.processArgumentDocumentation();
-      return result;
+      return await this.processArgumentDocumentation();
     } catch (e) {
       console.error('Error in isParam() function:', e);
       throw e;
@@ -91,7 +90,7 @@ export class PineHoverParam {
       }
       const stringMatch = this.line.match(/(?:"[^"]*"|'[^']*')/g);
       if (stringMatch) {
-        const length = stringMatch[0].length;
+        const { length } = stringMatch[0];
         const space = ' '.repeat(length);
         const reLine = this.line.replace(/(?:"[^"]*"|'[^']*')/, space);
         const argTest = new RegExp(`\\b${argument}\\b`).test(reLine);
@@ -117,8 +116,7 @@ export class PineHoverParam {
     try {
       const paramRegex = new RegExp(`([\\w.<>]+)\\s*\\(.*?(?:([\\w.<>\\[\\]]*?)?\\s*)?\\b(${this.argument})\\b(?:\\s*(?:(=)|(,)|(\\)))\\s*([^,()]*?))?.*?(\\))\\s*(?=(\\)\\s*=>|=>)?)`);
       line = line.replace(/\[\]/g, '');
-      const match = line.match(paramRegex);
-      return match;
+      return line.match(paramRegex);
     } catch (error) {
       console.error(error);
       return null;
@@ -141,7 +139,7 @@ export class PineHoverParam {
       this.closingParen = match[8];
       this.arrow = match[9];
 
-      if ((!this.arrow && (!this.eqSign || this.comma) && ( this.closingParen)) || !this.functionName || !this.argument) {
+      if ((!this.arrow && (!this.eqSign || this.comma) && (this.closingParen)) || !this.functionName || !this.argument) {
         return;
       }
 
@@ -154,8 +152,7 @@ export class PineHoverParam {
 
       this.mapDocs = map.get(this.functionName);
 
-      const argDocs = this.mapDocs?.args.find((i: PineDocsManager) => i.name === this.argument) ?? undefined;
-      return argDocs;
+      return this.mapDocs?.args.find((i: PineDocsManager) => i.name === this.argument) ?? undefined;
     } catch (error) {
       console.error(error);
       return;

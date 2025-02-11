@@ -1,0 +1,595 @@
+
+//@version=5
+// @description This script demonstrates a near complete syntax of Pine Script v6.
+indicator("Organized Pine Script Syntax Test",overlay = true)
+
+// #############################################################################
+// #  Annotations
+// #############################################################################
+
+// @description This script demonstrates the complete syntax of Pine Script v6.
+// @function myFunction - A demo function.
+// @param param1 (string) A string parameter.
+// @param param2 (int) An integer parameter.
+// @returns (int) The result of the calculation.
+// @type MyUDT - A user-defined type.
+// @field myIntField (int) An integer field.
+// @field myFloatField (float) A float field.
+// @field myStringField (string) A string field.
+// @field myBoolField (bool) A boolean field.
+// @field myColorField (color) A color field.
+// @field myPoint (chart.point) A chart point field
+// @field myArr (array<int>) An integer array field.
+// @field myMap (map<string,float>) A map field with string keys and float values.
+// @variable myVar (float) A float variable.
+// @strategy_alert_message "This is a strategy alert message."
+var const int thingy = 0
+
+
+// #############################################################################
+// #  Keywords
+// #############################################################################
+
+// Keywords are spread throughout this code example
+// but here's a quick listing,where each line is a group that should be distinctly scoped..
+// `and`,`or`,`not`,`if`,`switch`,`for`,`while`
+// `var`,`varip`,`import`,`export`,`method`,
+// `continue`,`break`
+// `type`,`enum`
+// `simple`,`const`,`series`,`input`
+
+// #############################################################################
+// #  User-Defined Types (UDTs)
+// #############################################################################
+
+// @type ImportedUDT
+// This is markup
+// # Heading
+// ## Subheading
+// > This is a blockquote
+// - This is a list
+// 1. This is a numbered list
+// **This is bold text**
+// *This is italic text*
+// [This is a link](https://www.google.com)
+// `This is code`
+//
+// ```pine
+//
+// // This is a code block
+// indicator("blah")
+// import myname/libname/1 as implib
+// this(thing) => str.tostring(thing + 1)
+//
+// varip this = 100
+//
+// ```
+//
+// @field field1 int,defval = 10
+// @field field2 string,defval = "hello"
+type ImportedUDT
+    int field1 = 10
+    string field2 = "hello"
+    
+// @enum ExportedEnum
+// @field VALUE1
+// @field VALUE2
+export enum ExportedEnum
+    VALUE1 = "val 1"
+    VALUE2 = "val 2"
+
+// @type MyUDT
+// @field myIntField (int) An integer field.
+// @field myFloatField (float) A float field,default value (0.0).
+// @field myStringField (string) A string field,default value ("hello").
+// @field myBoolField (bool) A boolean field,default value (false).
+// @field myColorField (color) A color field,default value (#ff0000 - red).
+// @field myArr (array<int>) An integer array field.
+// @field myMatrix (matrix<float>) A float matrix field.
+// @field myMap (map<string,float>) A map field with string keys and float values.
+// @field myImportedUDT (myimportlib.ImportedUDT) An imported UDT field.
+// @field myImportedMap (map<string,myimportlib.ImportedUDT>) An imported UDT map field.
+// @field myLine (line) A line field.
+// @field myLabel (label) A label field.
+// @field myBox (box) A box field.
+// @field myTable (table) A table field.
+// @field myLinefill (linefill) A linefill field.
+// @field myPoint (chart.point) A point field
+// @field myPolyline (polyline) A polyline field
+type MyUDT
+    int                myIntField
+    float              myFloatField  = 0.0
+    string             myStringField = "hello"
+    bool               myBoolField   = false
+    color              myColorField  = #ff0000
+    array<int>         myArr
+    matrix<float>      myMatrix
+    map<string,float> myMap
+    ImportedUDT        myImportedUDT
+    map<string,ImportedUDT> myImportedMap
+    line               myLine
+    label              myLabel
+    box                myBox
+    table              myTable
+    linefill           myLinefill
+    chart.point        myPoint
+    polyline           myPolyline
+
+// #############################################################################
+// #  Variable Declarations and Initialization
+// #############################################################################
+
+// -----------------------------------------------------------------------------
+// -- Primitive Types (float,int,bool,string,color)
+// -----------------------------------------------------------------------------
+
+float myFloat = 10.5
+var float myFloatVar = close
+varip float myFloatVarip = close
+
+int myInt = 5
+var int myIntVar = 10
+varip int myIntVarip = 20
+
+bool myBool = true
+var bool myBoolVar = false
+varip bool myBoolVarip = true
+
+string myString = "Hello"
+var string myStringVar = "World"
+varip string myStringVarip = "Pine"
+
+color myColor = color.red
+var color myColorVar = color.blue
+varip color myColorVarip = color.green
+
+// -----------------------------------------------------------------------------
+// -- Built-in Objects (line,label,box,table,linefill)
+// -----------------------------------------------------------------------------
+
+var line myLine = na
+var myLineVarip = line.new(x1 = bar_index - 5,y1 = low,x2 = bar_index,y2 = high,color = color.green)
+
+var label myLabel = na
+var myLabelVarip = label.new(x = bar_index,y = high,text = "High", color = color.yellow)
+
+var box myBox = na
+var myBoxVarip = box.new(left = bar_index - 10,top = high,right = bar_index,bottom = low,border_color = color.blue)
+
+var table myTable = na
+var myTableVarip = table.new(position = position.top_right,columns = 2,rows = 2,border_color = color.black)
+
+var linefill myLinefill = na
+var myLinefillVarip = linefill.new(line1 = myLine,line2 = myLineVarip,color = color.new(color.purple,80))
+
+// -----------------------------------------------------------------------------
+// -- chart.point
+// -----------------------------------------------------------------------------
+
+chart.point myPoint = chart.point.now(price=close)
+var chart.point myPointVar = chart.point.from_index(index=bar_index-10,price=low)
+varip chart.point myPointVarip = chart.point.from_time(time=time,price=open)
+
+// -----------------------------------------------------------------------------
+// -- polyline
+// -----------------------------------------------------------------------------
+
+polyline myPolyline = polyline.new(points=array.from(myPoint,chart.point.now(close)),line_color=color.fuchsia)
+var polyline myPolylineVar = na
+varip polyline myPolylineVarip = na
+
+// -----------------------------------------------------------------------------
+// -- Arrays
+// -----------------------------------------------------------------------------
+
+array<float>       myFloatArray           = array.new<float>(size = 5,initial_value = 0.0)
+var                array<int> myIntArray  = array.new<int>()
+varip              array<bool> myBoolArray= array.from(true,false,true)
+array<string>      myStringArray          = array.new<string>(size = 3)
+array<color>       myColorArray           = array.new<color>(size = 2,initial_value = color.red)
+array<line>        myLineArray            = array.new<line>()
+array<label>       myLabelArray           = array.new<label>()
+array<box>         myBoxArray             = array.new<box>()
+array<table>       myTableArray           = array.new<table>()
+array<linefill>    myLinefillArray        = array.new<linefill>()
+array<chart.point> myPointArray           = array.new<chart.point>()
+array<polyline>    myPolylineArray        = array.new<polyline>()
+
+// -- Initializing arrays with `array.from()` (for built-in types only)
+array<float>  myFloatArray2 = array.from(1.0,2.0,3.0)
+array<int>    myIntArray2   = array.from(1,2,3,4,5)
+array<bool>   myBoolArray2  = array.from(true,false,true,true)
+array<string> myStringArray2= array.from("one","two","three")
+array<color>  myColorArray2 = array.from(color.red,color.green,color.blue)
+
+// -- Arrays of UDTs
+array<MyUDT> myUDTArray = array.new<MyUDT>()
+
+// -----------------------------------------------------------------------------
+// -- Matrices
+// -----------------------------------------------------------------------------
+
+matrix<float>       myFloatMatrix            = matrix.new<float>(rows = 2,columns = 2,initial_value = 0.0)
+var matrix<int>     myIntMatrix              = matrix.new<int>(rows = 3,columns = 3,initial_value = 1)
+varip matrix<bool>  myBoolMatrix             = matrix.new<bool>(rows = 2,columns = 1,initial_value = false)
+matrix<string>      myStringMatrix           = matrix.new<string>(rows = 1,columns = 1)
+matrix<color>       myColorMatrix            = matrix.new<color>(rows = 4,columns = 4,initial_value = color.black)
+matrix<line>        myLineMatrix             = matrix.new<line>(rows = 2,columns = 2)
+matrix<label>       myLabelMatrix            = matrix.new<label>(rows = 1,columns = 5)
+matrix<box>         myBoxMatrix              = matrix.new<box>(rows = 3,columns = 2)
+matrix<table>       myTableMatrix            = matrix.new<table>(rows = 2,columns = 2)
+matrix<linefill>    myLinefillMatrix         = matrix.new<linefill>(rows = 1,columns = 1)
+matrix<chart.point> myPointMatrix            = matrix.new<chart.point>(rows = 1,columns = 1)
+matrix<polyline>    myPolylineMatrix         = matrix.new<polyline>(rows = 1,columns = 1)
+
+// -- Matrices of UDTs
+matrix<MyUDT> myUDTMatrix = matrix.new<MyUDT>(rows = 2,columns = 2)
+
+// -----------------------------------------------------------------------------
+// -- Maps
+// -----------------------------------------------------------------------------
+
+map<string,float> myStringFloatMap = map.new<string,float>()
+map<int,string> myIntStringMap = map.new<int,string>()
+map<int,bool> myIntBoolMap = map.new<int,bool>()
+map<int,color> myIntColorMap = map.new<int,color>()
+map<int,MyUDT> myIntUDTMap = map.new<int,MyUDT>()
+map<string,ImportedUDT> myStringImportedUDTMap = map.new<string,ImportedUDT>()
+
+// -- Maps with UDT values
+map<string,MyUDT> myStringUDTMap = map.new<string,MyUDT>()
+
+// -- Maps are NOT allowed with arrays or matrices or maps as values
+// these map lines all FAIL
+// map<int,matrix<float>> myIntMatrixMap = map.new<int,matrix<float>>() // not allowed
+// map<int,array<int>> myIntArrayMap = map.new<int,array<int>>() // not allowed
+// map<int,map<int,int>> myIntMapMap = map.new<int,map<int,int>>() // not allowed
+
+// #############################################################################
+// #  Methods (Examples using `array`,`matrix`,and `map`)
+// #############################################################################
+
+// -----------------------------------------------------------------------------
+// -- Array Methods
+// -----------------------------------------------------------------------------
+
+method my_array_methods(array<int> arr) =>
+    arr.push(10)
+    arr.remove(index = 0)
+    arr.insert(index = 1,value = 5)
+    arr.pop()
+    arr.shift()
+    arr.unshift(1000)
+    arr.reverse()
+    arr.set(index = 3,value = 15)
+    arr.fill(value = 7)
+    arr.sort(order = order.ascending)
+    int firstElement = arr.first()
+    int lastElement = arr.last()
+    bool allPositive = arr.every() // only bool array
+    bool anyNegative = arr.some() // Returns true if at least one element of the id array is true, false otherwise.
+    int elementAtIndex2 = arr.get(index = 2)
+    int minValue = arr.min()
+    int maxValue = arr.max()
+    int rangeValue = arr.range()
+    int sumValue = arr.sum()
+    string joinedString = arr.join(separator = ",")
+    array<int> sortedIndices = arr.sort_indices(order = order.descending)
+    float percentileNearestRank = arr.percentile_nearest_rank(50)
+    float percentileLinearInterpolation = arr.percentile_linear_interpolation(percentage=0.5)
+    int index = arr.binary_search(5)
+    int leftIndex = arr.binary_search_leftmost(5)
+    int rightIndex = arr.binary_search_rightmost(5)
+    float averageValue = arr.avg()
+    float standardDeviation = arr.stdev()
+    float varianceValue = arr.variance()
+    float covarianceValue = arr.covariance(array.from(1.0,2.0,3.0))
+    int modeValue = arr.mode()
+    float medianValue = arr.median()
+    array<int> standardizedArray = arr.standardize()
+    array<int> absoluteValue = arr.abs()
+    int firstIndex = arr.indexof(value = 7)
+    int lastIndex = arr.lastindexof(value = 7)
+    bool includesValue = arr.includes(value = 15)
+    array<int> slicedArray = arr.slice(index_from = 1,index_to = -2)  // this will get indexes  1 - second last
+    int arraySize = arr.size()
+    new_arr = arr.concat(array.from(99,98,97))
+    arr.clear()
+
+// -----------------------------------------------------------------------------
+// -- Matrix Methods
+// -----------------------------------------------------------------------------
+
+method my_matrix_methods(matrix<float> mat) =>
+    float element = mat.get(row = 0,column = 1)
+    mat.set(row = 1,column = 0,value = 3.14)
+    array<float> rowArray = mat.row(row = 0)
+    array<float> colArray = mat.col(column = 1)
+    matrix<float> reshapedMatrix = mat.copy()
+    reshapedMatrix.reshape(rows = 4,columns = 1)
+    mat.add_row(0,array.from(4.0,5.0))
+    mat.add_col(0,array.from(6.0,7.0,8.0,9.0))
+    mat.remove_row(0)
+    mat.remove_col(1)
+    mat.fill(5.5)
+    matrix<float> subMat = mat.submatrix(from_row = 0, to_row = 1, from_column = 0,to_column = 1)
+    matrix<float> copiedMatrix = mat.copy()
+    int columns = mat.columns()
+    int rows = mat.rows()
+    int elementsCount = mat.elements_count()
+    mat.swap_rows(row1=2,row2=3)
+    mat.swap_columns(column1=1,column2=3)
+    float determinant = mat.det()
+    matrix<float> transposedMatrix = mat.transpose()
+    matrix<float> diffMatrix = mat.diff(transposedMatrix)
+    matrix<float> multipliedMatrix = mat.mult(matrix.new<float>(2,2,1.0))
+    matrix<float> inverseMatrix = mat.inv()
+    matrix<float> pseudoInverseMatrix = mat.pinv()
+    int rankValue = mat.rank()
+    float traceValue = mat.trace()
+    array<float> eigenvalues = mat.eigenvalues()
+    matrix<float> eigenvectors = mat.eigenvectors()
+    matrix<float> kronProduct = mat.kron(matrix.new<float>(2,2,2.0))
+    matrix<float> poweredMatrix = mat.pow(2)
+    bool isZero = mat.is_zero()
+    bool isIdentity = mat.is_identity()
+    bool isBinary = mat.is_binary()
+    bool isSymmetric = mat.is_symmetric()
+    bool isAntisymmetric = mat.is_antisymmetric()
+    bool isDiagonal = mat.is_diagonal()
+    bool isAntidiagonal = mat.is_antidiagonal()
+    bool isTriangular = mat.is_triangular()
+    bool isStochastic = mat.is_stochastic()
+    bool isSquare = mat.is_square()
+    matrix<float> concatenatedMatrix = mat.concat(matrix.new<float>(2,2,3.0))
+    mat.reverse()
+    mat.sort()
+    float minValue = mat.min()
+    float maxValue = mat.max()
+    float averageValue = mat.avg()
+    float medianValue = mat.median()
+    float modeValue = mat.mode()
+    matrix<float> sumValue = mat.sum(mat)
+
+// -----------------------------------------------------------------------------
+// -- Map Methods
+// -----------------------------------------------------------------------------
+
+method my_map_methods(map<string,float> myMap) =>
+    myMap.put(key = "apple",value = 1.0)
+    myMap.put(key = "banana",value = 0.5)
+    map<string,float> anotherMap = map.new<string,float>()
+    anotherMap.put("orange",0.75)
+    myMap.put_all(anotherMap)
+    float appleValue = myMap.get(key = "apple")
+    bool hasBanana = myMap.contains(key = "banana")
+    array<string> keys = myMap.keys()
+    array<float> values = myMap.values()
+    myMap.remove(key = "banana")
+    int mapSize = myMap.size()
+    myMap.clear()
+
+// -----------------------------------------------------------------------------
+// -- Box Methods
+// -----------------------------------------------------------------------------
+
+method my_box_methods(box b) =>
+    b.set_border_color(color = color.red)
+    b.set_bgcolor(color = color.new(color.yellow,50))
+    b.set_border_width(width = 2)
+    b.set_border_style(style = line.style_dashed)
+    b.set_extend(extend = extend.right)
+    b.set_text_font_family(font.family_monospace)
+    b.set_text_halign(text.align_center)
+    b.set_text_valign(text.align_bottom)
+    b.set_text_size(size.normal)
+    b.set_text(text = "My Box")
+    b.set_text_color(color.blue)
+    b.set_text_wrap(text.wrap_none)
+    int left = b.get_left()
+    int right = b.get_right()
+    float top = b.get_top()
+    float bottom = b.get_bottom()
+    b.set_left(left = bar_index - 20)
+    b.set_right(right = bar_index -5)
+    b.set_top(top = high + 1)
+    b.set_bottom(bottom = low - 1)
+    b.set_lefttop(left = bar_index - 15,top = high + 2)
+    b.set_rightbottom(right = bar_index - 2,bottom = low - 2)
+    b.copy()
+    b.delete()
+
+// -----------------------------------------------------------------------------
+// -- Line Methods
+// -----------------------------------------------------------------------------
+
+method my_line_methods(line ln) =>
+    ln.set_x1(x = bar_index - 10)
+    ln.set_y1(y = low)
+    ln.set_x2(x = bar_index)
+    ln.set_y2(y = high)
+    ln.set_xy1(x = bar_index - 5,y = low)
+    ln.set_xy2(x = bar_index + 5,y = high)
+    ln.set_xloc(x1= bar_index ,x2= bar_index -5, xloc = xloc.bar_index)
+    ln.set_extend(extend = extend.both)
+    ln.set_color(color = color.green)
+    ln.set_style(style = line.style_dotted)
+    ln.set_width(width = 3)
+    int x1 = ln.get_x1()
+    float y1 = ln.get_y1()
+    int x2 = ln.get_x2()
+    float y2 = ln.get_y2()
+    float price = ln.get_price(x=bar_index)
+    ln.copy()
+    ln.delete()
+
+// -----------------------------------------------------------------------------
+// -- Label Methods
+// -----------------------------------------------------------------------------
+
+method my_label_methods(label lb) =>
+    lb.set_x(x = bar_index)
+    lb.set_y(y = high)
+    lb.set_xy(x = bar_index + 5,y = high + 1)
+    lb.set_xloc(x = bar_index + 10,xloc = xloc.bar_time)
+    lb.set_yloc(yloc = yloc.abovebar)
+    lb.set_text(text = "My Label")
+    lb.set_text_font_family(font.family_default)
+    lb.set_color(color = color.new(color.purple,20))
+    lb.set_style(style = label.style_label_down)
+    lb.set_textcolor(textcolor=color.white)
+    lb.set_size(size = size.small)
+    lb.set_textalign(textalign = text.align_right)
+    lb.set_tooltip(tooltip = "This is a label")
+    int x = lb.get_x()
+    float y = lb.get_y()
+    string _text = lb.get_text() // text is reserved
+    lb.copy()
+    lb.delete()
+
+// -----------------------------------------------------------------------------
+// -- Table Methods
+// -----------------------------------------------------------------------------
+
+method my_table_methods(table tbl) =>
+    tbl.set_position(position = position.middle_center)
+    tbl.set_frame_color(frame_color = color.gray)
+    tbl.set_frame_width(frame_width = 2)
+    tbl.set_border_color(border_color = color.black)
+    tbl.set_border_width(border_width = 1)
+    tbl.cell(column = 0,row = 0,text = "Cell 1",text_color = color.red,bgcolor = color.yellow)
+    tbl.cell_set_text(column = 1,row = 0,text = "Cell 2")
+    tbl.cell_set_text_font_family(column = 1,row = 0,text_font_family= font.family_monospace)
+    tbl.cell_set_tooltip(column = 1,row = 0,tooltip="Cell 2 Tooltip")
+    tbl.cell_set_text_color(column = 1,row = 0,text_color = color.blue)
+    tbl.cell_set_text_halign(column = 1,row = 0, text_halign = text.align_center)
+    tbl.cell_set_text_valign(column = 1,row = 0, text_valign = text.align_center)
+    tbl.cell_set_text_size(column = 1,row = 0, text_size =size.large)
+    tbl.cell_set_bgcolor(column = 1,row = 0,bgcolor = color.new(color.green,70))
+    tbl.cell_set_width(column = 0,row = 0,width = 5)
+    tbl.cell_set_height(column = 0,row = 0,height = 5)
+    tbl.merge_cells(start_column = 0,start_row = 0,end_column = 1,end_row = 1)
+    tbl.clear(start_column= 0, start_row= 0, end_column= 3, end_row= 3) //    tbl.clear(start_column, start_row, end_column=the argument used for start_column, end_row=the argument used for start_row) 
+
+    tbl.delete()
+
+
+
+// -----------------------------------------------------------------------------
+// -- Linefill Methods
+// -----------------------------------------------------------------------------
+
+method my_linefill_methods(linefill lf) =>
+    lf.set_color(color.fuchsia)
+    line line1 = lf.get_line1()
+    line line2 = lf.get_line2()
+    lf.delete()
+
+// -----------------------------------------------------------------------------
+// -- chart.point Methods
+// -----------------------------------------------------------------------------
+
+method my_point_methods(chart.point p) =>
+    p.copy()
+
+// -----------------------------------------------------------------------------
+// -- polyline Methods
+// -----------------------------------------------------------------------------
+
+method my_polyline_methods(polyline pl) =>
+    polyline.new(
+      array.from(chart.point.now(close),chart.point.now(open)), // any array of chart.point
+      curved = false,   // default val shown
+      closed = false,   // default val shown
+      xloc = xloc.bar_index,   // default val shown
+      line_color = color.blue,   // default val shown
+      fill_color = na,   // default val shown
+      line_style = line.style_solid,   // default val shown
+      line_width = 1   // default val shown
+      )
+    pl.delete()
+
+// #############################################################################
+// #  Operators
+// #############################################################################
+
+float a = 10.0
+float b = 5.0
+float c = a + b  // Addition
+float d = a - b  // Subtraction
+float e = a * b  // Multiplication
+float f = a / b  // Division
+float g = a % b  // Modulo
+bool h = a > b   // Greater than
+bool i = a < b   // Less than
+bool j = a >= b  // Greater than or equal to
+bool k = a <= b  // Less than or equal to
+bool l = a == b  // Equal to
+bool m = a != b  // Not equal to
+bool n = true and false  // Logical AND
+bool o = true or false   // Logical OR
+bool p = not true       // Logical NOT
+float q = a > b ? a : not (10 > 100) ? b : c // Ternary conditional, not sits outside a value
+
+// #############################################################################
+// #  Control Flow
+// #############################################################################
+
+// -----------------------------------------------------------------------------
+// -- If
+// -----------------------------------------------------------------------------
+
+if close > open
+    label.new(x = bar_index,y = high,text = "Green Bar",color = color.green)
+else if close < open
+    label.new(x = bar_index,y = low,text = "Red Bar",color = color.red)
+else
+    label.new(x = bar_index,y = hl2,text = "Doji",color = color.gray)
+
+// -----------------------------------------------------------------------------
+// -- Switch
+// -----------------------------------------------------------------------------
+
+// Switch with a value
+int dayOfWeek = dayofweek
+string dayName = switch dayOfWeek
+    dayofweek.sunday    => "Sunday"
+    dayofweek.monday    => "Monday"
+    dayofweek.tuesday   => "Tuesday"
+    dayofweek.wednesday => "Wednesday"
+    dayofweek.thursday  => "Thursday"
+    dayofweek.friday    => "Friday"
+    dayofweek.saturday  => "Saturday"
+    => na
+
+// Switch for conditional logic
+string priceAction = switch
+    close > open     => "Bullish"
+    close < open     => "Bearish"
+    => "Neutral"
+
+// -----------------------------------------------------------------------------
+// -- For
+// -----------------------------------------------------------------------------
+
+for i = 0 to 10 by 2
+    label.new(x = bar_index - i,y = high - i,text = str.tostring(i),color = color.new(color.orange,i * 10))
+
+// -- For...in (for arrays and matrices)
+for val in myIntArray
+    label.new(x=bar_index,y=low,text=str.tostring(val))
+
+for [index,val] in myFloatMatrix
+    label.new(x=bar_index,y=low,text=str.tostring(val))
+
+// -----------------------------------------------------------------------------
+// -- While
+// -----------------------------------------------------------------------------
+
+int counter = 0
+while counter < 5
+    label.new(x = bar_index - counter,y = low + counter,text = "Count: " + str.tostring(counter),color = color.new(color.teal,counter * 20))
+    counter += 1
+
+
+ImportedUDT.new(      )

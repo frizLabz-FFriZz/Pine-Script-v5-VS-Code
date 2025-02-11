@@ -140,8 +140,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
    * @returns True if a new function is detected, false otherwise.
    */
   private detectNewFunction(): boolean {
-    const lastOpeningParenIndex = this.line.lastIndexOf('(', this.position.character);
-    const trim = this.line.slice(0, lastOpeningParenIndex);
+
     const functionMatch = /.*?([\w.]+)\s*\(/.exec(this.line);
     return !!functionMatch && functionMatch[1] !== this.activeFunction;
   }
@@ -287,7 +286,9 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
 
     for (const argName of args) {
       const argDocs = docs.args.find((arg: any) => arg.name === argName);
-      if (!argDocs) continue;
+      if (!argDocs) {
+        continue;
+      }
 
       const { name, desc, type } = argDocs;
       const argType = argDocs?.displayType ?? argDocs?.type ?? '';
@@ -307,7 +308,9 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       activeSignatureHelper.push({ arg: name, type: argType });
       const startEnd = this.findRegexMatchPosition(updatedSyntax, name);
 
-      if (!startEnd) continue;
+      if (!startEnd) {
+        continue;
+      }
 
       const paramInfo = new vscode.ParameterInformation(startEnd, paramDocumentation);
       parameters.push(paramInfo);
@@ -581,7 +584,9 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       }
 
       for (const name of possibleValues) {
-        if (!name || name === def) continue;
+        if (!name || name === def) {
+          continue;
+        }
 
         let nameEdit = typeof name === 'number' ? name : name.split(/[[(]/)[0];
 

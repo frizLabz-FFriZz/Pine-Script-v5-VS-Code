@@ -66,8 +66,8 @@ export class PineTemplates {
   async getIndicatorTemplate() {
     const scriptName = await this.getNameInputBox()
     const name = await Class.PineUserInputs?.getUsername() ?? ''
-    const template = 
-`// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+    const template =
+      `// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © ${name}
 
 //@version=5
@@ -85,8 +85,8 @@ plot(close)`
   async getStrategyTemplate() {
     const scriptName = await this.getNameInputBox()
     const name = await Class.PineUserInputs?.getUsername() ?? ''
-    const template = 
-`// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+    const template =
+      `// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © ${name}
 
 //@version=5
@@ -110,8 +110,8 @@ if (shortCondition)
   async getLibraryTemplate() {
     const scriptName = await this.getNameInputBox()
     const name = await Class.PineUserInputs?.getUsername() ?? ''
-    const template = 
-`// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+    const template =
+      `// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © ${name}
 
 //@version=5
@@ -124,7 +124,7 @@ library("${scriptName}", overlay = true)
 export fun(float x) =>
     //TODO : add function body and return value here
     x`
-    
+
     this.saveAndOpenNewScript(template, scriptName)
     return template
   }

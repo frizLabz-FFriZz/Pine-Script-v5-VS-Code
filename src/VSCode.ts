@@ -35,13 +35,13 @@ export class VSCode {
 
   public static ExtPath() {
     try {
-      return  __dirname
+      return __dirname
     } catch (error) {
       console.error('Error getting ExtensionContext:', error)
       return undefined
     }
   }
-  
+
 
   public static _Languages() {
     return VSCode.vsc.languages
@@ -88,7 +88,7 @@ export class VSCode {
   }
 
   public static _VSCode() {
-    return vscode 
+    return vscode
   }
 
   public static get vsc() {
@@ -124,7 +124,7 @@ export class VSCode {
     if (document) {
       return document
     }
-    return  
+    return
   }
 
   public static get Text() {
@@ -212,6 +212,6 @@ export class VSCode {
   }
 }
 
-export const vsc = VSCode.vsc
+export const { vsc } = VSCode
 
 

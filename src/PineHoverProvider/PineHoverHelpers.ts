@@ -11,13 +11,11 @@ export class PineHoverHelpers {
       if (!input) {
         return input
       }
-      const output = `(${
-        input
+      return `(${input
           .replace(/\\/, '')
           .replace(/[.*+?^${}()\[\]\\]/g, '\\$&')})`
         .replace(/<type(?:,type)*>/g, (match) => match.replace(/type/g, '[^,>]+'))
-        .replace(/for\|for\\\.\\\.\\\.in/, '(for.+in|for)')
-      return output
+        .replace(/for\|for\\\.\\\.\\\.in/, '(for.+in|for)');
     } catch (error) {
       console.error(error)
       return input
@@ -127,11 +125,10 @@ export class PineHoverHelpers {
   static replaceMapArrayMatrix(syntaxContentKey: string, mapArrayMatrix: string): string {
     try {
       const reducedArrayMatrix = mapArrayMatrix.replace(/\.new|\s*/g, '')
-      const out = syntaxContentKey
+      return syntaxContentKey
         .replace(PineHoverHelpers.mapArrayMatrixNew, mapArrayMatrix)
         .replace(PineHoverHelpers.mapArrayMatrixType, reducedArrayMatrix)
-        .replace(/\s{2,}/g, ' ')
-      return out
+        .replace(/\s{2,}/g, ' ');
     } catch (error) {
       console.error(error)
       return syntaxContentKey
@@ -147,10 +144,8 @@ export class PineHoverHelpers {
   static includesHelper(type: string[], thisType: string): boolean {
     try {
 
-      if (thisType.includes('array')) {
-        if (this.includesHelper(type, '[]')) {
-          return true
-        }
+      if (thisType.includes('array') && this.includesHelper(type, '[]')) {
+        return true
       }
 
       if (type.some((str: string) => str.includes(thisType))) {

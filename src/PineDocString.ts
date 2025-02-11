@@ -24,7 +24,7 @@ export class PineDocString {
       return '// Invalid function match'
     }
 
-    const isMethod = docsMatch.isMethod
+    const { isMethod } = docsMatch
     const desc = docsMatch.desc || docsMatch.info || '...'
     let returnedType
     if (docsMatch?.returnedType || docsMatch?.returnedTypes) {
@@ -36,8 +36,7 @@ export class PineDocString {
     const docStringBuild = [`// @function ${isMethod ? '(**method**) - ' : ''}${desc}`]
 
     docsMatch.args.forEach((arg: any) => {
-      let docStringParamBuild = `// @param ${arg.name} ${
-        arg?.info ? arg.info : '*' + Helpers.replaceType(arg?.type || '').trim() + '* ...'
+      let docStringParamBuild = `// @param ${arg.name} ${arg?.info ? arg.info : '*' + Helpers.replaceType(arg?.type || '').trim() + '* ...'
       } ${arg?.default ? '(' + arg.default + ')' : ''}`
 
       docStringBuild.push(docStringParamBuild)
@@ -64,8 +63,7 @@ export class PineDocString {
 
     docsMatch.fields.forEach((field: any) => {
       docStringBuild.push(
-        `// @field ${field.name} *${Helpers.replaceType(field?.type || '')}* - ${
-          field?.desc || field?.info || '...'
+        `// @field ${field.name} *${Helpers.replaceType(field?.type || '')}* - ${field?.desc || field?.info || '...'
         } ${field.default ? ' (' + field.default + ')' : ''}`,
       )
     })

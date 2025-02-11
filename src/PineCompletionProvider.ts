@@ -7,35 +7,76 @@ import * as vscode from 'vscode'
  * Context for Pine Inline Completion.
  * Provides necessary information for generating inline completions in Pine Script.
  */
-export class PineInlineCompletionContext implements vscode.InlineCompletionItemProvider {
-  selectedCompletionText: string | undefined;
-
+export class PineInlineCompletionHandler {
   /**
-   * Provides inline completion items for the current position in the document.
-   * @param document - The current document.
-   * @param position - The current position within the document.
+   * Handles the selection of an inline completion item.
    * @param context - The inline completion context.
-   * @returns null
    */
-  provideInlineCompletionItems(document: vscode.TextDocument, position: vscode.Position, context: vscode.InlineCompletionContext): vscode.ProviderResult<vscode.InlineCompletionItem[] | vscode.InlineCompletionList> {
-    const selectedCompletionText = context.selectedCompletionInfo?.text
+  handleInlineCompletionSelection(context: vscode.InlineCompletionContext): void {
+    const selectedCompletionText = context.selectedCompletionInfo?.text;
 
     if (selectedCompletionText) {
-      this.selectedCompletionText = selectedCompletionText
-      PineSharedCompletionState.setSelectedCompletion(context.selectedCompletionInfo?.text)
-      vscode.commands.executeCommand('editor.action.triggerParameterHints')
+      PineSharedCompletionState.setSelectedCompletion(selectedCompletionText);
+      vscode.commands.executeCommand('editor.action.triggerParameterHints');
     }
+  }
 
-    // console.log(context.selectedCompletionInfo?.text, 'selectedCompletionInfo')
-    return null
+  provideInlineCompletionItems(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+    context: vscode.InlineCompletionContext,
+    token: vscode.CancellationToken
+  ): vscode.ProviderResult<vscode.InlineCompletionItem[] | vscode.InlineCompletionList> {
+    // Implement your inline completion logic here
+    return [];
   }
 
   /**
    * Clears the selected completion text.
    */
-  clearSelectedCompletion() {
-    PineSharedCompletionState.setSelectedCompletion(undefined)
+  clearSelectedCompletion(): void {
+    PineSharedCompletionState.setSelectedCompletion(undefined);
   }
+
+  /**
+   * Registers the completion handler.
+   * @param context - The extension context.
+   */
+  public static register(context: vscode.ExtensionContext): void {
+    const completionHandler = new PineInlineCompletionHandler();
+
+    context.subscriptions.push(
+      vscode.window.onDidChangeTextEditorSelection(event => {
+        const editor = event.textEditor;
+        if (editor) {
+          const position = editor.selection.active;
+          const {document} = editor;
+          const range = new vscode.Range(position, position);
+          let selectedInfo = undefined;
+
+          // Check if the selection change was triggered by an inline completion
+          if (event.kind === vscode.TextEditorSelectionChangeKind.Mouse) {
+            const lastCompletion = PineSharedCompletionState.getLastCompletion();
+            if (lastCompletion && lastCompletion.range.contains(position)) {
+              selectedInfo = {
+                range: lastCompletion.range,
+                text: lastCompletion.insertText as string
+              };
+            }
+          }
+
+          const context: vscode.InlineCompletionContext = {
+            selectedCompletionInfo: selectedInfo,
+            triggerKind: vscode.InlineCompletionTriggerKind.Automatic
+          };
+
+          completionHandler.handleInlineCompletionSelection(context);
+        }
+      })
+    );
+  }
+
+
 }
 
 export class PineCompletionProvider implements vscode.CompletionItemProvider {
@@ -161,9 +202,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         const wordBoundaryRegexArgs = /(?:\(|,)?\s*\b[\w.]+$/
         const argStartMatch = wordBoundaryRegexArgs.exec(textBeforeCursor)
         let argStart = argStartMatch ? position.character - argStartMatch[0].length : position.character
-        if (argStart < 0) {
-          argStart = 0
-        }
+        argStart = Math.max(argStart, 0)
 
         if (!PineSharedCompletionState.getIsLastArg) {
           insertText += ''
@@ -178,9 +217,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         const wordBoundaryRegex = /\b[\w.]+$/
         const wordStartMatch = wordBoundaryRegex.exec(textBeforeCursor)
         let wordStart = wordStartMatch ? position.character - wordStartMatch[0].length : position.character
-        if (wordStart < 0) {
-          wordStart = 0
-        }
+        wordStart = Math.max(wordStart, 0)
 
         // Set the replacement range and insert text of the completion item
         completionItem.insertText = insertText
@@ -317,10 +354,14 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
 
             if (foundIndex === -1) {
               typoTrack++;
-              if (typoTrack > 1) break;
+              if (typoTrack > 1) {
+                break;
+              }
             } else if (foundIndex !== matchIndex) {
               minorTypoCount++;
-              if (minorTypoCount >= 3) break;
+              if (minorTypoCount >= 3) {
+                break;
+              }
               matchIndex = foundIndex + 1;
             } else {
               matchIndex++;
@@ -402,7 +443,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         'controls',
         'annotations',
         'fields',
-        'fields2'
+        'fields2',
       );
 
       const lowerMatch = match.toLowerCase();
@@ -421,10 +462,14 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
 
             if (foundIndex === -1) {
               majorTypoCount++;
-              if (majorTypoCount > 1) break;
+              if (majorTypoCount > 1) {
+                break;
+              }
             } else if (foundIndex !== matchIndex) {
               minorTypoCount++;
-              if (minorTypoCount >= 3) break;
+              if (minorTypoCount >= 3) {
+                break;
+              }
               matchIndex = foundIndex + 1;
             } else {
               matchIndex++;

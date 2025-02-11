@@ -145,7 +145,9 @@ export class PineTypify {
   async typifyDocument() {
     await this.makeMap();
     const document = VSCode.Document;
-    if (!document) return;
+    if (!document) {
+      return;
+    }
 
     const text = document.getText();
     let edits: vscode.TextEdit[] = [];
@@ -157,7 +159,9 @@ export class PineTypify {
       );
       let match;
       while ((match = regex.exec(text)) !== null) {
-        if (!type.baseType || /(plot|hline|undetermined type)/g.test(type.baseType)) continue;
+        if (!type.baseType || /(plot|hline|undetermined type)/g.test(type.baseType)) {
+          continue;
+        }
 
         const lineStartIndex = text.lastIndexOf('\n', match.index) + 1;
         const lineEndIndex = text.indexOf('\n', match.index);
@@ -166,12 +170,18 @@ export class PineTypify {
           document.positionAt(lineEndIndex !== -1 ? lineEndIndex : text.length)
         );
 
-        if (edits.some((edit) => range.intersection(edit.range))) continue;
+        if (edits.some((edit) => range.intersection(edit.range))) {
+          continue;
+        }
 
         const lineText = text.substring(lineStartIndex, lineEndIndex !== -1 ? lineEndIndex : text.length);
-        if (lineText.startsWith('//')) continue;
+        if (lineText.startsWith('//')) {
+          continue;
+        }
 
-        if (RegExp(`\\b(${this.stringifyParsedType(type)}|\\s*\\[\\])\\s+${name}\\b`, 'g').test(lineText)) continue;
+        if (RegExp(`\\b(${this.stringifyParsedType(type)}|\\s*\\[\\])\\s+${name}\\b`, 'g').test(lineText)) {
+          continue;
+        }
 
         const replacementText = lineText
           .replace(new RegExp(`(?<!\\.\\s*)\\b${name}\\b`, 'g'), `${this.stringifyParsedType(type)} ${name}`)

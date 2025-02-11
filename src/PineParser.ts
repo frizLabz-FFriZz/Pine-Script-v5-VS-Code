@@ -55,7 +55,7 @@ export class PineParser {
 
     for (const lib of this.libIds) {
       const libId = lib.id;
-      const alias = lib.alias;
+      const { alias } = lib;
 
       // Check if this.libs already contains the libId and alias
       const existingLib = this.libs.find((item: any) => item.id === libId && item.alias === alias);
@@ -142,7 +142,7 @@ export class PineParser {
       const func: any[] = [];
 
       for (const data of documents) {
-        const script = data.script;
+        const { script } = data;
         if (typeof script !== 'string') {
           // console.log('Script is not a string:', script);
           continue;
@@ -220,7 +220,7 @@ export class PineParser {
       const type: any[] = [];
 
       for (const data of documents) {
-        const script = data.script;
+        const { script } = data;
 
         if (typeof script !== 'string') {
           // console.log('Script is not a string:', script);
