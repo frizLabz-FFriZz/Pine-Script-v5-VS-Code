@@ -11,7 +11,7 @@
       {"include": "#comments"},
       {
          "comment": "export? type name regex",
-         "match": "(?<=(export)\\s+|^)(type|enum)\\s+([a-zA-Z_][a-zA-Z_0-9]*)\\b",
+         "match": "(?<=^(export\\s+)?)(type|enum)\\s+([a-zA-Z_][a-zA-Z_0-9]*)\\b",
          "captures": {
             "1": {"name": "keyword.control.flow.pine"},
             "2": {"name": "keyword.operator..pine"},
@@ -29,7 +29,7 @@
       },
       {
          "comment": "array functions (blocks ta and math due to conflicts with conflitcs with functions like min, max, sum, avg, etc.)",
-         "match": "\\b(array)(\\s*\\.\\s*)(?!ta\\.|math\\.|matrix\\.)(new_float|new_int|new_color|new_bool|new_string|new_line|new_box|new_table|new_label|new_linefill|copy|slice|size|get|min|max|push|range|sum|set|from|fill|insert|join|remove|pop|clear|sort|sort_indices|percentrank|percentile_nearest_rank|percentile_linear_interpolation|abs|binary_search|binary_search_leftmost|binary_search_rightmost|concat|avg|stdev|variance|covariance|mode|median|standardize|indexof|lastindexof|includes|shift|unshift|reverse|first|last|every|some)\\b(?=\\s*\\()",
+         "match": "\\b(?!(?!array))(array)(\\s*\\.\\s*)(new_float|new_int|new_color|new_bool|new_string|new_line|new_box|new_table|new_label|new_linefill|copy|slice|size|get|min|max|push|range|sum|set|from|fill|insert|join|remove|pop|clear|sort|sort_indices|percentrank|percentile_nearest_rank|percentile_linear_interpolation|abs|binary_search|binary_search_leftmost|binary_search_rightmost|concat|avg|stdev|variance|covariance|mode|median|standardize|indexof|lastindexof|includes|shift|unshift|reverse|first|last|every|some)\\b(?=\\s*\\()",
          "captures": {
             "1": {"name": "support.type.pine"},
             "2": {"name": "punctuation.pine"},
@@ -38,7 +38,7 @@
       },
       {
          "comment": "matrix  functions",
-         "match": "\\b(?!ta|math|array)(matrix)(\\s*\\.\\s*)(row|col|reshape|get|set|add_row|add_col|remove_row|remove_col|fill|submatrix|copy|columns|rows|elements_count|concat|swap_rows|swap_columns|reverse|sort|det|min|max|avg|median|mode|transpose|sum|diff|mult|pinv|inv|rank|trace|eigenvalues|eigenvectors|kron|pow|is_zero|is_identity|is_binary|is_symmetric|is_antisymmetric|is_diagonal|is_antidiagonal|is_triangular|is_stochastic|is_square)\\s*(?=\\s*\\()",
+         "match": "\\b(?!(?!matrix))(matrix)(\\s*\\.\\s*)(row|col|reshape|get|set|add_row|add_col|remove_row|remove_col|fill|submatrix|copy|columns|rows|elements_count|concat|swap_rows|swap_columns|reverse|sort|det|min|max|avg|median|mode|transpose|sum|diff|mult|pinv|inv|rank|trace|eigenvalues|eigenvectors|kron|pow|is_zero|is_identity|is_binary|is_symmetric|is_antisymmetric|is_diagonal|is_antidiagonal|is_triangular|is_stochastic|is_square)\\s*(?=\\s*\\()",
          "captures": {
             "1": {"name": "support.type.pine"},
             "2": {"name": "punctuation.pine"},
@@ -47,7 +47,7 @@
       },
       {
          "comment": "map functions",
-         "match": "\\b(map)(\\s*\\.\\s*)(copy|size|get|contains|keys|values|put|put_all|remove|clear)\\s*(?=\\s*\\()",
+         "match": "\\b(?!(?!map))(map)(\\s*\\.\\s*)(copy|size|get|contains|keys|values|put|put_all|remove|clear)\\s*(?=\\s*\\()",
          "captures": {
             "1": {"name": "support.type.pine"},
             "2": {"name": "punctuation.pine"},
@@ -56,7 +56,7 @@
       },
       {
          "comment": "highlights import, export, method, varip, var",
-         "match": "\\b(import|export|method|var(?:ip)?)\\b(?=\\s\\w)",
+         "match": "\\b(import|export|method|var(?:ip)?)\\b(?=\\s+\\w)",
          "name": "keyword.control.flow.pine"
       },
       {
@@ -316,7 +316,7 @@
          "patterns": [
             {
                "comment": "fields/param types",
-               "match": "(?<=^|,|\\(|var|varip|simple|series|input|const)(?:\\s*)(?:(array|matrix|map)<(?:(?:([a-zA-Z_][A-z0-9_]*),)?(?:(?:([a-zA-Z_][A-z0-9_]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*))>)|(?:([a-zA-Z_][A-z0-9_]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*)(?:\\s*\\[\\](?=\\s))?)(?=\\s+[a-zA-Z_][A-z0-9_]*(?:(?:(?:\\t| )*(?:=\\s*(?:(?:'.*')|(?:\".*\")|(?:\\d*(?:\\.(?:\\d+[eE]?\\d+)?\\d*|\\d+))|(?:#[a-fA-F0-9]{6,8})|(?:(?:[a-zA-Z_][A-z0-9_]*\\.)*[a-zA-Z_][A-z0-9_]*))))?))",
+               "match": "(?:(?<=^|,|\\(|var|varip|simple|series|input|const)\\s*)(?:(array|matrix|map)<(?:(?:([a-zA-Z_][A-z0-9_]*),)?(?:(?:([a-zA-Z_][A-z0-9_]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*))>)|(?:([a-zA-Z_][A-z0-9_]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*)(?:\\s*\\[\\](?=\\s))?)(?=\\s+[a-zA-Z_][A-z0-9_]*(?:(?:(?:\\t| )*(?:=\\s*(?:(?:'.*')|(?:\".*\")|(?:\\d*(?:\\.(?:\\d+[eE]?\\d+)?\\d*|\\d+))|(?:#[a-fA-F0-9]{6,8})|(?:(?:[a-zA-Z_][A-z0-9_]*\\.)*[a-zA-Z_][A-z0-9_]*))))?))",
                "captures": {
                   "1": {"name": "storage.type.pine"},
                   "2": {"name": "keyword.operator.new.pine"},
@@ -435,15 +435,21 @@
                   "0": {"name": "constant.color.pine"},
                   "1": {"name": "color.$1.pine"}
                }
+            },
+            {
+               "comment": "Predefined color constants",
+               "match": "\\bcolor\\.rgb\\s*\\((?:(\\s*\\d+(?:\\.\\d*)?\\s*),)(?:(\\s*\\d+(?:\\.\\d*)?\\s*),)(?:(\\s*\\d+(?:\\.\\d*)?\\s*))(?:,(?:(?:\\s*\\d+(?:\\.\\d*)?\\s*)))?\\)",
+               "captures": {
+                  "0": {"name": "constant.color.pine"},
+                  "1": {"name": "color.red.pine"},
+                  "2": {"name": "color.green.pine"},
+                  "3": {"name": "color.blue.pine"}
+               }
             }
          ]
       },
       "constants": {
          "patterns": [
-            {
-               "match": "\\bcolor\\.(black|silver|gray|white|maroon|red|purple|fuchsia|green|lime|olive|yellow|navy|blue|teal|orange|aqua)\\b",
-               "captures": {"0": {"name": "color.$1.pine"}}
-            },
             {
                "comment": "special type highlighting regex",
                "match": "\\b(simple|literal|series|const|plot)\\b\\s+(?=[^\\(\\.])",
@@ -456,7 +462,7 @@
             },
             {
                "comment": "highlights 'this' and 'self'",
-               "match": "\\b(this|self)\\b(?=\\.\\w+\\b|\\s*(?!\\(\\w))",
+               "match": "(?<!\/\/.*)\\b(this|self)\\b(?=\\.\\w+\\b|\\s*(?!\\(\\w))",
                "captures": {"1": {"name": "entity.name.tag.pine"}}
             },
             {
@@ -603,7 +609,7 @@
             },
             {
                "comment": "",
-               "match": "\\b(ta)(\\s*\\.\\s*)(wad|tr|vwap|obv|accdist|iii|nvi|pvi|pvt|wvad)",
+               "match": "\\b(ta)(\\s*\\.\\s*)(wad|tr|vwap|obv|accdist|iii|nvi|pvi|pvt|wvad)(?=\\s*[^\\(])",
                "captures": {
                   "1": {"name": "variable.pine"},
                   "2": {"name": "punctuation.pine"},
