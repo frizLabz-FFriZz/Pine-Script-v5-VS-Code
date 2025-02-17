@@ -499,6 +499,35 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
 
 
 
+
+// PineInlineCompletionContext.ts
+async function safeExecute<T>(action: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await action();
+  } catch (error) {
+    console.error(error);
+    return fallback;
+  }
+}
+
+function buildLabel(name: string, doc: any, namespace: string | null): { label: string; openParen: string; closeParen: string } {
+  let label = name;
+  let openParen = '';
+  let closeParen = '';
+  const kind = doc?.kind;
+  if (kind && (kind.includes('Function') || kind.includes('Method'))) {
+    label = name.replace(/\(\)/g, '');
+    openParen = '(';
+    closeParen = ')';
+  }
+  if (doc?.isMethod && namespace) {
+    label = `${namespace}.${label.split('.').pop()}`;
+  }
+  return { label: label + openParen + closeParen, openParen, closeParen };
+}
+
+
+
 export class PineInlineCompletionContext implements vscode.InlineCompletionItemProvider {
   completionItems: vscode.InlineCompletionItem[] = []
   docType: any
@@ -580,74 +609,24 @@ export class PineInlineCompletionContext implements vscode.InlineCompletionItemP
     position: vscode.Position,
     argCompletion: boolean = false,
   ): Promise<vscode.InlineCompletionItem | null> {
-    try {
-      // Determine if the item is a method
-      const isMethod = doc?.isMethod ?? false
-      // Get the kind of the item
-      const kind = doc?.kind
-
-      // name the label variable
-      let label = name
-      // If the item is a function or method, add parentheses to the name
-      let openParen = ''
-      let closeParen = ''
-      if (kind && (kind.includes('Function') || kind.includes('Method'))) {
-        label = name.replace(/\(\)/g, '')
-        openParen = '('
-        closeParen = ')'
-      }
-
-      // Format the syntax and check for overloads
-      const modifiedSyntax = Helpers.formatSyntax(name, doc, isMethod, namespace)
-      // Format the label and description
-      label = isMethod ? `${namespace}.${label.split('.').pop()}` : label
-      label = label + openParen + closeParen
-
-      const formattedDesc = Helpers.formatUrl(Helpers?.checkDesc(doc?.desc))
-
-      // Use a snippet string for the insert text
-      let insertText = label
-      const textBeforeCursor = document.lineAt(position.line).text.substring(0, position.character)
-
-      // If it's an argument completion, prepend a space
+    return safeExecute(async () => {
+      const { label } = buildLabel(name, doc, namespace);
+      let insertText = label;
+      const textBeforeCursor = document.lineAt(position.line).text.substring(0, position.character);
+      let startPosition: number;
       if (argCompletion) {
-        const wordBoundaryRegexArgs = /(?:\(|,)?\s*\b[\w.]+$/
-        const argStartMatch = wordBoundaryRegexArgs.exec(textBeforeCursor)
-        let argStart = argStartMatch ? position.character - argStartMatch[0].length : position.character
-        argStart = Math.max(argStart, 0)
-
-        if (!PineSharedCompletionState.getIsLastArg) {
-          insertText += ''
-        }
-
-        // Create a new InlineCompletionItem object
-        const inlineCompletionItem = new vscode.InlineCompletionItem(
-          insertText,
-          new vscode.Range(new vscode.Position(position.line, argStart), position),
-        )
-        return inlineCompletionItem
-
+        const argStartMatch = /(?:\(|,)?\s*\b[\w.]+$/.exec(textBeforeCursor);
+        startPosition = Math.max(position.character - (argStartMatch ? argStartMatch[0].length : 0), 0);
       } else {
-        // Calculate the start position of the word being completed
-        const wordBoundaryRegex = /\b[\w.]+$/
-        const wordStartMatch = wordBoundaryRegex.exec(textBeforeCursor)
-        let wordStart = wordStartMatch ? position.character - wordStartMatch[0].length : position.character
-        wordStart = Math.max(wordStart, 0)
-
-        // Create a new InlineCompletionItem object
-        const inlineCompletionItem = new vscode.InlineCompletionItem(
-          insertText,
-          new vscode.Range(new vscode.Position(position.line, wordStart), position),
-        )
-
-        return inlineCompletionItem
+        const wordStartMatch = /\b[\w.]+$/.exec(textBeforeCursor);
+        startPosition = Math.max(position.character - (wordStartMatch ? wordStartMatch[0].length : 0), 0);
       }
-    } catch (error) {
-      console.error(error)
-      return null
-    }
+      return new vscode.InlineCompletionItem(
+        insertText,
+        new vscode.Range(new vscode.Position(position.line, startPosition), position),
+      );
+    }, null);
   }
-
 
   /**
     * Provides inline completion items for method completions.
@@ -815,7 +794,7 @@ export class PineInlineCompletionContext implements vscode.InlineCompletionItemP
             const foundIndex = lowerName.indexOf(char, matchIndex)
 
             if (foundIndex === -1) {
-              majorTypoCount++
+              majorTypoCount++;
               if (majorTypoCount > 1) {
                 break
               }
@@ -864,6 +843,26 @@ export class PineInlineCompletionContext implements vscode.InlineCompletionItemP
       if (!linePrefix) {
         return []
       }
+
+      // Check if we are right after an opening parenthesis (possibly with whitespace)
+      const argumentContextRegex = /\([\s]*$/;
+      if (argumentContextRegex.test(linePrefix.trim())) {
+        // Trigger argument completions directly
+        const functionCallMatch = linePrefix.trim().match(/(\w+)\([\s]*$/); // Capture function name if needed for context
+        if (functionCallMatch && functionCallMatch[1]) {
+          const functionName = functionCallMatch[1];
+          const functionDoc = Class.PineDocsManager.getFunctionDocs(functionName); // Use the new getFunctionDocs
+
+          if (functionDoc && functionDoc.args) { // Check if functionDoc and args exist
+            PineSharedCompletionState.setCompletions(functionDoc.args); // Set completions from functionDoc.args
+            PineSharedCompletionState.setArgumentCompletionsFlag(true); // Ensure flag is set
+            return await this.argumentInlineCompletions(document, position, functionDoc.args); // Pass functionDoc.args to argumentInlineCompletions
+          }
+        }
+        return []; // If no function name or args found in this context, return empty
+      }
+
+
       // If there are no completions in the shared state, match the text before the cursor
       const match = linePrefix.match(/[\w.]+$/)?.[0].trim()
       if (!match) {
@@ -909,7 +908,7 @@ export class PineInlineCompletionContext implements vscode.InlineCompletionItemP
         )
 
         if (completionItem) {
-          completionItem.filterText = `order${index.toString().padStart(4, '0')}` // Keep sortText if needed for ordering
+          completionItem.insertText = `order${index.toString().padStart(4, '0')}` // Keep sortText if needed for ordering
           this.completionItems.push(completionItem)
         }
         index++
@@ -922,4 +921,7 @@ export class PineInlineCompletionContext implements vscode.InlineCompletionItemP
       return []
     }
   }
+
+
 }
+
