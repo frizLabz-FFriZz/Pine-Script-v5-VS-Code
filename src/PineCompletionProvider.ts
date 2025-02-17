@@ -642,15 +642,11 @@ export class PineInlineCompletionContext implements vscode.InlineCompletionItemP
         wordStart = Math.max(wordStart, 0)
 
         // Create a new InlineCompletionItem object
-        const inlineCompletionItem = new vscode.InlineCompletionItem(
-          insertText,
-          new vscode.Range(new vscode.Position(position.line, wordStart), position),
-        )
+        return new vscode.InlineCompletionItem(
+                  insertText,
+                  new vscode.Range(new vscode.Position(position.line, wordStart), position),
+                );
 
-        // inlineCompletionItem.documentation = new vscode.MarkdownString(`${formattedDesc} \`\`\`pine\n${modifiedSyntax}\n\`\`\``)
-        // const detail = kind ?? ''
-        // inlineCompletionItem.detail = detail
-        return inlineCompletionItem
       }
     } catch (error) {
       console.error(error)
