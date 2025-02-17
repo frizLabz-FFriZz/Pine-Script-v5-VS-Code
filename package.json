@@ -4,361 +4,118 @@
   "displayName": "Pine Script v5",
   "description": "Pine Script Language Server",
   "repository": {
-    "type": "git",
-    "url": "https://github.com/FFriZ/Pine-Script-v5-VS-Code"
+    "type": "git"                                            ,
+    "url" : "https://github.com/FFriZ/Pine-Script-v5-VS-Code"
   },
   "version": "0.1.8",
   "type": "commonjs",
   "engines": {
-    "vscode": "^1.93.0",
-    "node": ">=16.0.0"
+    "vscode": "^1.93.0" ,
+    "node"  : ">=16.0.0"
   },
   "categories": [
-    "Language Packs",
+    "Language Packs"       ,
     "Programming Languages",
-    "Themes",
-    "Snippets",
+    "Themes"               ,
+    "Snippets"             ,
     "Other"
   ],
   "keywords": [
-    "pine",
-    "pinescript",
-    "Pine Script",
-    "Pinescript",
-    "TradingView",
+    "pine"           ,
+    "pinescript"     ,
+    "Pine Script"    ,
+    "Pinescript"     ,
+    "TradingView"    ,
     "TradingView.com"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+  ],
   "icon": "media/PineLogo.png",
   "capabilities": {
-    "untrustedWorkspaces": {
-      "supported": true
-    },
+    "untrustedWorkspaces": { "supported": true },
     "secrets": true
   },
   "scripts": {
-    "webpack": "webpack --devtool source-map --mode development",
-    "compile": "pnpm run webpack",
-    "start": "pnpm run compile && code --extensionDevelopmentPath=.",
-    "build-docs": "pnpm run typedoc --name 'Pine Script v5'",
-    "vscode:prepublish": "pnpm run compile",
-    "compile-tests": "pnpm run tsc -p . --outDir out",
-    "watch-tests": "pnpm run tsc -p . -w --outDir out",
-    "lint": "pnpm run eslint src --ext ts",
-    "vsce-package": "vsce package -o pinescriptv5.vsix"
+    "webpack"          : "webpack --devtool source-map --mode development"      ,
+    "compile"          : "pnpm run webpack"                                     ,
+    "start"            : "pnpm run compile && code --extensionDevelopmentPath=.",
+    "build-docs"       : "pnpm run typedoc --name 'Pine Script v5'"             ,
+    "vscode:prepublish": "pnpm run compile"                                     ,
+    "compile-tests"    : "pnpm run tsc -p . --outDir out"                       ,
+    "watch-tests"      : "pnpm run tsc -p . -w --outDir out"                    ,
+    "lint"             : "pnpm run eslint src --ext ts"                         ,
+    "vsce-package"     : "vsce package -o pinescriptv5.vsix"
   },
   "main": "./dist/extension.js",
   "contributes": {
     "themes": [
-      {
-        "label": "Pine-*Preferred",
-        "id": "Dark Theme (*Preferred)",
-        "uiTheme": "vs-dark",
-        "path": "themes/Pine-Preferred.json"
-      },
-      {
-        "label": "Pine-Original-Dark",
-        "id": "Dark Theme (Original)",
-        "uiTheme": "vs-dark",
-        "path": "themes/Pine-Original.json"
-      },
-      {
-        "label": "Pine-V4-Classic",
-        "id": "Dark V4 Theme (Deep Coverage)",
-        "uiTheme": "vs-dark",
-        "path": "themes/Pine-classic-v4.json"
-      },
-      {
-        "label": "Pine-Basic",
-        "id": "Dark Theme (Basic)",
-        "uiTheme": "vs-dark",
-        "path": "themes/Pine-Basic.json"
-      },
-      {
-        "label": "Pine-Universal",
-        "id": "Dark Theme (Universal)",
-        "uiTheme": "vs-dark",
-        "path": "themes/Pine-Universal.json"
-      },
-      {
-        "label": "Pine-Cold",
-        "id": "Dark Theme (Cold)",
-        "uiTheme": "vs-dark",
-        "path": "themes/Pine-Cold.json"
-      },
-      {
-        "label": "Pine-Cool",
-        "id": "Dark Theme (Cool)",
-        "uiTheme": "vs-dark",
-        "path": "themes/Pine-Cool.json"
-      },
-      {
-        "label": "Pine-Dark #01",
-        "id": "Dark Theme (#1)",
-        "uiTheme": "vs-dark",
-        "path": "themes/Pine-Dark#01.json"
-      },
-      {
-        "label": "Pine-Dark #02",
-        "id": "Dark Theme (#2)",
-        "uiTheme": "vs-dark",
-        "path": "themes/Pine-Dark#02.json"
-      },
-      {
-        "label": "Pine-Dark #03",
-        "id": "Dark Theme (#3)",
-        "uiTheme": "vs-dark",
-        "path": "themes/Pine-Dark#03.json"
-      },
-      {
-        "label": "Pine-Dark #04",
-        "id": "Dark Theme (#4)",
-        "uiTheme": "vs-dark",
-        "path": "themes/Pine-Dark#04.json"
-      },
-      {
-        "label": "Pine-Dark #05",
-        "id": "Dark Theme (#5)",
-        "uiTheme": "vs-dark",
-        "path": "themes/Pine-Dark#05.json"
-      },
-      {
-        "label": "Pine-Dark #06",
-        "id": "Dark Theme (#6)",
-        "uiTheme": "vs-dark",
-        "path": "themes/Pine-Dark#06.json"
-      },
-      {
-        "label": "Pine-Dark #07",
-        "id": "Dark Theme (#7)",
-        "uiTheme": "vs-dark",
-        "path": "themes/Pine-Dark#07.json"
-      },
-      {
-        "label": "Pine-Dark #08",
-        "id": "Dark Theme (#8)",
-        "uiTheme": "vs-dark",
-        "path": "themes/Pine-Dark#08.json"
-      },
-      {
-        "label": "Pine-Dark #09",
-        "id": "Dark Theme (#9)",
-        "uiTheme": "vs-dark",
-        "path": "themes/Pine-Dark#09.json"
-      },
-      {
-        "label": "Pine-Light #01",
-        "id": "Light Theme (#1)",
-        "uiTheme": "vs",
-        "path": "themes/Pine-Light#01.json"
-      },
-      {
-        "label": "Pine-Light #02",
-        "id": "Light Theme (#2)",
-        "uiTheme": "vs",
-        "path": "themes/Pine-Light#02.json"
-      }
+      { "label": "Pine-*Preferred"   , "id": "Dark Theme (*Preferred)"      , "uiTheme": "vs-dark", "path": "themes/Pine-Preferred.json"  },
+      { "label": "Pine-Original-Dark", "id": "Dark Theme (Original)"        , "uiTheme": "vs-dark", "path": "themes/Pine-Original.json"   },
+      { "label": "Pine-V4-Classic"   , "id": "Dark V4 Theme (Deep Coverage)", "uiTheme": "vs-dark", "path": "themes/Pine-classic-v4.json" },
+      { "label": "Pine-Basic"        , "id": "Dark Theme (Basic)"           , "uiTheme": "vs-dark", "path": "themes/Pine-Basic.json"      },
+      { "label": "Pine-Universal"    , "id": "Dark Theme (Universal)"       , "uiTheme": "vs-dark", "path": "themes/Pine-Universal.json"  },
+      { "label": "Pine-Cold"         , "id": "Dark Theme (Cold)"            , "uiTheme": "vs-dark", "path": "themes/Pine-Cold.json"       },
+      { "label": "Pine-Cool"         , "id": "Dark Theme (Cool)"            , "uiTheme": "vs-dark", "path": "themes/Pine-Cool.json"       },
+      { "label": "Pine-Dark #01"     , "id": "Dark Theme (#1)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#01.json"    },
+      { "label": "Pine-Dark #02"     , "id": "Dark Theme (#2)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#02.json"    },
+      { "label": "Pine-Dark #03"     , "id": "Dark Theme (#3)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#03.json"    },
+      { "label": "Pine-Dark #04"     , "id": "Dark Theme (#4)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#04.json"    },
+      { "label": "Pine-Dark #05"     , "id": "Dark Theme (#5)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#05.json"    },
+      { "label": "Pine-Dark #06"     , "id": "Dark Theme (#6)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#06.json"    },
+      { "label": "Pine-Dark #07"     , "id": "Dark Theme (#7)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#07.json"    },
+      { "label": "Pine-Dark #08"     , "id": "Dark Theme (#8)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#08.json"    },
+      { "label": "Pine-Dark #09"     , "id": "Dark Theme (#9)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#09.json"    },
+      { "label": "Pine-Light #01"    , "id": "Light Theme (#1)"             , "uiTheme": "vs"     , "path": "themes/Pine-Light#01.json"   },
+      { "label": "Pine-Light #02"    , "id": "Light Theme (#2)"             , "uiTheme": "vs"     , "path": "themes/Pine-Light#02.json"   }
     ],
     "configuration": {},
-    "submenus": [
-      {
-        "id": "pine.mysubmenuNonPineFile",
-        "label": " Pine Script v5"
-      },
-      {
-        "id": "pine.mysubmenu2",
-        "label": " Pine Script v5"
-      }
-    ],
-    "commands": [
-      {
-        "command": "pine.mysubmenuNonPineFile",
-        "title": "Pine Script Options",
-        "category": "navigation",
-        "when": "!editorLangId == pine"
-      },
-      {
-        "command": "pine.mysubmenu2",
-        "title": "Pine Script Options",
-        "category": "navigation",
-        "when": "editorLangId == pine"
-      },
-      {
-        "command": "pine.typify",
-        "title": "Typify Variables",
-        "category": "navigation"
-      },
-      {
-        "command": "pine.completionAccepted",
-        "title": "Completion Accepted"
-      },
-      {
-        "command": "pine.getStandardList",
-        "title": "Open Built-in Script",
-        "category": "navigation"
-      },
-      {
-        "command": "pine.docString",
-        "title": "Generate Docstring",
-        "when": "editorLangId == pine",
-        "category": "navigation"
-      },
-      {
-        "command": "pine.setUsername",
-        "title": "Set/Remove Username",
-        "category": "navigation",
-        "when": "editorLangId == pine"
-      },
-      {
-        "command": "pine.getIndicatorTemplate",
-        "title": "New Indicator",
-        "category": "navigation"
-      },
-      {
-        "command": "pine.getStrategyTemplate",
-        "title": "New Strategy",
-        "category": "navigation"
-      },
-      {
-        "command": "pine.getLibraryTemplate",
-        "title": "New Library",
-        "category": "navigation"
-      }
-    ],
+    "submenus": [ { "id": "pine.mysubmenuNonPineFile", "label": " Pine Script v5" }, { "id": "pine.mysubmenu2", "label": " Pine Script v5" } ],
+    "commands": [ { "command": "pine.mysubmenuNonPineFile", "title": "Pine Script Options", "category": "navigation", "when": "!editorLangId == pine" }, { "command": "pine.mysubmenu2", "title": "Pine Script Options", "category": "navigation", "when": "editorLangId == pine" }, { "command": "pine.typify", "title": "Typify Variables", "category": "navigation" }, { "command": "pine.completionAccepted", "title": "Completion Accepted" }, { "command": "pine.getStandardList", "title": "Open Built-in Script", "category": "navigation" }, { "command": "pine.docString", "title": "Generate Docstring", "when": "editorLangId == pine", "category": "navigation" }, { "command": "pine.setUsername", "title": "Set/Remove Username", "category": "navigation", "when": "editorLangId == pine" }, { "command": "pine.getIndicatorTemplate", "title": "New Indicator", "category": "navigation" }, { "command": "pine.getStrategyTemplate", "title": "New Strategy", "category": "navigation" }, { "command": "pine.getLibraryTemplate", "title": "New Library", "category": "navigation" } ],
     "menus": {
-      "editor/context": [
-        {
-          "submenu": "pine.mysubmenuNonPineFile",
-          "when": "editorLangId !== pine",
-          "group": "Pine"
-        },
-        {
-          "submenu": "pine.mysubmenu2",
-          "group": "1Pine",
-          "when": "editorLangId == pine"
-        },
-        {
-          "command": "pine.typify",
-          "group": "1Pine",
-          "when": "editorLangId == pine && editorHasSelection"
-        },
-        {
-          "command": "pine.docString",
-          "group": "1Pine",
-          "when": "editorLangId == pine && editorHasSelection"
-        },
-        {
-          "command": "pine.getStandardList",
-          "group": "1Pine",
-          "when": "editorLangId == pine"
-        }
-      ],
-      "pine.mysubmenuNonPineFile": [
-        {
-          "command": "pine.getStandardList"
-        },
-        {
-          "command": "pine.getIndicatorTemplate"
-        },
-        {
-          "command": "pine.getStrategyTemplate"
-        },
-        {
-          "command": "pine.getLibraryTemplate"
-        }
-      ],
-      "pine.mysubmenu2": [
-        {
-          "command": "pine.docString"
-        },
-        {
-          "command": "pine.setUsername"
-        },
-        {
-          "command": "pine.typify"
-        },
-        {
-          "command": "pine.getIndicatorTemplate"
-        },
-        {
-          "command": "pine.getStrategyTemplate"
-        },
-        {
-          "command": "pine.getLibraryTemplate"
-        }
-      ]
+      "editor/context"           : [ { "submenu": "pine.mysubmenuNonPineFile", "when": "editorLangId !== pine", "group": "Pine"                                    }, { "submenu": "pine.mysubmenu2", "group": "1Pine", "when": "editorLangId == pine"                                         }, { "command": "pine.typify"             , "group": "1Pine", "when": "editorLangId == pine && editorHasSelection" }, { "command": "pine.docString"           , "group": "1Pine", "when": "editorLangId == pine && editorHasSelection" }, { "command": "pine.getStandardList"    , "group": "1Pine", "when": "editorLangId == pine" }                                           ],
+      "pine.mysubmenuNonPineFile": [ {                                                                                           "command": "pine.getStandardList" }, {                                                                                 "command": "pine.getIndicatorTemplate" }, { "command": "pine.getStrategyTemplate"                                                                         }, { "command": "pine.getLibraryTemplate"                                                                           }                                                                                                                                        ],
+      "pine.mysubmenu2"          : [ {                                                                                           "command": "pine.docString"       }, {                                                                                 "command": "pine.setUsername"          }, { "command": "pine.typify"                                                                                      }, { "command": "pine.getIndicatorTemplate"                                                                         }, { "command": "pine.getStrategyTemplate"                                                   }, { "command": "pine.getLibraryTemplate" } ]
     },
     "snippets": [],
     "languages": [
-      {
-        "id": "pine",
-        "icon": {
-          "light": "media/PineLogo.png",
-          "dark": "media/PineLogo.png"
-        },
-        "aliases": [
-          "pinescript",
-          "pine"
-        ],
-        "extensions": [
-          ".ps",
-          ".pine",
-          ".pinescript"
-        ],
-        "configuration": "config/language-configuration.json"
-      }
+      { "id": "pine", "icon": { "light": "media/PineLogo.png", "dark": "media/PineLogo.png" }, "aliases": [ "pinescript", "pine" ], "extensions": [ ".ps", ".pine", ".pinescript" ], "configuration": "config/language-configuration.json" }
     ],
-    "documentSymbolProvider": [
-      {
-        "language": "pine",
-        "scheme": "file"
-      }
-    ],
+    "documentSymbolProvider": [ { "language": "pine", "scheme": "file" } ],
     "grammars": [
-      {
-        "language": "pine",
-        "scopeName": "source.pine",
-        "path": "syntaxes/pine.tmLanguage.json"
-      },
-      {
-        "scopeName": "source.markdown",
-        "path": "syntaxes/pine-embedded.tmLanguage.json",
-        "injectTo": [
-          "text.html.markdown"
-        ]
-      }
+      { "language": "pine", "scopeName": "source.pine"    , "path": "syntaxes/pine.tmLanguage.json"                                                },
+      {                     "scopeName": "source.markdown", "path": "syntaxes/pine-embedded.tmLanguage.json", "injectTo": [ "text.html.markdown" ] }
     ]
   },
   "dependencies": {
-    "debounce": "^2.1.1",
-    "lodash": "^4.17.21",
+    "debounce"  : "^2.1.1"  ,
+    "lodash"    : "^4.17.21",
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {
-    "@types/debounce": "^1.2.4",
-    "@types/lodash": "^4.17.7",
-    "@types/node": "^22.5.4",
-    "@types/source-map-support": "^0.5.10",
-    "@types/vscode": "^1.93.0",
-    "@typescript-eslint/eslint-plugin": "^7.0.0",
-    "@typescript-eslint/parser": "^7.0.0",
-    "@vscode/vsce": "^3.1.0",
-    "eslint": "^8.56.0",
-    "eslint-config-airbnb": "^19.0.4",
-    "eslint-config-airbnb-typescript": "^18.0.0",
-    "eslint-plugin-import": "^2.30.0",
-    "eslint-plugin-jsx-a11y": "^6.10.0",
-    "eslint-plugin-react": "^7.35.2",
-    "eslint-plugin-react-hooks": "^4.6.2",
-    "nodemon": "^3.1.4",
-    "remark-preset-wooorm": "^9.0.0",
-    "source-map-support": "^0.5.21",
-    "ts-loader": "^9.5.1",
-    "type-coverage": "^2.0.0",
-    "typedoc": "^0.26.7",
-    "typescript": "^5.7.3",
-    "webpack": "^5.94.0",
-    "webpack-cli": "^5.1.4",
-    "xo": "^0.54.0"
+    "@types/debounce"                 : "^1.2.4"  ,
+    "@types/lodash"                   : "^4.17.7" ,
+    "@types/node"                     : "^22.5.4" ,
+    "@types/source-map-support"       : "^0.5.10" ,
+    "@types/vscode"                   : "^1.93.0" ,
+    "@typescript-eslint/eslint-plugin": "^7.0.0"  ,
+    "@typescript-eslint/parser"       : "^7.0.0"  ,
+    "@vscode/vsce"                    : "^3.1.0"  ,
+    "eslint"                          : "^8.56.0" ,
+    "eslint-config-airbnb"            : "^19.0.4" ,
+    "eslint-config-airbnb-typescript" : "^18.0.0" ,
+    "eslint-plugin-import"            : "^2.30.0" ,
+    "eslint-plugin-jsx-a11y"          : "^6.10.0" ,
+    "eslint-plugin-react"             : "^7.35.2" ,
+    "eslint-plugin-react-hooks"       : "^4.6.2"  ,
+    "nodemon"                         : "^3.1.4"  ,
+    "remark-preset-wooorm"            : "^9.0.0"  ,
+    "source-map-support"              : "^0.5.21" ,
+    "ts-loader"                       : "^9.5.1"  ,
+    "type-coverage"                   : "^2.0.0"  ,
+    "typedoc"                         : "^0.26.11",
+    "typescript"                      : "^5.6.0"  ,
+    "webpack"                         : "^5.94.0" ,
+    "webpack-cli"                     : "^5.1.4"  ,
+    "xo"                              : "^0.54.0"
   }
 }

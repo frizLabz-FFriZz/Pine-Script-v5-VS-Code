@@ -111,33 +111,34 @@ export class PineLint {
     for (const group of dataGroups) {
       if (!group || group.length === 0) {
 
-      for (const data of group) {
-        const { start, end, message } = data;
-        const range = new vscode.Range(
-          start.line - 1,
-          start.column - 1,
-          end.line - 1,
-          end.column,
-        );
+        for (const data of group) {
+          const { start, end, message } = data;
+          const range = new vscode.Range(
+            start.line - 1,
+            start.column - 1,
+            end.line - 1,
+            end.column,
+          );
 
-        let severity: vscode.DiagnosticSeverity;
-        if (message.includes('error')) {
-          severity = vscode.DiagnosticSeverity.Error;
-        } else if (message.includes('warning')) {
-          severity = vscode.DiagnosticSeverity.Warning;
-        } else if (message.includes('calculation')) {
-          severity = vscode.DiagnosticSeverity.Warning;
-        } else {
-          severity = vscode.DiagnosticSeverity.Information;
+          let severity: vscode.DiagnosticSeverity;
+          if (message.includes('error')) {
+            severity = vscode.DiagnosticSeverity.Error;
+          } else if (message.includes('warning')) {
+            severity = vscode.DiagnosticSeverity.Warning;
+          } else if (message.includes('calculation')) {
+            severity = vscode.DiagnosticSeverity.Warning;
+          } else {
+            severity = vscode.DiagnosticSeverity.Information;
+          }
+
+          diagnostics.push(new vscode.Diagnostic(range, message, severity));
         }
-
-        diagnostics.push(new vscode.Diagnostic(range, message, severity));
       }
-    }
 
-    const uri = VSCode.Uri;
-    if (uri) {
-      PineLint.setDiagnostics(uri, diagnostics);
+      const uri = VSCode.Uri;
+      if (uri) {
+        PineLint.setDiagnostics(uri, diagnostics);
+      }
     }
   }
 
