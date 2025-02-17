@@ -15,7 +15,7 @@ export function deactivate(context: vscode.ExtensionContext) {
   // the context.subscriptions array.
 
   PineLint.handleDocumentChange()
-  return context
+  return void
 }
 
 let timerStart: number = 0
