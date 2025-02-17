@@ -13,9 +13,8 @@ export function deactivate(context: vscode.ExtensionContext) {
   PineLint.versionClear()
   // Clean up all the subscriptions in
   // the context.subscriptions array.
-
   PineLint.handleDocumentChange()
-  return void
+  return undefined
 }
 
 let timerStart: number = 0
