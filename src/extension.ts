@@ -1,7 +1,5 @@
 
-import { PineSignatureHelpProvider } from './PineSignatureHelpProvider';
-import { PineCompletionProvider } from './PineCompletionProvider';
-import { PineLibCompletionProvider } from './PineLibCompletionProvider';
+
 import { VSCode } from './VSCode'
 import { Class } from './PineClass'
 import { PineDocString } from './PineDocString'
