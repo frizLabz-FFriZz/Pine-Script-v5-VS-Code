@@ -552,7 +552,9 @@ export class PineInlineCompletionContext implements vscode.InlineCompletionItemP
 
       const completionsFromState: Record<string, any>[] = this.checkCompletions()
 
-      if (token.isCancellationRequested) { }
+      if (token.isCancellationRequested) {
+        return null;
+      }
 
       if (completionsFromState.length > 0) {
         return await this.argumentInlineCompletions(document, position, completionsFromState)
