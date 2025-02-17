@@ -290,7 +290,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
         continue;
       }
 
-      const { name, desc, type } = argDocs;
+      const { name, desc } = argDocs;
       const argType = argDocs?.displayType ?? argDocs?.type ?? '';
 
       const paramLabel = `${argType !== '' ? ' ' : ''}${name}`;
@@ -422,7 +422,6 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       const functionCallNoParens = openingParenToCursor.slice(0, closingParenIndex > -1 ? closingParenIndex : openingParenToCursor.length);
       const matchEq = functionCallNoParens.match(/(\b\w+)\s*=/g);
 
-      let count = 0;
       let sigMatch: number[] = [];
 
       if (matchEq) {
@@ -454,7 +453,6 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
 
       const iType = Helpers.identifyType(popMatch);
 
-      count = 0;
       sigMatch = [];
       for (const [index, help] of activeSignatureHelper.entries()) {
         if (help[this.signatureHelp.activeParameter]?.type === iType) {
@@ -579,7 +577,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
           'color.black', 'color.silver', 'color.gray', 'color.white',
           'color.maroon', 'color.red', 'color.purple', 'color.fuchsia',
           'color.green', 'color.lime', 'color.olive', 'color.yellow',
-          'color.navy', 'color.blue', 'color.teal', 'color.orange', 'color.aqua'
+          'color.navy', 'color.blue', 'color.teal', 'color.orange', 'color.aqua',
         ];
       }
 

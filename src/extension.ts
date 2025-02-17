@@ -1,7 +1,5 @@
 
-import { PineSignatureHelpProvider } from './PineSignatureHelpProvider';
-import { PineCompletionProvider } from './PineCompletionProvider';
-import { PineLibCompletionProvider } from './PineLibCompletionProvider';
+
 import { VSCode } from './VSCode'
 import { Class } from './PineClass'
 import { PineDocString } from './PineDocString'
@@ -15,8 +13,9 @@ export function deactivate(context: vscode.ExtensionContext) {
   PineLint.versionClear()
   // Clean up all the subscriptions in
   // the context.subscriptions array.
+
   PineLint.handleDocumentChange()
-  return undefined
+  return void
 }
 
 let timerStart: number = 0
