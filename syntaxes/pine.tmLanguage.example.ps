@@ -1,5 +1,6 @@
 
 //@version=5
+
 // @description This script demonstrates a near complete syntax of Pine Script v6.
 indicator("Organized Pine Script Syntax Test",overlay = true)
 
@@ -25,6 +26,7 @@ indicator("Organized Pine Script Syntax Test",overlay = true)
 // @strategy_alert_message "This is a strategy alert message."
 var const int thingy = 0
 
+MyUDT.new(myColorField=color.blue)
 
 // #############################################################################
 // #  Keywords
@@ -54,9 +56,9 @@ var const int thingy = 0
 // [This is a link](https://www.google.com)
 // `This is code`
 //
-// ```pine
+// ```pinescript
 //
-// // This is a code block
+// This is a code block
 // indicator("blah")
 // import myname/libname/1 as implib
 // this(thing) => str.tostring(thing + 1)
@@ -97,23 +99,25 @@ export enum ExportedEnum
 // @field myPoint (chart.point) A point field
 // @field myPolyline (polyline) A polyline field
 type MyUDT
-    int                myIntField
-    float              myFloatField  = 0.0
-    string             myStringField = "hello"
-    bool               myBoolField   = false
-    color              myColorField  = #ff0000
-    array<int>         myArr
-    matrix<float>      myMatrix
-    map<string,float> myMap
-    ImportedUDT        myImportedUDT
-    map<string,ImportedUDT> myImportedMap
-    line               myLine
-    label              myLabel
-    box                myBox
-    table              myTable
-    linefill           myLinefill
-    chart.point        myPoint
-    polyline           myPolyline
+    int                       myIntField
+    float                     myFloatField  = 0.0
+    string                    myStringField = "hello"
+    bool                      myBoolField   = false
+    color                     myColorField  = #ff0000
+    array<int>                myArr
+    matrix<float>             myMatrix
+    map<string,float>         myMap
+    ImportedUDT               myImportedUDT
+    map<string,ImportedUDT>   myImportedMap
+    line                      myLine
+    label                     myLabel
+    box                       myBox
+    table                     myTable
+    linefill                  myLinefill
+    chart.point               myPoint
+    polyline                  myPolyline
+    array<MyUDT>              nested_self
+
 
 // #############################################################################
 // #  Variable Declarations and Initialization
@@ -318,7 +322,7 @@ method my_matrix_methods(matrix<float> mat) =>
     int rows = mat.rows()
     int elementsCount = mat.elements_count()
     mat.swap_rows(row1=2,row2=3)
-    mat.swap_columns(column1=1,column2=3)
+    mat.swap_columns(column1 = 1,column2=3)
     float determinant = mat.det()
     matrix<float> transposedMatrix = mat.transpose()
     matrix<float> diffMatrix = mat.diff(transposedMatrix)
@@ -423,11 +427,13 @@ method my_line_methods(line ln) =>
     ln.copy()
     ln.delete()
 
+
+    
 // -----------------------------------------------------------------------------
 // -- Label Methods
 // -----------------------------------------------------------------------------
 
-method my_label_methods(label lb) =>
+method my_label_methods(series label lb) =>
     lb.set_x(x = bar_index)
     lb.set_y(y = high)
     lb.set_xy(x = bar_index + 5,y = high + 1)
@@ -564,8 +570,8 @@ string dayName = switch dayOfWeek
 
 // Switch for conditional logic
 string priceAction = switch
-    close > open     => "Bullish"
-    close < open     => "Bearish"
+    close > open => "Bullish"
+    close < open => "Bearish"
     => "Neutral"
 
 // -----------------------------------------------------------------------------
@@ -590,4 +596,13 @@ int counter = 0
 while counter < 5
     label.new(x = bar_index - counter,y = low + counter,text = "Count: " + str.tostring(counter),color = color.new(color.teal,counter * 20))
     counter += 1
+
+
+switch thisthing
+    => sdfgsf 
+    =>
+
+var simple erg.float newvar = switch
+    true => 1 
+    => 0
 
