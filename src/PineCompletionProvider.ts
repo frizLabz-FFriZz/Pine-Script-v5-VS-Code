@@ -45,7 +45,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
     document: vscode.TextDocument,
     position: vscode.Position,
     token: vscode.CancellationToken,
-  ): Promise<vscode.CompletionItem[] | vscode.CompletionList<vscode.CompletionItem> | null | undefined> {
+  ): Promise<vscode.CompletionItem[] | vscode.CompletionList | null | undefined> {
     try {
       // Initialize the completion items array
       this.completionItems = []
@@ -178,18 +178,18 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
       const kinds: any = {
         Function: vscode.CompletionItemKind.Function,
         Method: vscode.CompletionItemKind.Method,
-        Local: vscode.CompletionItemKind.Class,
-        Imported: vscode.CompletionItemKind.Class,
-        Integer: vscode.CompletionItemKind.EnumMember,
+        Local: vscode.CompletionItemKind.Module,
+        Imported: vscode.CompletionItemKind.Module,
+        Integer: vscode.CompletionItemKind.Value,
         Color: vscode.CompletionItemKind.Color,
         Control: vscode.CompletionItemKind.Keyword,
         Variable: vscode.CompletionItemKind.Variable,
         Boolean: vscode.CompletionItemKind.EnumMember,
         Constant: vscode.CompletionItemKind.Enum,
-        Type: vscode.CompletionItemKind.TypeParameter,
-        Annotation: vscode.CompletionItemKind.Snippet,
+        Type: vscode.CompletionItemKind.Class,
+        Annotation: vscode.CompletionItemKind.Reference,
         Property: vscode.CompletionItemKind.Property,
-        Parameter: vscode.CompletionItemKind.Struct,
+        Parameter: vscode.CompletionItemKind.TypeParameter,
         Other: vscode.CompletionItemKind.Value,
       }
       // For each key in the mapping, if the kind includes the key, return the corresponding completion item kind

@@ -173,7 +173,9 @@ export class PineLint {
       return true;
     }
 
-    const regex = /\/\/@version=(\d+)(?:[\s\S]+)(indicator|strategy|library|study)\s*\((?:.*\btitle\s*=)?\s*('[^']*'|"[^"]*")/
+    const version_statement = /\/\/@version=(\d+)/
+    const script_statement = /(?:indicator|strategy|library|study)\s*\((?:(?<!['\"].*)\btitle\s*=)?\s*('[^\']*'|"[^\"]*")/
+
     const document = VSCode?._Document();
     const replaced = document?.getText().replace(/\r\n/g, '\n');
 
@@ -181,14 +183,15 @@ export class PineLint {
       return false;
     }
 
-    const match = regex.exec(replaced);
+    const match = version_statement.exec(replaced);
+    const namematch = script_statement.exec(replaced);
     if (!match || !match[1]) {
       return false;
     }
 
-    if (match) {
-      if (match[3]) {
-        PineLint.setFileName(match[3]);
+    if (namematch) {
+      if (namematch[1]) {
+        PineLint.setFileName(namematch[1]);
       }
       PineLint.version = match[1];
 

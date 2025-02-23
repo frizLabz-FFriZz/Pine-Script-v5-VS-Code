@@ -1,0 +1,393 @@
+
+
+//@version=6
+indicator("Type Declaration Coverage", overlay = true)
+
+// =============================================================================
+// Library Definition (Imaginary - For Demonstration Purposes)
+// =============================================================================
+
+// Assume a library named `myimportlib` with an exported type `ImportedUDT`
+// and an exported enum `ExportedEnum` is defined elsewhere.
+
+// @type ImportedUDT, all library code require exported types and enums to have `export` defined
+// @field field1 int,defval = 10
+// @field field2 string,defval = "hello"
+export type ImportedUDT
+    int field1 = 10
+    string field2 = "hello"
+
+
+// @enum ExportedEnum, all library code with exoprts require exported types and enums to have `export` defined
+// @field VALUE1
+// @field VALUE2
+export enum ExportedEnum
+    VALUE1 = "val 1"
+    VALUE2 = "val 2"
+
+
+// ============================== end imagonary lib  area
+
+//import myimportlib/mylibrary/1 as myimportlib // this makes the above real
+
+
+// =============================================================================
+// User-Defined Type (UDT) Definition
+// =============================================================================
+
+// @type MyUDT demonstrates all situations where we can use the int/float/string types for defaults, array/matrix/map are not allowed to have any
+// @field myIntField int,defval = 0
+// @field myFloatField float,defval = 0.0
+// @field myStringField string,defval = "hello"
+// @field myBoolField bool,defval = false
+// @field myColorField color,defval = color.red
+type MyUDT
+    int myIntField = 0
+    float myFloatField = 0.0
+    string myStringField = "hello"
+    bool myBoolField = false
+    color myColorField = color.red
+    array<int> myArrayField  // no default value for arrays
+    matrix<float> myMatrixField // no default value for matrices
+    map<string, int> myMapField   // no default value for maps
+
+
+// =============================================================================
+// Library type declarations (Imaginary - For Demonstration Purposes)
+// =============================================================================
+// Imported type
+// var ImportedUDT myImportedUDTVar
+// varip ImportedUDT myImportedUDTVarip
+
+// map<string, ImportedUDT> myMapOfImportedUDTs = map.new<string, ImportedUDT>()
+//matrix<ImportedUDT> myMatrixOfImportedUDTs = matrix.new<ImportedUDT>(2,2)
+
+// =============================================================================
+// Primitive Type Declarations
+// =============================================================================
+
+// Standard Variable Declaration
+int myInt = 10
+float myFloat = 3.14
+bool myBool = true
+string myString = "Pine Script"
+color myColor = color.red
+
+// Series Variable Declaration
+series int mySeriesInt = close
+series float mySeriesFloat = close
+series bool mySeriesBool = close > open
+series string mySeriesString = syminfo.ticker
+series color mySeriesColor = close > open ? color.green : color.red
+
+// Simple Variable Declaration
+simple int mySimpleInt = 20
+simple float mySimpleFloat = 6.28
+simple bool mySimpleBool = syminfo.type == "stock"
+simple string mySimpleString = syminfo.currency
+simple color mySimpleColor = color.yellow
+
+
+// Constant Variable Declaration
+const int myConstInt = 30
+const float myConstFloat = 9.42
+const bool myConstBool = true
+const string myConstString = "Constant Value"
+const color myConstColor = color.blue
+
+// var Variable Declaration (initializes once per bar)
+var int myVarInt = 40
+var float myVarFloat = 12.56
+var bool myVarBool = false
+var string myVarString = "Var Value"
+var color myVarColor = color.orange
+
+// varip Variable Declaration (persists across calculations)
+varip int myVaripInt = 50, myVaripInt := nz(myVaripInt,50)
+varip float myVaripFloat = 15.7, myVaripFloat := nz(myVaripFloat,15.7)
+varip bool myVaripBool = true, myVaripBool := nz(myVaripBool,true)
+varip string myVaripString = "Varip Value", myVaripString := nz(myVaripString,"Varip Value")
+
+// =============================================================================
+// Built-in Object Declarations
+// =============================================================================
+
+// Line Declaration
+line myLine = line.new(bar_index[10], low[10], bar_index, high)
+var line myVarLine = line.new(bar_index[5], high[5], bar_index, low)
+varip line myVaripLine = line.new(bar_index[2], close[2], bar_index, open)
+
+// Label Declaration
+label myLabel = label.new(bar_index, high, "Label Text")
+var label myVarLabel = label.new(bar_index, low, "Var Label")
+varip label myVaripLabel = label.new(bar_index, close, "Varip Label")
+
+// Box Declaration
+box myBox = box.new(bar_index[10], high[10], bar_index, low)
+var box myVarBox = box.new(bar_index[5], high[5], bar_index, low)
+varip box myVaripBox = box.new(bar_index[2], close[2], bar_index, open)
+
+// Table Declaration
+table myTable = table.new(position.top_right, 2, 2)
+var table myVarTable = table.new(position.bottom_left, 3, 3)
+varip table myVaripTable = table.new(position.middle_center, 4, 4)
+
+// Linefill Declaration
+linefill myLinefill = linefill.new(myLine, myVarLine, color.green)
+var linefill myVarLinefill = linefill.new(myLine, myVarLine, color.red)
+varip linefill myVaripLinefill = linefill.new(myLine, myVarLine, color.blue)
+
+// chart.point Declaration
+chart.point myPoint = chart.point.now(close)
+var chart.point myVarPoint = chart.point.from_index(index=bar_index-10,price=low)
+varip chart.point myVaripPoint = chart.point.from_time(time=time,price=open)
+
+// polyline Declaration
+polyline myPolyline = polyline.new(points=array.from(myPoint,chart.point.now(close)),line_color=color.fuchsia)
+var polyline myPolylineVar = na
+varip polyline myPolylineVarip = na
+
+// =============================================================================
+// Array Declarations
+// =============================================================================
+
+// Array of int
+array<int> myIntArray = array.new<int>()
+var array<int> myVarIntArray = array.new<int>(5)
+varip array<int> myVaripIntArray = array.from(1, 2, 3)
+
+// Array of float
+array<float> myFloatArray = array.new<float>()
+var array<float> myVarFloatArray = array.new<float>(5, 0.0)
+varip array<float> myVaripFloatArray = array.from(1.1, 2.2, 3.3)
+
+// Array of string
+array<string> myStringArray = array.new<string>()
+var array<string> myVarStringArray = array.new<string>(3, "empty")
+varip array<string> myVaripStringArray = array.from("a", "b", "c")
+
+// Array of bool
+array<bool> myBoolArray = array.new<bool>()
+var array<bool> myVarBoolArray = array.new<bool>(4, false)
+varip array<bool> myVaripBoolArray = array.from(true, false, true)
+
+// Array of color
+array<color> myColorArray = array.new<color>()
+var array<color> myVarColorArray = array.new<color>(2, color.white)
+varip array<color> myVaripColorArray = array.from(color.red, color.green)
+
+// Array of line
+array<line> myLineArray = array.new<line>()
+var array<line> myVarLineArray = array.new<line>(2, myLine)
+varip array<line> myVaripLineArray = array.from(myLine, myVarLine)
+
+// Array of label
+array<label> myLabelArray = array.new<label>()
+var array<label> myVarLabelArray = array.new<label>(2, myLabel)
+varip array<label> myVaripLabelArray = array.from(myLabel, myVarLabel)
+
+// Array of box
+array<box> myBoxArray = array.new<box>()
+var array<box> myVarBoxArray = array.new<box>(2, myBox)
+varip array<box> myVaripBoxArray = array.from(myBox, myVarBox)
+
+// Array of table
+array<table> myTableArray = array.new<table>()
+var array<table> myVarTableArray = array.new<table>(2, myTable)
+varip array<table> myVaripTableArray = array.from(myTable, myVarTable)
+
+// Array of linefill
+array<linefill> myLinefillArray = array.new<linefill>()
+var array<linefill> myVarLinefillArray = array.new<linefill>(2, myLinefill)
+varip array<linefill> myVaripLinefillArray = array.from(myLinefill, myVarLinefill)
+
+// Array of chart.point
+array<chart.point> myPointArray = array.new<chart.point>()
+var array<chart.point> myVarPointArray = array.new<chart.point>(2, chart.point.now(close))
+varip array<chart.point> myVaripPointArray = array.from(chart.point.now(close), chart.point.from_index(bar_index-10,low))
+
+// Array of polyline
+array<polyline> myPolylineArray = array.new<polyline>()
+var array<polyline> myVarPolylineArray = array.new<polyline>(2)
+varip array<polyline> myVaripPolylineArray = array.from(myPolyline)
+
+// Array of UDT
+array<MyUDT> myUDTArray = array.new<MyUDT>()
+var array<MyUDT> myVarUDTArray = array.new<MyUDT>(3)
+varip array<MyUDT> myVaripUDTArray = array.new<MyUDT>(3)
+
+
+// =============================================================================
+// Matrix Declarations
+// =============================================================================
+
+// Matrix of int
+matrix<int> myIntMatrix = matrix.new<int>(2, 2)
+var matrix<int> myVarIntMatrix = matrix.new<int>(3, 3, 0)
+varip matrix<int> myVaripIntMatrix = matrix.new<int>(2, 2, 1)
+
+// Matrix of float
+matrix<float> myFloatMatrix = matrix.new<float>(2, 2)
+var matrix<float> myVarFloatMatrix = matrix.new<float>(3, 3, 0.0)
+varip matrix<float> myVaripFloatMatrix = matrix.new<float>(2, 2, 1.0)
+
+// Matrix of string
+matrix<string> myStringMatrix = matrix.new<string>(1, 1)
+var matrix<string> myVarStringMatrix = matrix.new<string>(2, 2, "empty")
+varip matrix<string> myVaripStringMatrix = matrix.new<string>(1, 1, "value")
+
+// Matrix of bool
+matrix<bool> myBoolMatrix = matrix.new<bool>(2, 1)
+var matrix<bool> myVarBoolMatrix = matrix.new<bool>(2, 2, false)
+varip matrix<bool> myVaripBoolMatrix = matrix.new<bool>(1, 1, true)
+
+// Matrix of color
+matrix<color> myColorMatrix = matrix.new<color>(2, 2)
+var matrix<color> myVarColorMatrix = matrix.new<color>(3, 3, color.white)
+varip matrix<color> myVaripColorMatrix = matrix.new<color>(2, 2, color.black)
+
+// Matrix of line
+matrix<line> myLineMatrix = matrix.new<line>(2, 2)
+var matrix<line> myVarLineMatrix = matrix.new<line>(3, 3, myLine)
+varip matrix<line> myVaripLineMatrix = matrix.new<line>(2, 2, myLine)
+
+// Matrix of label
+matrix<label> myLabelMatrix = matrix.new<label>(2, 2)
+var matrix<label> myVarLabelMatrix = matrix.new<label>(3, 3, myLabel)
+varip matrix<label> myVaripLabelMatrix = matrix.new<label>(2, 2, myLabel)
+
+// Matrix of box
+matrix<box> myBoxMatrix = matrix.new<box>(2, 2)
+var matrix<box> myVarBoxMatrix = matrix.new<box>(3, 3, myBox)
+varip matrix<box> myVaripBoxMatrix = matrix.new<box>(2, 2, myBox)
+
+// Matrix of table
+matrix<table> myTableMatrix = matrix.new<table>(2, 2)
+var matrix<table> myVarTableMatrix = matrix.new<table>(3, 3, myTable)
+varip matrix<table> myVaripTableMatrix = matrix.new<table>(2, 2, myTable)
+
+// Matrix of linefill
+matrix<linefill> myLinefillMatrix = matrix.new<linefill>(2, 2)
+var matrix<linefill> myVarLinefillMatrix = matrix.new<linefill>(3, 3, myLinefill)
+varip matrix<linefill> myVaripLinefillMatrix = matrix.new<linefill>(2, 2, myLinefill)
+
+// Matrix of chart.point
+matrix<chart.point> myPointMatrix = matrix.new<chart.point>(1, 1)
+var matrix<chart.point> myVarPointMatrix = matrix.new<chart.point>(1, 1, chart.point.now(close))
+varip matrix<chart.point> myVaripPointMatrix = matrix.new<chart.point>(1, 1, chart.point.from_index ( bar_index-10 , low ))
+
+// Matrix of polyline
+matrix<polyline> myPolylineMatrix = matrix.new<polyline>(1, 1)
+var matrix<polyline> myVarPolylineMatrix = matrix.new<polyline>(1, 1)
+varip matrix<polyline> myVaripPolylineMatrix = matrix.new<polyline>(1, 1)
+
+// Matrix of UDT
+matrix<MyUDT> myUDTMatrix = matrix.new<MyUDT>(2, 2)
+var matrix<MyUDT> myVarUDTMatrix = matrix.new<MyUDT>(3, 3)
+varip matrix<MyUDT> myVaripUDTMatrix = matrix.new<MyUDT>(2, 2)
+
+
+// =============================================================================
+// Map Declarations
+// =============================================================================
+
+// Map with string keys and int values
+map<string, int> myStringIntMap = map.new<string, int>()
+var map<string, int> myVarStringIntMap = map.new<string, int>()
+varip map<string, int> myVaripStringIntMap = map.new<string, int>()
+
+// Map with int keys and float values
+map<int, float> myIntFloatMap = map.new<int, float>()
+var map<int, float> myVarIntFloatMap = map.new<int, float>()
+varip map<int, float> myVaripIntFloatMap = map.new<int, float>()
+
+// Map with int keys and string values
+map<int, string> myIntStringMap = map.new<int, string>()
+var map<int, string> myVarIntStringMap = map.new<int, string>()
+varip map<int, string> myVaripIntStringMap = map.new<int, string>()
+
+// Map with int keys and bool values
+map<int, bool> myIntBoolMap = map.new<int, bool>()
+var map<int, bool> myVarIntBoolMap = map.new<int, bool>()
+varip map<int, bool> myVaripIntBoolMap = map.new<int, bool>()
+
+// Map with int keys and color values
+map<int, color> myIntColorMap = map.new<int, color>()
+var map<int, color> myVarIntColorMap = map.new<int, color>()
+varip map<int, color> myVaripIntColorMap = map.new<int, color>()
+
+// Map with string keys and UDT values
+map<string, MyUDT> myStringUDTMap = map.new<string, MyUDT>()
+var map<string, MyUDT> myVarStringUDTMap = map.new<string, MyUDT>()
+varip map<string, MyUDT> myVaripStringUDTMap = map.new<string, MyUDT>()
+
+// Map with int keys and UDT values
+map<int, MyUDT> myIntUDTMap = map.new<int, MyUDT>()
+var map<int, MyUDT> myVarIntUDTMap = map.new<int, MyUDT>()
+varip map<int, MyUDT> myVaripIntUDTMa'p = map.new<int,MyUDT>()
+
+// =============================================================================
+// UDT Declarations
+// =============================================================================
+
+// Standard UDT Declaration
+MyUDT myUDT = MyUDT.new()
+var MyUDT myVarUDT = MyUDT.new()
+varip MyUDT myVaripUDT = MyUDT.new()
+
+// -----------------------------------------------------------------------------
+// -- Enums
+// -----------------------------------------------------------------------------
+
+// Enum myEnum
+enum myEnum
+    value1
+    VALUE2
+    
+var myEnum myenumvar = myEnum.value1
+
+
+
+// #############################################################################
+// #  Function Definition
+// #############################################################################
+
+// With type definition
+myFunc(int a, float b) =>
+    a + b
+
+// function that retuns udt and uses one as argument
+myfunc2(MyUDT a) =>
+    a
+
+// Function returning array of type
+myFunc3() =>
+    array.new<int>()
+
+// Function returning a matrix
+myFunc4() =>
+    matrix.new<float>(2, 2)
+
+// Function returning a map
+myFunc5() =>
+    map.new<string, int>()
+
+// #############################################################################
+// #  Switch Statement
+// #############################################################################
+
+// Switch for conditional logic
+string priceAction = switch
+    close > open     => "Bullish"
+    close < open     => "Bearish"
+    => "Neutral"
+
+// Switch with enum
+myNextEnum = switch myenumvar
+    myEnum.value1 => myEnum.value2
+    myEnum.value2 => myEnum.value1
+    => na
+
+
+// The last statemnt in the file
+plot(close)
