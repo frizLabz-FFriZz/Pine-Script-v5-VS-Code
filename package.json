@@ -28,7 +28,8 @@
     "TradingView"    ,
     "TradingView.com"
   ],
-  "activationEvents": [
+  "maintainers": [
+    { "name": "kai gouthro" }
   ],
   "icon": "media/PineLogo.png",
   "capabilities": {
@@ -49,24 +50,26 @@
   "main": "./dist/extension.js",
   "contributes": {
     "themes": [
-      { "label": "Pine-*Preferred"   , "id": "Dark Theme (*Preferred)"      , "uiTheme": "vs-dark", "path": "themes/Pine-Preferred.json"  },
-      { "label": "Pine-Original-Dark", "id": "Dark Theme (Original)"        , "uiTheme": "vs-dark", "path": "themes/Pine-Original.json"   },
-      { "label": "Pine-V4-Classic"   , "id": "Dark V4 Theme (Deep Coverage)", "uiTheme": "vs-dark", "path": "themes/Pine-classic-v4.json" },
-      { "label": "Pine-Basic"        , "id": "Dark Theme (Basic)"           , "uiTheme": "vs-dark", "path": "themes/Pine-Basic.json"      },
-      { "label": "Pine-Universal"    , "id": "Dark Theme (Universal)"       , "uiTheme": "vs-dark", "path": "themes/Pine-Universal.json"  },
-      { "label": "Pine-Cold"         , "id": "Dark Theme (Cold)"            , "uiTheme": "vs-dark", "path": "themes/Pine-Cold.json"       },
-      { "label": "Pine-Cool"         , "id": "Dark Theme (Cool)"            , "uiTheme": "vs-dark", "path": "themes/Pine-Cool.json"       },
-      { "label": "Pine-Dark #01"     , "id": "Dark Theme (#1)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#01.json"    },
-      { "label": "Pine-Dark #02"     , "id": "Dark Theme (#2)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#02.json"    },
-      { "label": "Pine-Dark #03"     , "id": "Dark Theme (#3)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#03.json"    },
-      { "label": "Pine-Dark #04"     , "id": "Dark Theme (#4)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#04.json"    },
-      { "label": "Pine-Dark #05"     , "id": "Dark Theme (#5)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#05.json"    },
-      { "label": "Pine-Dark #06"     , "id": "Dark Theme (#6)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#06.json"    },
-      { "label": "Pine-Dark #07"     , "id": "Dark Theme (#7)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#07.json"    },
-      { "label": "Pine-Dark #08"     , "id": "Dark Theme (#8)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#08.json"    },
-      { "label": "Pine-Dark #09"     , "id": "Dark Theme (#9)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#09.json"    },
-      { "label": "Pine-Light #01"    , "id": "Light Theme (#1)"             , "uiTheme": "vs"     , "path": "themes/Pine-Light#01.json"   },
-      { "label": "Pine-Light #02"    , "id": "Light Theme (#2)"             , "uiTheme": "vs"     , "path": "themes/Pine-Light#02.json"   }
+      { "label": "Pine-*Preferred"   , "id": "Dark Theme (*Preferred)"         , "uiTheme": "vs-dark", "path": "themes/Pine-Preferred.json"  },
+      { "label": "Pine-Original-Dark", "id": "Dark Theme (Original)"           , "uiTheme": "vs-dark", "path": "themes/Pine-Original.json"   },
+      { "label": "Pine-V4-Classic"   , "id": "Dark V4    Theme (Deep Coverage)", "uiTheme": "vs-dark", "path": "themes/Pine-classic-v4.json" },
+      { "label": "Pine-Cadbury"      , "id": "Dark Bunny Theme (Deep Coverage)", "uiTheme": "vs-dark", "path": "themes/Pine-Cadbury.json"    },
+      { "label": "Pine-1980"         , "id": "Dark TMNT  Theme (Deep Coverage)", "uiTheme": "vs-dark", "path": "themes/Pine-1980.json"       },
+      { "label": "Pine-Basic"        , "id": "Dark Theme (Basic)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Basic.json"      },
+      { "label": "Pine-Universal"    , "id": "Dark Theme (Universal)"          , "uiTheme": "vs-dark", "path": "themes/Pine-Universal.json"  },
+      { "label": "Pine-Cold"         , "id": "Dark Theme (Cold)"               , "uiTheme": "vs-dark", "path": "themes/Pine-Cold.json"       },
+      { "label": "Pine-Cool"         , "id": "Dark Theme (Cool)"               , "uiTheme": "vs-dark", "path": "themes/Pine-Cool.json"       },
+      { "label": "Pine-Dark #01"     , "id": "Dark Theme (#1)"                 , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#01.json"    },
+      { "label": "Pine-Dark #02"     , "id": "Dark Theme (#2)"                 , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#02.json"    },
+      { "label": "Pine-Dark #03"     , "id": "Dark Theme (#3)"                 , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#03.json"    },
+      { "label": "Pine-Dark #04"     , "id": "Dark Theme (#4)"                 , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#04.json"    },
+      { "label": "Pine-Dark #05"     , "id": "Dark Theme (#5)"                 , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#05.json"    },
+      { "label": "Pine-Dark #06"     , "id": "Dark Theme (#6)"                 , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#06.json"    },
+      { "label": "Pine-Dark #07"     , "id": "Dark Theme (#7)"                 , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#07.json"    },
+      { "label": "Pine-Dark #08"     , "id": "Dark Theme (#8)"                 , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#08.json"    },
+      { "label": "Pine-Dark #09"     , "id": "Dark Theme (#9)"                 , "uiTheme": "vs-dark", "path": "themes/Pine-Dark#09.json"    },
+      { "label": "Pine-Light #01"    , "id": "Light Theme (#1)"                , "uiTheme": "vs"     , "path": "themes/Pine-Light#01.json"   },
+      { "label": "Pine-Light #02"    , "id": "Light Theme (#2)"                , "uiTheme": "vs"     , "path": "themes/Pine-Light#02.json"   }
     ],
     "configuration": {},
     "submenus": [ { "id": "pine.mysubmenuNonPineFile", "label": " Pine Script v5" }, { "id": "pine.mysubmenu2", "label": " Pine Script v5" } ],
@@ -89,18 +92,19 @@
   "dependencies": {
     "debounce"  : "^2.1.1"  ,
     "lodash"    : "^4.17.21",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2"  ,
+    "vscode"    : "^1.1.37"
   },
   "devDependencies": {
     "@types/debounce"                 : "^1.2.4"  ,
-    "@types/lodash"                   : "^4.17.7" ,
+    "@types/lodash"                   : "^4.17.15",
     "@types/node"                     : "^22.5.4" ,
     "@types/source-map-support"       : "^0.5.10" ,
     "@types/vscode"                   : "^1.93.0" ,
     "@typescript-eslint/eslint-plugin": "^7.0.0"  ,
     "@typescript-eslint/parser"       : "^7.0.0"  ,
     "@vscode/vsce"                    : "^3.1.0"  ,
-    "eslint"                          : "^8.56.0" ,
+    "eslint"                          : "^8.0.0"  ,
     "eslint-config-airbnb"            : "^19.0.4" ,
     "eslint-config-airbnb-typescript" : "^18.0.0" ,
     "eslint-plugin-import"            : "^2.30.0" ,
@@ -112,10 +116,11 @@
     "source-map-support"              : "^0.5.21" ,
     "ts-loader"                       : "^9.5.1"  ,
     "type-coverage"                   : "^2.0.0"  ,
-    "typedoc"                         : "^0.26.11",
-    "typescript"                      : "^5.6.0"  ,
+    "typedoc"                         : "^0.27.7" ,
+    "typescript"                      : "^5.7.3"  ,
     "webpack"                         : "^5.94.0" ,
     "webpack-cli"                     : "^5.1.4"  ,
     "xo"                              : "^0.54.0"
-  }
+  },
+  "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af"
 }

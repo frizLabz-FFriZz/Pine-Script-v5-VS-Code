@@ -1,4 +1,5 @@
 
+//@version=5
 
 // #############################################################################
 // #  Built-in Constants (strings/args for specilized functions)
@@ -119,7 +120,7 @@ indicator()
 // Strategy
 strategy()
 // Chart Point
-chart.point.new(),chart.point.from_index(),chart.point.copy(),chart.point.from_time(),chart.point.now()
+chart.point.new(), chart.point.from_index(),chart.point.copy(),chart.point.from_time(),chart.point.now()
 // Map
 map.new<type,UDTypeTest>(),map.new<type,type>(),map.copy(),map.size(),map.get(),map.contains(),map.keys(),map.values(),map.put(),map.put_all(),map.remove(),map.clear()
 // Runtime
@@ -507,7 +508,7 @@ dividends.future_pay_date
 // #  Predefined Colors
 // #############################################################################
 color.new(#008080,0)
-color.rgb(255,166,0)
+color.rgb(25,16,0)
 color.r(#ff660065)
 color.g(#ff660065)
 color.b(#ff660065)
@@ -515,4 +516,7 @@ color.t(#ff6600)
 color.new(#ff6600,0)
 color.from_gradient(src,min,max,colmin,colmax)
 
+
+type myudt
+    int this = 3
 
