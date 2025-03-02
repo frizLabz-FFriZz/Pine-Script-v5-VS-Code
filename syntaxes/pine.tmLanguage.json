@@ -158,15 +158,12 @@
                   "4": { "name": "variable.parameter" }
                },
                "patterns": [
-                  { "include": "#markup" },
                   { "include": "#colors" },
                   { "include": "#keywords" },
                   { "include": "#operators" },
                   { "include": "#constants" },
                   { "include": "#functions" },
                   { "include": "#strings" },
-                  { "include": "#variables" },
-                  { "include": "#numbers" },
                   {
                      "comment": "Annotations without descriptions",
                      "match": "^(\/\/)[ \\t]*(@)(?:[a-zA-Z_][A-Za-z0-9_]*)(?=[^\\n]*)",
@@ -175,6 +172,29 @@
                         "2": { "name": "punctuation.definition.comment" }
                      }
                   },
+                  { "include": "#numbers" },
+                  {
+                     "begin": "(?<=\\()",
+                     "end": "(?=\\))",
+                     "patterns": [
+                        { "include": "#type-declaration" },
+                        {
+                           "match": "(bool|color|float|int|string|line|label|box|table|linefill|chart\\.point|polyline|(?:([a-zA-Z_][a-zA-Z_0-9]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*))|(?:(array|matrix|map)(\\.new)?<[ \\t]*(?:(?:([a-zA-Z_][a-zA-Z_0-9]*)[ \\t]*,)?[ \\t]*(?:(?:([a-zA-Z_][a-zA-Z_0-9]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*)))>|\\b(?!if|for|while|switch|else|export|method|type|var|varip|simple|series|input|const)(?:(?:([a-zA-Z_][a-zA-Z_0-9]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*(?:[ \\t]*\\[\\])?)))",
+                           "captures": {
+                              "0": { "name": "support.type" },
+                              "2": { "name": "entity.name.type" },
+                              "3": { "name": "entity.name.type.parameter.declaration" },
+                              "4": { "name": "entity.name.type.parameter.declaration" },
+                              "5": { "name": "entity.name.namespace" },
+                              "6": { "name": "entity.name.type.declaration" },
+                              "7": { "name": "entity.name.namespace" },
+                              "8": { "name": "entity.name.type.declaration" }
+                           }
+                        }
+                     ]
+                  },
+                  { "include": "#variables" },
+                  { "include": "#markup" },
                   {
                      "match": "\\b(?:true|false|na)\\b",
                      "name": "constant.language.boolean"
@@ -187,11 +207,7 @@
                      "match": "\\b(?:[a-zA-Z_][A-Za-z0-9_]*)\\b",
                      "name": "variable.other"
                   },
-                  { "include": "source.markdown" },
-                  {
-                     "match": "\\([ \\t]*(?:(?:array|matrix|map)<[^>]+>|(([a-zA-Z_][A-z0-9_]*\\.)?[a-zA-Z_][A-z0-9_]*))[ \\t]*\\)",
-                     "name": "entity.name.type"
-                  }
+                  { "include": "source.markdown" }
                ],
                "applyEndPatternLast": 0,
                "end": "^(?=^\/\/[ \\t]*@|[ \\t]*(?!\/\/)[A-Za-z0-9_])"
