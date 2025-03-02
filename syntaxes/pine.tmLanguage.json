@@ -563,32 +563,32 @@
          "patterns": [
             {
                "comment": "Assignment operators: +=, -=, *=, /=, %=, :=",
-               "match": "(?<=(?:\\b|\\B)[ \\t]*)(\\+=|\\-=|\\*=|\\/=|\\%=|\\:=)(?=[ \\t]*(?:\\B|\\b))",
+               "match": "(?<=(?:\\b|\\B)[ \\t]*)(\\+=|\\-=|\\*=|\\/=|\\%=|\\:=)(?=\\B|\\b)",
                "name": "keyword.operator.assignment"
             },
             {
                "comment": "Comparison operators: ==, !=, <=, >=, <, >",
-               "match": "(?<=(?:\\b|\\B)[ \\t]*)(==|!=|<=|>=|<|>)(?=[ \\t]*(?:\\B|\\b))",
+               "match": "(?<=(?:\\b|\\B)[ \\t]*)(==|!=|<=|>=|<|>)(?=\\B|\\b)",
                "name": "keyword.operator.comparison"
             },
             {
                "comment": "Range operator: = and =>",
-               "match": "(?<=(?:\\b|\\B)[ \\t]*)(=)(>)?(?=[ \\t]*(?:\\B|\\b))",
+               "match": "(?<=\\b|\\B)(=)(>)?(?=\\B|\\b)",
                "name": "keyword.control"
             },
             {
                "comment": "Simple assignment operator: =",
-               "match": "(?<=\\b[ \\t]*)(?![-:!=><\\+*%\/])=(?!>=)(?=[ \\t]*(?:\\B|\\b))",
+               "match": "(?<=\\B|\\b)(?![-:!=><\\+*%\/])=(?!>=)(?=\\B|\\b)",
                "name": "keyword.operator.assignment"
             },
             {
                "comment": "Arithmetic operators: +, -, *, /, %",
-               "match": "(?<=\\b[ \\t]*)(\\+|\\-|\\*|/|%)(?=[ \\t]*(?:\\B|\\b))",
+               "match": "(?<=\\B|\\b)(\\+|\\-|\\*|/|%)(?=\\B|\\b)",
                "name": "keyword.operator.arithmetic"
             },
             {
                "comment": "Ternary operator: ?, :",
-               "match": "(?<=(?:\\b|\\B)[ \\t]*)(\\?|\\:)(?=[ \\t]*(?:\\B|\\b))",
+               "match": "(?<=(?:\\b|\\B)[ \\t]*)(\\?|\\:)(?=\\B|\\b)",
                "name": "keyword.operator.ternary"
             },
             {
