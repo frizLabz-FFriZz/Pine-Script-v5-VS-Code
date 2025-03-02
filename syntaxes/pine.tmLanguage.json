@@ -158,6 +158,7 @@
                   "4": { "name": "variable.parameter" }
                },
                "patterns": [
+                  { "include": "#markup" },
                   { "include": "#colors" },
                   { "include": "#keywords" },
                   { "include": "#operators" },
@@ -194,7 +195,6 @@
                      ]
                   },
                   { "include": "#variables" },
-                  { "include": "#markup" },
                   {
                      "match": "\\b(?:true|false|na)\\b",
                      "name": "constant.language.boolean"
