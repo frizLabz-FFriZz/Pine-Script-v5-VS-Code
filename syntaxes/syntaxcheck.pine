@@ -1,5 +1,4 @@
 
-//@version=5
 
 // #############################################################################
 // #  Built-in Constants (strings/args for specilized functions)
@@ -120,9 +119,13 @@ indicator()
 // Strategy
 strategy()
 // Chart Point
-chart.point.new(), chart.point.from_index(),chart.point.copy(),chart.point.from_time(),chart.point.now()
+chart.point.new(),chart.point.from_index(),chart.point.copy(),chart.point.from_time(),chart.point.now()
 // Map
 map.new<type,UDTypeTest>(),map.new<type,type>(),map.copy(),map.size(),map.get(),map.contains(),map.keys(),map.values(),map.put(),map.put_all(),map.remove(),map.clear()
+// Array
+array.new<type>(),array.new<float>(),array.new<int>(),array.new<color>(),array.new<bool>(),array.new<string>(),array.new<line>(),array.new<box>(),array.new<table>(),array.new<label>(),array.new<linefill>(),array.new<asdfasdfasdfasd>(),array.new_float(),array.new_int(),array.new_color(),array.new_bool(),array.new_string(),array.new_line(),array.new_box(),array.new_table(),array.new_label(),array.new_linefill(),array.copy(),array.slice(),array.size(),array.first(),array.last(),array.every(),array.some(),array.get(),array.min(),array.max(),array.range(),array.sum(),array.set(),array.from(),array.fill(),array.insert(),array.join(),array.push(),array.remove(),array.pop(),array.clear(),array.sort(),array.sort_indices(),array.percentrank(),array.percentile_nearest_rank(),array.percentile_linear_interpolation(),array.abs(),array.binary_search(),array.binary_search_leftmost(),array.binary_search_rightmost(),array.concat(),array.avg(),array.stdev(),array.variance(),array.covariance(),array.mode(),array.median(),array.standardize(),array.indexof(),array.lastindexof(),array.includes(),array.shift(),array.unshift(),array.reverse()
+// Matrix
+matrix.new<int>(),matrix.new<float>(),matrix.new<bool>(),matrix.new<string>(),matrix.new<color>(),matrix.new<line>(),matrix.new<label>(),matrix.new<box>(),matrix.new<table>(),matrix.new<linefill>(),matrix.new<type>(),matrix.row(),matrix.col(),matrix.reshape(),matrix.get(),matrix.set(),matrix.add_row(),matrix.add_col(),matrix.remove_row(),matrix.remove_col(),matrix.fill(),matrix.submatrix(),matrix.copy(),matrix.columns(),matrix.rows(),matrix.elements_count(),matrix.concat(),matrix.swap_rows(),matrix.swap_columns(),matrix.reverse(),matrix.sort(),matrix.det(),matrix.min(),matrix.max(),matrix.avg(),matrix.median(),matrix.mode(),matrix.transpose(),matrix.sum(),matrix.diff(),matrix.mult(),matrix.pinv(),matrix.inv(),matrix.rank(),matrix.trace(),matrix.eigenvalues(),matrix.eigenvectors(),matrix.kron(),matrix.pow(),matrix.is_zero(),matrix.is_identity(),matrix.is_binary(),matrix.is_symmetric(),matrix.is_antisymmetric(),matrix.is_diagonal(),matrix.is_antidiagonal(),matrix.is_triangular(),matrix.is_stochastic(),matrix.is_square()
 // Runtime
 runtime.error()
 // Log
@@ -179,7 +182,6 @@ timestamp()
 str.format(),str.format_time(),str.tostring(),str.tonumber(),str.replace_all(),str.contains(),str.substring(),str.replace(),str.lower(),str.upper(),str.startswith(),str.endswith(),str.match(),str.pos(),str.split(),str.length()
 // TA
 ta.tr(),ta.vwap(),ta.median(),ta.max(),ta.min(),ta.range(),ta.sma(),ta.hma(),ta.ema(),ta.wma(),ta.vwma(),ta.supertrend(),ta.macd(),ta.lowest(),ta.highest(),ta.lowestbars(),ta.highestbars(),ta.barssince(),ta.valuewhen(),ta.falling(),ta.rising(),ta.roc(),ta.cci(),ta.variance(),ta.dev(),ta.stdev(),ta.percentrank(),ta.rma(),ta.rsi(),ta.cum(),ta.change(),ta.mom(),ta.pivot_point_levels(),ta.swma(),ta.sar(),ta.cross(),ta.cog(),ta.alma(),ta.cmo(),ta.mfi(),ta.wpr(),ta.bb(),ta.bbw(),ta.kc(),ta.kcw(),ta.dmi(),ta.correlation(),ta.tsi(),ta.linreg(),ta.stoch(),ta.atr(),ta.percentile_nearest_rank(),ta.percentile_linear_interpolation(),ta.crossover(),ta.crossunder(),ta.pivothigh(),ta.pivotlow()
-
 // Box
 box.copy(),box.new(),box.delete(),box.get_left(),box.get_right(),box.get_top(),box.get_bottom(),box.set_left(),box.set_lefttop(),box.set_right(),box.set_rightbottom(),box.set_top(),box.set_bottom(),box.set_border_color(),box.set_bgcolor(),box.set_border_width(),box.set_border_style(),box.set_extend(),box.set_text_font_family(),box.set_text_halign(),box.set_text_valign(),box.set_text_size(),box.set_text(),box.set_text_color(),box.set_text_wrap(),box.set_top_left_point(),box.set_bottom_right_point()
 // Line
@@ -188,16 +190,12 @@ line.copy(),line.new(),line.set_x1(),line.set_y1(),line.set_xy1(),line.set_x2(),
 linefill.new(),linefill.delete(),linefill.set_color(),linefill.get_line1(),linefill.get_line2()
 // Label
 label.new(),label.copy(),label.set_x(),label.set_y(),label.set_xy(),label.set_xloc(),label.set_yloc(),label.set_text(),label.set_text_font_family(),label.set_color(),label.set_style(),label.set_textcolor(),label.set_size(),label.set_textalign(),label.set_tooltip(),label.delete(),label.get_x(),label.get_y(),label.get_text(),label.set_point()
-// Array
-array.new<type>(),array.new<float>(),array.new<int>(),array.new<color>(),array.new<bool>(),array.new<string>(),array.new<line>(),array.new<box>(),array.new<table>(),array.new<label>(),array.new<linefill>(),array.new<asdfasdfasdfasd>(),array.new_float(),array.new_int(),array.new_color(),array.new_bool(),array.new_string(),array.new_line(),array.new_box(),array.new_table(),array.new_label(),array.new_linefill(),array.copy(),array.slice(),array.size(),array.first(),array.last(),array.every(),array.some(),array.get(),array.min(),array.max(),array.range(),array.sum(),array.set(),array.from(),array.fill(),array.insert(),array.join(),array.push(),array.remove(),array.pop(),array.clear(),array.sort(),array.sort_indices(),array.percentrank(),array.percentile_nearest_rank(),array.percentile_linear_interpolation(),array.abs(),array.binary_search(),array.binary_search_leftmost(),array.binary_search_rightmost(),array.concat(),array.avg(),array.stdev(),array.variance(),array.covariance(),array.mode(),array.median(),array.standardize(),array.indexof(),array.lastindexof(),array.includes(),array.shift(),array.unshift(),array.reverse()
 // Alert
 alert()
 // Table
 table.new(),table.delete(),table.set_position(),table.set_bgcolor(),table.set_frame_color(),table.set_border_color(),table.set_frame_width(),table.set_border_width(),table.clear(),table.merge_cells()
 // Table Cell
 table.cell(),table.cell_set_text(),table.cell_set_text_font_family(),table.cell_set_tooltip(),table.cell_set_width(),table.cell_set_height(),table.cell_set_text_color(),table.cell_set_text_halign(),table.cell_set_text_valign(),table.cell_set_text_size(),table.cell_set_bgcolor()
-// Matrix
-matrix.new<int>(),matrix.new<float>(),matrix.new<bool>(),matrix.new<string>(),matrix.new<color>(),matrix.new<line>(),matrix.new<label>(),matrix.new<box>(),matrix.new<table>(),matrix.new<linefill>(),matrix.new<type>(),matrix.row(),matrix.col(),matrix.reshape(),matrix.get(),matrix.set(),matrix.add_row(),matrix.add_col(),matrix.remove_row(),matrix.remove_col(),matrix.fill(),matrix.submatrix(),matrix.copy(),matrix.columns(),matrix.rows(),matrix.elements_count(),matrix.concat(),matrix.swap_rows(),matrix.swap_columns(),matrix.reverse(),matrix.sort(),matrix.det(),matrix.min(),matrix.max(),matrix.avg(),matrix.median(),matrix.mode(),matrix.transpose(),matrix.sum(),matrix.diff(),matrix.mult(),matrix.pinv(),matrix.inv(),matrix.rank(),matrix.trace(),matrix.eigenvalues(),matrix.eigenvectors(),matrix.kron(),matrix.pow(),matrix.is_zero(),matrix.is_identity(),matrix.is_binary(),matrix.is_symmetric(),matrix.is_antisymmetric(),matrix.is_diagonal(),matrix.is_antidiagonal(),matrix.is_triangular(),matrix.is_stochastic(),matrix.is_square()
 // Strategy
 strategy.position_size,strategy.position_avg_price,strategy.openprofit,strategy.netprofit,strategy.equity,strategy.position_entry_name,strategy.grossprofit,strategy.grossloss,strategy.max_drawdown,strategy.max_runup,strategy.max_contracts_held_all,strategy.max_contracts_held_long,strategy.max_contracts_held_short,strategy.opentrades,strategy.closedtrades,strategy.wintrades,strategy.losstrades,strategy.eventrades,strategy.initial_capital,strategy.account_currency,strategy.long,strategy.short,strategy.margin_liquidation_price,strategy.grossloss_percent,strategy.max_runup_percent,strategy.netprofit_percent,strategy.openprofit_percent,strategy.grossprofit_percent,strategy.max_drawdown_percent,strategy.oca.none,strategy.oca.cancel,strategy.oca.reduce,strategy.commission.percent,strategy.commission.cash_per_contract,strategy.commission.cash_per_order,strategy.fixed,strategy.cash,strategy.percent_of_equity,strategy.direction.all,strategy.direction.long,strategy.direction.short
 // Strategy Methods
@@ -233,7 +231,8 @@ fh( simple float varname = 0.1,
     chart.point varname = ...
     polyline varname = ...
     Importlibname.mytype varname = ...
-    array<mytype> varname
+    
+    array<mytype> varname 
     array<int> varname
     array<float> varname
     array<bool> varname
@@ -508,15 +507,11 @@ dividends.future_pay_date
 // #  Predefined Colors
 // #############################################################################
 color.new(#008080,0)
-color.rgb(25,16,0)
+color.rgb(255,166,0)
 color.r(#ff660065)
 color.g(#ff660065)
 color.b(#ff660065)
 color.t(#ff6600)
 color.new(#ff6600,0)
 color.from_gradient(src,min,max,colmin,colmax)
-
-
-type myudt
-    int this = 3
 

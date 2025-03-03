@@ -45,8 +45,9 @@ MyUDT.new(myColorField=color.blue)
 // #############################################################################
 
 // @type ImportedUDT
-// This is markup
 // # Heading
+// This is markup
+//
 // ## Subheading
 // > This is a blockquote
 // - This is a list
@@ -56,14 +57,14 @@ MyUDT.new(myColorField=color.blue)
 // [This is a link](https://www.google.com)
 // `This is code`
 //
-// ```pinescript
+// ```pine
 //
-// This is a code block
+// // This is a code block
 // indicator("blah")
 // import myname/libname/1 as implib
-// this(thing) => str.tostring(thing + 1)
+// export thisfunc(thing) => str.tostring(thing + 1)
 //
-// varip this = 100
+// varip thisone = 100
 //
 // ```
 //
@@ -433,7 +434,7 @@ method my_line_methods(line ln) =>
 // -- Label Methods
 // -----------------------------------------------------------------------------
 
-method my_label_methods(series label lb) =>
+method my_label_methods(label lb) =>
     lb.set_x(x = bar_index)
     lb.set_y(y = high)
     lb.set_xy(x = bar_index + 5,y = high + 1)
@@ -597,12 +598,96 @@ while counter < 5
     label.new(x = bar_index - counter,y = low + counter,text = "Count: " + str.tostring(counter),color = color.new(color.teal,counter * 20))
     counter += 1
 
+// #############################################################################
 
-switch thisthing
-    => sdfgsf 
-    =>
+    
+//@version=6
+// @description Compact Pine Script v6 Syntax Demonstration, including export and method
+// @strategy_alert_message "Alert: {{ticker}} - {{strategy.order.action}} {{strategy.order.contracts}} @ {{close}}"
+library("CompactSyntaxDemo", overlay = true)
 
-var simple erg.float newvar = switch
-    true => 1 
-    => 0
+// --- Inputs ---
+int     inpLen      = input.int(14, "Length", minval=1, maxval=100, step=1, tooltip="Length of the indicator", group = "Main")
+float   inpSrc      = input.source(close, "Source", group = "Main", confirm = false)
+bool    inpShow     = input.bool(true, "Show Plot", inline="Plot", group="Display")
+string  inpColor    = input.color(#2157f3, "", inline="Plot", group="Display")
+string  inpConfirm  = input.string("Confirm", "Confirmation", ["Confirm", "No Confirm"], "Confirm?", group = "Main")
+
+// --- Exported Enum ---
+// @enum OrderType - Defines the type of order.
+// @field Buy - Buy order.
+// @field Sell - Sell order.
+export enum OrderType
+    Buy  = "buy"
+    Sell = "sell"
+
+// --- Exported UDT ---
+// @type MyExportedUDT - A user-defined type for export.
+// @field value (int) - An integer field.
+// @field description (string) - A string field.
+export type MyExportedUDT
+    int value = 0
+    string description = ""
+
+// --- Internal UDT ---
+// @type internalUDT - a local UDT
+// @field my_int - int
+// @field my_str - str
+// @field my_map - map str,float
+// @field my_arr - array
+type internalUDT
+    int                       my_int    = 1
+    string                    my_str    = "hello"
+    map<string, float>        my_map
+    array<MyExportedUDT>      my_arr
+
+// --- Exported Function ---
+// @function calculate - Performs a calculation.
+// @param udt (MyExportedUDT) - Input UDT.
+// @param orderType (OrderType) - Input enum.
+// @returns (float) - The calculated result.
+export calculate(MyExportedUDT udt, OrderType orderType) =>
+    float result = udt.value * (orderType == OrderType.Buy ? 2.0 : 0.5)
+    result
+
+// --- Method ---
+// @method updateMap - Updates the map within internalUDT.
+// @param key (string) - The key to update.
+// @param val (float) - The new value.
+method updateMap(internalUDT this, string key, float val) =>
+    this.my_map.put(key, val)
+
+// --- Var/Varip ---
+var my_map = map.new<string, float>()
+my_map.put("initial_key", 1.234)
+varip internalUDT inst = internalUDT.new( 
+          my_int  = inpLen,
+          my_str  = "42",
+          my_map  = my_map,
+          my_arr  = array.new<MyExportedUDT>()
+          )
+inst  := inst                        // Essential for varip persistence
+
+
+
+// --- Logic ---
+MyExportedUDT exported_instance = MyExportedUDT.new(value=inpLen, description=inpConfirm)
+float calc_result = calculate(exported_instance, OrderType.Buy)
+inst.updateMap("new_key", calc_result) // Method call
+float final_result = inst.my_map.get("new_key") * inpSrc
+
+// --- Plot ---
+plot(final_result, "Result", color.parse(inpColor), display = inpShow ? display.all : display.none)
+
+// -- Switch --
+string switch_test = switch inpConfirm
+    "Confirm"   => "Confirmed"
+    "No Confirm"=> "Not Confirmed"
+    => "Unknown"  // Default case, though covered.
+
+//-- For in
+var myarray = array.new<string>(5,"hello")
+for [index,value] in myarray
+    log.info(" index={0}, val={1} ",index,value)
+
 

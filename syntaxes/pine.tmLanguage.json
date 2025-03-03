@@ -1,14 +1,14 @@
 {
-   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+   "$schema": "https:\/\/raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
    "name": "pine",
    "patterns": [
       {
          "comment": "export? type name regex",
-         "match": "^(export[ \t]+)?(type|enum)[ \t]+\\b([a-zA-Z_][a-zA-Z_0-9]*)\\b",
+         "match": "^(export[ \\t]+)?(type|enum)[ \\t]+\\b([a-zA-Z_][a-zA-Z_0-9]*)\\b",
          "captures": {
             "1": { "name": "keyword.control.export" },
             "2": { "name": "entity.name.type" },
-            "3": { "name": "entity.name.tag" }
+            "3": { "name": "entity.name.type" }
          }
       },
       { "include": "#script" },
@@ -19,18 +19,25 @@
       { "include": "#annotations" },
       { "include": "#comments" },
       {
+         "comment": "blocks built in namespaces, for highlighting built-in methods",
+         "match": "\\b((?!adjustment|alert|array|barmerge|barstate|box|chart|closedtrades|color|commission|currency|dayofweek|direction|display|dividends|earnings|extend|font|format|hline|imported|input|label|line|linefill|location|log|map|math|matrix|method|oca|opentrades|order|plot|point|polyline|position|request|risk|runtime|scale|session|shape|size|splits|str|strategy|syminfo|ta|table|text|ticker|timeframe|udt|xloc|yloc)[A-Za-z_][A-Za-z_0-9]*\\.)(copy|delete|get_left|get_right|get_top|get_bottom|set_left|set_lefttop|set_right|set_rightbottom|set_top|set_bottom|set_border_color|set_bgcolor|set_border_width|set_border_style|set_extend|set_text_font_family|set_text_halign|set_text_valign|set_text_size|set_text|set_text_color|set_text_wrap|set_x1|set_y1|set_xy1|set_x2|set_y2|set_xy2|set_xloc|set_color|set_style|set_width|get_x1|get_y1|get_x2|get_y2|get_price|get_line1|get_line2|set_x|set_y|set_xy|set_yloc|set_textcolor|set_size|set_textalign|set_tooltip|get_x|get_y|get_text|slice|size|first|last|every|some|get|min|max|range|sum|set|fill|insert|join|push|remove|pop|clear|sort|sort_indices|percentrank|percentile_nearest_rank|percentile_linear_interpolation|abs|binary_search|binary_search_leftmost|binary_search_rightmost|concat|avg|stdev|variance|covariance|mode|median|standardize|indexof|lastindexof|includes|shift|unshift|reverse|set_position|set_frame_color|set_frame_width|cell|cell_set_text|cell_set_text_font_family|cell_set_tooltip|cell_set_width|cell_set_height|cell_set_text_color|cell_set_text_halign|cell_set_text_valign|cell_set_text_size|cell_set_bgcolor|row|col|reshape|add_row|add_col|remove_row|remove_col|submatrix|columns|rows|elements_count|swap_rows|swap_columns|det|transpose|diff|mult|pinv|inv|rank|trace|eigenvalues|eigenvectors|kron|pow|is_zero|is_identity|is_binary|is_symmetric|is_antisymmetric|is_diagonal|is_antidiagonal|is_triangular|is_stochastic|is_square|merge_cells|copy|set_first_point|set_second_point|set_point|set_top_left_point|set_bottom_right_point|contains|keys|values|put|put_all)\\b(?=[ \\t]*\\()",
+         "captures": {
+            "1": { "name": "entity.name.variable" },
+            "2": { "name": "entity.name.function.method" }
+         }
+      },
+      {
          "comment": "math functions",
-         "match": "\\b(math)([ \t]*\\.[ \t]*)(pi|phi|rphi|e|pow|min|max|abs|log|log10|sqrt|sign|exp|sin|cos|tan|asin|acos|atan|ceil|floor|round|round_to_mintick|todegrees|toradians|random|sum|avg)(?=[ \t]*\\()",
+         "match": "\\b(math)([ \\t]*\\.[ \\t]*)(pi|phi|rphi|e|pow|min|max|abs|log|log10|sqrt|sign|exp|sin|cos|tan|asin|acos|atan|ceil|floor|round|round_to_mintick|todegrees|toradians|random|sum|avg)(?=[ \\t]*\\()",
          "captures": {
             "1": { "name": "support.module" },
             "2": { "name": "punctuation.accessor" },
             "3": { "name": "support.function" }
          }
       },
-      { "include": "#type-declaration" },
       {
          "comment": "array functions (blocks ta and math due to conflicts with conflitcs with functions like min, max, sum, avg, etc.)",
-         "match": "\\b(array)([ \t]*\\.[ \t]*)(new_float|new_int|new_color|new_bool|new_string|new_line|new_box|new_table|new_label|new_linefill|copy|slice|size|get|min|max|push|range|sum|set|from|fill|insert|join|remove|pop|clear|sort|sort_indices|percentrank|percentile_nearest_rank|percentile_linear_interpolation|abs|binary_search|binary_search_leftmost|binary_search_rightmost|concat|avg|stdev|variance|covariance|mode|median|standardize|indexof|lastindexof|includes|shift|unshift|reverse|first|last|every|some)\\b(?=[ \t]*\\()",
+         "match": "\\b(array)([ \\t]*\\.[ \\t]*)(new_float|new_int|new_color|new_bool|new_string|new_line|new_box|new_table|new_label|new_linefill|copy|slice|size|get|min|max|push|range|sum|set|from|fill|insert|join|remove|pop|clear|sort|sort_indices|percentrank|percentile_nearest_rank|percentile_linear_interpolation|abs|binary_search|binary_search_leftmost|binary_search_rightmost|concat|avg|stdev|variance|covariance|mode|median|standardize|indexof|lastindexof|includes|shift|unshift|reverse|first|last|every|some)\\b(?=[ \\t]*\\()",
          "captures": {
             "1": { "name": "entity.name.type" },
             "2": { "name": "punctuation.accessor" },
@@ -39,7 +46,7 @@
       },
       {
          "comment": "matrix  functions",
-         "match": "\\b(matrix)([ \t]*\\.[ \t]*)(?:\\.(new)(?=[ \t]*<)|(row|col|reshape|get|set|add_row|add_col|remove_row|remove_col|fill|submatrix|copy|columns|rows|elements_count|concat|swap_rows|swap_columns|reverse|sort|det|min|max|avg|median|mode|transpose|sum|diff|mult|pinv|inv|rank|trace|eigenvalues|eigenvectors|kron|pow|is_zero|is_identity|is_binary|is_symmetric|is_antisymmetric|is_diagonal|is_antidiagonal|is_triangular|is_stochastic|is_square)[ \t]*(?=[ \t]*\\())",
+         "match": "\\b(matrix)([ \\t]*\\.[ \\t]*)(?:(?:\\.(new)(?=[ \\t]*<)|(row|col|reshape|get|set|add_row|add_col|remove_row|remove_col|fill|submatrix|copy|columns|rows|elements_count|concat|swap_rows|swap_columns|reverse|sort|det|min|max|avg|median|mode|transpose|sum|diff|mult|pinv|inv|rank|trace|eigenvalues|eigenvectors|kron|pow|is_zero|is_identity|is_binary|is_symmetric|is_antisymmetric|is_diagonal|is_antidiagonal|is_triangular|is_stochastic|is_square)[ \\t]*(?=[ \\t]*\\()))",
          "captures": {
             "0": { "name": "storage.type" },
             "1": { "name": "support.type" },
@@ -49,7 +56,7 @@
       },
       {
          "comment": "map functions",
-         "match": "\\b(map)([ \t]*\\.[ \t]*)(?:\\.(new)(?=[ \t]*<)|(copy|size|get|contains|keys|values|put|put_all|remove|clear)[ \t]*(?=[ \t]*\\())",
+         "match": "\\b(map)([ \\t]*\\.[ \\t]*)(?:\\.(new)(?=[ \\t]*<)|(copy|size|get|contains|keys|values|put|put_all|remove|clear)[ \\t]*(?=[ \\t]*\\())",
          "captures": {
             "0": { "name": "storage.type" },
             "1": { "name": "support.type" },
@@ -59,22 +66,28 @@
       },
       {
          "comment": "highlights import, export, method, varip, var",
-         "match": "\\b(import|export|method|var(?:ip)?)\\b(?=[ \t]+[A-Za-z0-9_])",
-         "name": "keyword.control"
+         "match": "\\b(?:(import)|(export)|(method)|(var(?:ip)?))\\b(?=[ \\t]+[A-Za-z0-9_])",
+         "captures": {
+            "0": { "name": "storage.type" },
+            "1": { "name": "keyword.other.unit" },
+            "2": { "name": "storage.modifier" },
+            "3": { "name": "entity.name.function" }
+         }
       },
       {
          "comment": "blocks built in namespaces, for highlighting built-in methods",
-         "match": "\\b(?:(?<!adjustment|alert|array|barmerge|barstate|box|chart|closedtrades|color|commission|currency|dayofweek|direction|display|dividends|earnings|extend|font|format|hline|imported|input|label|line|linefill|location|log|map|math|matrix|method|oca|opentrades|order|plot|point|polyline|position|request|risk|runtime|scale|session|shape|size|splits|str|strategy|syminfo|ta|table|text|ticker|timeframe|udt|xloc|yloc)\\.)(copy|delete|get_left|get_right|get_top|get_bottom|set_left|set_lefttop|set_right|set_rightbottom|set_top|set_bottom|set_border_color|set_bgcolor|set_border_width|set_border_style|set_extend|set_text_font_family|set_text_halign|set_text_valign|set_text_size|set_text|set_text_color|set_text_wrap|set_x1|set_y1|set_xy1|set_x2|set_y2|set_xy2|set_xloc|set_color|set_style|set_width|get_x1|get_y1|get_x2|get_y2|get_price|get_line1|get_line2|set_x|set_y|set_xy|set_yloc|set_textcolor|set_size|set_textalign|set_tooltip|get_x|get_y|get_text|slice|size|first|last|every|some|get|min|max|range|sum|set|fill|insert|join|push|remove|pop|clear|sort|sort_indices|percentrank|percentile_nearest_rank|percentile_linear_interpolation|abs|binary_search|binary_search_leftmost|binary_search_rightmost|concat|avg|stdev|variance|covariance|mode|median|standardize|indexof|lastindexof|includes|shift|unshift|reverse|set_position|set_frame_color|set_frame_width|cell|cell_set_text|cell_set_text_font_family|cell_set_tooltip|cell_set_width|cell_set_height|cell_set_text_color|cell_set_text_halign|cell_set_text_valign|cell_set_text_size|cell_set_bgcolor|row|col|reshape|add_row|add_col|remove_row|remove_col|submatrix|columns|rows|elements_count|swap_rows|swap_columns|det|transpose|diff|mult|pinv|inv|rank|trace|eigenvalues|eigenvectors|kron|pow|is_zero|is_identity|is_binary|is_symmetric|is_antisymmetric|is_diagonal|is_antidiagonal|is_triangular|is_stochastic|is_square|merge_cells|copy|set_first_point|set_second_point|set_point|set_top_left_point|set_bottom_right_point|contains|keys|values|put|put_all)\\b(?=[ \t]*\\()",
+         "match": "\\b(?:(?<!adjustment|alert|array|barmerge|barstate|box|chart|closedtrades|color|commission|currency|dayofweek|direction|display|dividends|earnings|extend|font|format|hline|imported|input|label|line|linefill|location|log|map|math|matrix|method|oca|opentrades|order|plot|point|polyline|position|request|risk|runtime|scale|session|shape|size|splits|str|strategy|syminfo|ta|table|text|ticker|timeframe|udt|xloc|yloc)\\.)(copy|delete|get_left|get_right|get_top|get_bottom|set_left|set_lefttop|set_right|set_rightbottom|set_top|set_bottom|set_border_color|set_bgcolor|set_border_width|set_border_style|set_extend|set_text_font_family|set_text_halign|set_text_valign|set_text_size|set_text|set_text_color|set_text_wrap|set_x1|set_y1|set_xy1|set_x2|set_y2|set_xy2|set_xloc|set_color|set_style|set_width|get_x1|get_y1|get_x2|get_y2|get_price|get_line1|get_line2|set_x|set_y|set_xy|set_yloc|set_textcolor|set_size|set_textalign|set_tooltip|get_x|get_y|get_text|slice|size|first|last|every|some|get|min|max|range|sum|set|fill|insert|join|push|remove|pop|clear|sort|sort_indices|percentrank|percentile_nearest_rank|percentile_linear_interpolation|abs|binary_search|binary_search_leftmost|binary_search_rightmost|concat|avg|stdev|variance|covariance|mode|median|standardize|indexof|lastindexof|includes|shift|unshift|reverse|set_position|set_frame_color|set_frame_width|cell|cell_set_text|cell_set_text_font_family|cell_set_tooltip|cell_set_width|cell_set_height|cell_set_text_color|cell_set_text_halign|cell_set_text_valign|cell_set_text_size|cell_set_bgcolor|row|col|reshape|add_row|add_col|remove_row|remove_col|submatrix|columns|rows|elements_count|swap_rows|swap_columns|det|transpose|diff|mult|pinv|inv|rank|trace|eigenvalues|eigenvectors|kron|pow|is_zero|is_identity|is_binary|is_symmetric|is_antisymmetric|is_diagonal|is_antidiagonal|is_triangular|is_stochastic|is_square|merge_cells|copy|set_first_point|set_second_point|set_point|set_top_left_point|set_bottom_right_point|contains|keys|values|put|put_all)\\b(?=[ \\t]*\\()",
          "captures": { "1": { "name": "entity.name.function.method" } }
       },
+      { "include": "#type-declaration" },
       {
          "comment": "Not-a-Number value",
-         "match": "\\bna\\b(?![ \t]*\\()",
+         "match": "\\bna\\b(?![ \\t]*\\()",
          "name": "constant.language.null"
       },
       {
          "comment": "Return type arrow",
-         "match": "\\)[ \t]*(→[ \t]+(?:\\[[^\\]]+\\]|[a-zA-Z_.<>]+(?:\\.[a-zA-Z_]+)?))",
+         "match": "\\)[ \\t]*(→[ \\t]+(?:\\[[^\\]]+\\]|[a-zA-Z_.<>]+(?:\\.[a-zA-Z_]+)?))",
          "captures": {
             "1": { "name": "keyword.operator.return" },
             "2": { "name": "entity.name.type" }
@@ -82,16 +95,16 @@
       },
       {
          "comment": "highlights [....] in the hover over following ) → [..,...,..]",
-         "match": "\\)[ \t]+(→[ \t]+(?:\\[(?:[^,\\]]+,[ \t]*)+[[A-Za-z0-9_]_]+\\]|(?:[A-Za-z0-9_]+\\.[A-Za-z0-9_]+)|(?:(?!void|na)[[A-Za-z0-9_].><\\[\\]]+)))$",
+         "match": "\\)[ \\t]+(→[ \\t]+(?:\\[(?:[^,\\]]+,[ \\t]*)+[[A-Za-z0-9_]_]+\\]|(?:[A-Za-z0-9_]+\\.[A-Za-z0-9_]+)|(?:(?!void|na)[[A-Za-z0-9_].><\\[\\]]+)))$",
          "captures": { "1": { "name": "keyword.type" } }
       },
       { "include": "#colors" },
-      { "include": "#constants" },
-      { "include": "#operators" },
       { "include": "#keywords" },
+      { "include": "#operators" },
+      { "include": "#constants" },
       { "include": "#functions" },
-      { "include": "#variables" },
       { "include": "#strings" },
+      { "include": "#variables" },
       { "include": "#numbers" }
    ],
    "repository": {
@@ -109,7 +122,7 @@
             },
             {
                "comment": "TradingView script URL",
-               "match": "^(\/\/[ \t]*)(ⓘ)(https://www.tradingview.com)([-a-zA-Z0-9@:%_\\+.~#?&\/=]*)",
+               "match": "^(\/\/[ \\t]*)(ⓘ)(https:\/\/www.tradingview.com)([-a-zA-Z0-9@:%_\\+.~#?&\/=]*)",
                "captures": {
                   "1": { "name": "comment.line" },
                   "2": { "name": "punctuation.definition.bold" },
@@ -119,7 +132,7 @@
             },
             {
                "comment": "Import statement",
-               "match": "\\b(import)\\b[ \t]+(?:([a-zA-Z_][A-Za-z0-9_]*)\/)(?:([a-zA-Z_][A-Za-z0-9_]*)\/)(\\d+)(?:[ \t]+(as)[ \t]+([a-zA-Z_][A-Za-z0-9_]*))?",
+               "match": "\\b(import)\\b[ \\t]+(?:([a-zA-Z_][A-Za-z0-9_]*)\/)(?:([a-zA-Z_][A-Za-z0-9_]*)\/)(\\d+)(?:[ \\t]+(as)[ \\t]+([a-zA-Z_][A-Za-z0-9_]*))?",
                "captures": {
                   "0": { "name": "keyword.control" },
                   "1": { "name": "keyword.operator.new" },
@@ -136,7 +149,7 @@
          "patterns": [
             {
                "comment": "Annotations with descriptions or markdown",
-               "begin": "^(\/\/)[ \t]*(@)(type|description|function|returns|enum|variable|field|param|strategy_alert_message|version)(?:(?<=field|param)[ \t]+([a-zA-Z_][A-Za-z0-9_]*))?(?=[^\\n]*)",
+               "begin": "^(\/\/)[ \\t]*(@)(type|description|function|returns|enum|variable|field|param|strategy_alert_message|version)(?:(?<=field|param)[ \\t]+([a-zA-Z_][A-Za-z0-9_]*))?(?=[^\\n]*)",
                "beginCaptures": {
                   "0": { "name": "comment.block.documentation" },
                   "1": { "name": "punctuation.definition.comment" },
@@ -146,14 +159,42 @@
                },
                "patterns": [
                   { "include": "#markup" },
+                  { "include": "#colors" },
+                  { "include": "#keywords" },
+                  { "include": "#operators" },
+                  { "include": "#constants" },
+                  { "include": "#functions" },
+                  { "include": "#strings" },
                   {
                      "comment": "Annotations without descriptions",
-                     "match": "^(\/\/)[ \t]*(@)(?:[a-zA-Z_][A-Za-z0-9_]*)(?=[^\\n]*)",
+                     "match": "^(\/\/)[ \\t]*(@)(?:[a-zA-Z_][A-Za-z0-9_]*)(?=[^\\n]*)",
                      "captures": {
                         "1": { "name": "comment.block.documentation" },
                         "2": { "name": "punctuation.definition.comment" }
                      }
                   },
+                  { "include": "#numbers" },
+                  {
+                     "begin": "(?<=\\()",
+                     "end": "(?=\\))",
+                     "patterns": [
+                        { "include": "#type-declaration" },
+                        {
+                           "match": "(bool|color|float|int|string|line|label|box|table|linefill|chart\\.point|polyline|(?:([a-zA-Z_][a-zA-Z_0-9]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*))|(?:(array|matrix|map)(\\.new)?<[ \\t]*(?:(?:([a-zA-Z_][a-zA-Z_0-9]*)[ \\t]*,)?[ \\t]*(?:(?:([a-zA-Z_][a-zA-Z_0-9]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*)))>|\\b(?!if|for|while|switch|else|export|method|type|var|varip|simple|series|input|const)(?:(?:([a-zA-Z_][a-zA-Z_0-9]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*(?:[ \\t]*\\[\\])?)))",
+                           "captures": {
+                              "0": { "name": "support.type" },
+                              "2": { "name": "entity.name.type" },
+                              "3": { "name": "entity.name.type.parameter.declaration" },
+                              "4": { "name": "entity.name.type.parameter.declaration" },
+                              "5": { "name": "entity.name.namespace" },
+                              "6": { "name": "entity.name.type.declaration" },
+                              "7": { "name": "entity.name.namespace" },
+                              "8": { "name": "entity.name.type.declaration" }
+                           }
+                        }
+                     ]
+                  },
+                  { "include": "#variables" },
                   {
                      "match": "\\b(?:true|false|na)\\b",
                      "name": "constant.language.boolean"
@@ -166,14 +207,10 @@
                      "match": "\\b(?:[a-zA-Z_][A-Za-z0-9_]*)\\b",
                      "name": "variable.other"
                   },
-                  { "include": "source.markdown" },
-                  {
-                     "match": "\\([ \t]*(?:(?:array|matrix|map)<[^>]+>|(([a-zA-Z_][A-z0-9_]*\\.)?[a-zA-Z_][A-z0-9_]*))[ \t]*\\)",
-                     "name": "entity.name.type"
-                  }
+                  { "include": "source.markdown" }
                ],
                "applyEndPatternLast": 0,
-               "end": "^(?=^//[ \t]*@|[ \t]*(?!//)[A-Za-z0-9_])"
+               "end": "^(?=^\/\/[ \\t]*@|[ \\t]*(?!\/\/)[A-Za-z0-9_])"
             }
          ]
       },
@@ -189,28 +226,28 @@
       "markup": {
          "patterns": [
             {
-               "begin": "(?=^\\/\\/)",
+               "begin": "(?=^\/\/)",
                "patterns": [
                   {
-                     "match": "^\\/\\/[ \t]*(#+)[ \t]+([^\\n]*)",
+                     "match": "^\/\/[ \\t]*(#+)[ \\t]+([^\\n]*)",
                      "captures": {
                         "1": { "name": "punctuation.definition.heading" },
                         "2": { "name": "markup.heading.1" }
                      }
                   },
                   {
-                     "match": "(?<=^\\/\\/[ \t]*|[^*])\\*\\*([^\\n*]+)\\*\\*(?=[^*]|$)",
+                     "match": "(?<=^\/\/[ \\t]*|[^*])\\*\\*([^\\n*]+)\\*\\*(?=[^*]|$)",
                      "captures": { "1": { "name": "markup.bold" } }
                   },
                   {
-                     "match": "^\\/\\/[ \t]*(-)[ \t]+([^\\n]*)",
+                     "match": "^\/\/[ \\t]*(-)[ \\t]+([^\\n]*)",
                      "captures": {
                         "1": { "name": "punctuation.definition.list" },
                         "2": { "name": "markup.list.bullet" }
                      }
                   },
                   {
-                     "match": "^\\/\\/[ \t]*(\\d+)(\\.)[ \t]+([^\\n]*)",
+                     "match": "^\/\/[ \\t]*(\\d+)(\\.)[ \\t]+([^\\n]*)",
                      "captures": {
                         "1": { "name": "constant.numeric" },
                         "2": { "name": "punctuation.definition.list" },
@@ -218,7 +255,7 @@
                      }
                   },
                   {
-                     "match": "^\\/\\/[ \t]*(>)[ \t]+([^\\n]*)",
+                     "match": "^\/\/[ \\t]*(>)[ \\t]+([^\\n]*)",
                      "captures": {
                         "1": { "name": "punctuation.definition.quote" },
                         "2": { "name": "markup.quote" }
@@ -226,7 +263,7 @@
                   },
                   {
                      "name": "markup.italic",
-                     "match": "(?<=^\\/\\/[ \t]*|[^\\*])\\*([^\\n*]+)\\*(?=[^\\*]|$)",
+                     "match": "(?<=^\/\/[ \\t]*|[^\\*])\\*([^\\n*]+)\\*(?=[^\\*]|$)",
                      "captures": { "1": { "name": "markup.italic" } }
                   },
                   {
@@ -243,76 +280,55 @@
                      "captures": { "1": { "name": "markup.code" } }
                   },
                   {
-                     "begin": "(?<=^\\/\\/[ \t]*```(pine[A-Za-z0-9_]*))",
-                     "contentName": "markup.raw.block",
+                     "begin": "(?<=^\\/\\/[ \\t]*```(pine[A-Za-z0-9_]*))",
                      "patterns": [
                         { "include": "#type-declaration" },
+                        { "include": "#script" },
                         { "include": "#keywords" },
-                        { "include": "#constants" },
                         { "include": "#operators" },
                         { "include": "#colors" },
                         { "include": "#functions" },
+                        { "include": "#constants" },
                         { "include": "#variables" },
                         { "include": "#strings" },
                         { "include": "#numbers" }
                      ],
-                     "end": "(?=/\/[ \t]*```\\n|^[\\s\/]|^\\/\\/[ \t]*@)"
-                  },
-                  {
-                     "name": "markup.paragraph",
-                     "match": "[^[ \t]]+[[A-Za-z0-9_][ \t]\\.,;:'\"\\-!?()]+"
+                     "end": "(?=\/\/[ \\t]*```\\n|^[^\\s\/]|^\/\/[ \\t]*@)"
                   }
                ],
-               "end": "^(?=(\\b|\\/\\/[ \t]*@))"
+               "end": "(?=^(\\b|\/\/[ \\t]*@))"
             }
          ]
       },
       "keywords": {
          "patterns": [
             {
-               "match": "(?<=[A-Za-z0-9_]\\n][ \t]+)(and|or)\\b(?=[ \t])|(?<=[A-Za-z0-9_][ \t]|=|^)\\b(not)\\b(?=[ \t])",
+               "match": "(?<=[A-Za-z0-9_]\\n][ \\t]+)(and|or)\\b(?=[ \\t])|(?<=[A-Za-z0-9_][ \\t]|=|^)\\b(not)\\b(?=[ \\t])",
                "name": "keyword.operator.logical"
             },
             {
                "match": "\\b(and|or|not)\\b",
-               "name": "keyword.operator.logical"
+               "name": "keyword.operator.logical.pine"
             },
             {
-               "comment": "hex colors",
-               "match": "#([0-9a-fA-F]{6,8})\\b",
-               "captures": { "0": { "name": "constant.numeric.hex" } }
-            },
-            {
-               "match": "(?<=^|=)[ \t]*(if|else[ \t]+if|else)\\b",
+               "match": "(?<=^|=)[ \\t]*(if|else[ \\t]+if|else)\\b",
                "name": "keyword.control.conditional"
             },
             {
-               "match": "(?<=(^|=)[ \t]*)(?:(while|for|switch)(?=[ \t]+(?:\\b|\\B))|switch)\\b",
+               "match": "(?<=(^|=)[ \\t]*)(?:(while|for|switch)(?=[ \\t]+(?:\\b|\\B))|switch)\\b",
                "name": "keyword.control.loop"
             },
             {
-               "match": "[ \t](in|to|by)[ \t]",
+               "match": "[ \\t](in|to|by)[ \\t]",
                "name": "keyword.control"
             },
             {
                "comment": "Arggs",
-               "begin": "(?<=\\(|,)(?=[ \t]*[a-zA-Z_][a-zA-Z_0-9]*[ \t]*=[^\\)\\,]+(?:\\)|,))(?=[ \t]*(?!=>))",
-               "end": "(?==)",
-               "patterns": [
-                  {
-                     "begin": "(?<=\\(|,|\\n)(?=[ \t]*[a-zA-Z_][a-zA-Z_0-9]*[ \t]*=)",
-                     "end": "(?=[ \t]*=)",
-                     "patterns": [
-                        {
-                           "match": "\\b[a-zA-Z_][a-zA-Z_0-9]*\\b",
-                           "name": "variable.parameter"
-                        }
-                     ]
-                  }
-               ]
+               "match": "(?<=(?:(?:,|\\() *|^(?: {4})*(?: {1,3})))\\b([a-zA-Z_]\\w*)(?=\\s*=(?!=))",
+               "name": "variable.parameter"
             },
             {
-               "match": "(?<=for[ \t]+)[ \t]*(?:\\[[ \t]*([_A-Za-z][A-Za-z0-9_]*)[ \t]*,[ \t]*([_A-Za-z][A-Za-z0-9_]*)[ \t]*\\]|([_A-Za-z][A-Za-z0-9_]*))(?=[ \t]+in)",
+               "match": "(?<=for[ \\t]+)[ \\t]*(?:\\[[ \\t]*([_A-Za-z][A-Za-z0-9_]*)[ \\t]*,[ \\t]*([_A-Za-z][A-Za-z0-9_]*)[ \\t]*\\]|([_A-Za-z][A-Za-z0-9_]*))(?=[ \\t]+in)",
                "captures": {
                   "1": { "name": "variable.parameter" },
                   "2": { "name": "variable.parameter" },
@@ -325,19 +341,8 @@
       "type-declaration": {
          "patterns": [
             {
-               "match": "\\b(array|matrix|map)\\.(new)<(?:[\t ]*(?:([a-zA-Z_][a-zA-Z_0-9]*)[ \t]*,)?[ \t]*(?:(?:([a-zA-Z_][a-zA-Z_0-9]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*)))>(?=(?<=>[ \t]*)\\(|[ \t]+[A-Za-z_][A-Za-z0-9_]*)",
-               "captures": {
-                  "1": { "name": "storage.type" },
-                  "2": { "name": "storage.modifier" },
-                  "3": { "name": "entity.name.type" },
-                  "4": { "name": "entity.name.type.parameter.declaration" },
-                  "5": { "name": "entity.name.namespace" },
-                  "6": { "name": "entity.name.type.declaration" }
-               }
-            },
-            {
                "name": "entity.type.declaration",
-               "match": "(?<=^|var[ \t]|varip[ \t]|\\(|,)(?<!\\/\\/.*|\\.)[ \t]*(?:\\b(simple|series|input|const)\\b[ \t]+)?(?:(array|matrix|map)(\\.new)?<[ \t]*(?:(?:([a-zA-Z_][a-zA-Z_0-9]*)[ \t]*,)?[ \t]*(?:(?:([a-zA-Z_][a-zA-Z_0-9]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*)))>|\\b(?!if|for|while|switch|else|export|method|type|var|varip|simple|series|input|const)(?:(?:([a-zA-Z_][a-zA-Z_0-9]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*(?:[ \t]*\\[\\])?)))(?=(?<=>[ \t]+)\\(|[ \t]+[A-Za-z_][A-Za-z0-9_]*)",
+               "match": "(?<=^|var[ \\t]|varip[ \\t]|\\(|,)(?<!\\/\\/.*|\\.)[ \\t]*(?:\\b(simple|series|input|const)\\b[ \\t]+)?(?:(array|matrix|map)(\\.new)?<[ \\t]*(?:(?:([a-zA-Z_][a-zA-Z_0-9]*)[ \\t]*,)?[ \\t]*(?:(?:([a-zA-Z_][a-zA-Z_0-9]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*)))>|\\b(?!if|for|while|switch|else|export|method|type|var|varip|simple|series|input|const)(?:(?:([a-zA-Z_][a-zA-Z_0-9]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*(?:[ \\t]*\\[\\])?)))(?=(?<=>[ \\t]+)\\(|[ \\t]+[A-Za-z_][A-Za-z0-9_]*)",
                "captures": {
                   "0": { "name": "storage.type" },
                   "1": { "name": "storage.modifier" },
@@ -352,7 +357,7 @@
             },
             {
                "comment": "Built-in type keywords",
-               "match": "\\b(?!if|for|while|switch|else|export|method|type|var|varip|simple|series|input|const)(bool|color|float|int|string|line|label|box|table|linefill|chart\\.point|polyline|(?:([a-zA-Z_][a-zA-Z_0-9]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*))(?:[ \t]*\\[\\])?\\b(?=[a-zA-Z_][A-Za-z0-9_]*(?:(?:\\\\s+(?:=\\s*(?:(?:'.*')|(?:\".*\")|(?:\\d*(?:\\.(?:\\d+[eE]?\\d+)?\\d*|\\d+))|(?:#[a-fA-F0-9]{6,8})|(?:(?:[a-zA-Z_][A-Za-z0-9_]*\\.)*[a-zA-Z_][A-Za-z0-9]*))))?))",
+               "match": "\\b(?!if|for|while|switch|else|export|method|type|var|varip|simple|series|input|const)(bool|color|float|int|string|line|label|box|table|linefill|chart\\.point|polyline|(?:([a-zA-Z_][a-zA-Z_0-9]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*))(?:[ \\t]*\\[\\])?\\b(?=[a-zA-Z_][A-Za-z0-9_]*(?:(?:\\[ ]+(?:=[ ]*(?:(?:'.*')|(?:\".*\")|(?:\\d*(?:\\.(?:\\d+[eE]?\\d+)?\\d*|\\d+))|(?:#[a-fA-F0-9]{6,8})|(?:(?:[a-zA-Z_][A-Za-z0-9_]*\\.)*[a-zA-Z_][A-Za-z0-9]*))))?))",
                "captures": {
                   "0": { "name": "support.type" },
                   "1": { "name": "support.type" },
@@ -360,10 +365,20 @@
                }
             },
             {
-               "comment": "Improved type highlighting",
-               "match": "\\b(([a-zA-Z_][A-Za-z0-9_]*\\.)?([a-zA-Z_][A-Za-z0-9_]*))(?:\\.(new)[ \t]*(?:\\(|<)|\\.([a-zA-Z_][A-Za-z0-9_]*))(?=[ \t]*\\()",
+               "match": "\\b(array|matrix|map)\\.(new)(?:<[ \\t]*(?:(?:([a-zA-Z_][a-zA-Z_0-9]*)[ \\t]*,)?[ \\t]*(?:(?:([a-zA-Z_][a-zA-Z_0-9]*)\\.)?([a-zA-Z_][a-zA-Z_0-9]*)))>)",
                "captures": {
-                  "0": { "name": "support.module" },
+                  "1": { "name": "storage.type" },
+                  "2": { "name": "keyword.operator.new" },
+                  "3": { "name": "entity.name.type.declaration" },
+                  "4": { "name": "entity.name.namespace" },
+                  "5": { "name": "entity.name.type.declaration" }
+               }
+            },
+            {
+               "comment": "Improved type highlighting",
+               "match": "\\b(([a-zA-Z_][A-Za-z0-9_]*\\.)?([a-zA-Z_][A-Za-z0-9_]*))(?:\\.(new)[ \\t]*(?:\\(|<)|\\.([a-zA-Z_][A-Za-z0-9_]*))(?=[ \\t]*\\()",
+               "captures": {
+                  "0": { "name": "support.type" },
                   "1": { "name": "entity.name.type.namespace" },
                   "2": { "name": "support.module" },
                   "3": { "name": "storage.type.user-defined" },
@@ -435,8 +450,8 @@
       "colors": {
          "patterns": [
             {
-               "comment": "Hex color codes",
-               "match": "\\b#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})\\b",
+               "comment": "hex colors",
+               "match": "#([0-9a-fA-F]{6,8})\\b",
                "captures": { "0": { "name": "constant.numeric.hex" } }
             },
             {
@@ -449,7 +464,7 @@
             },
             {
                "comment": "Predefined color constants",
-               "match": "\\bcolor\\.rgb[ \t]*\\((?:([ \t]*\\d+(?:\\.\\d*)?[ \t]*),)(?:([ \t]*\\d+(?:\\.\\d*)?[ \t]*),)(?:([ \t]*\\d+(?:\\.\\d*)?[ \t]*))(?:,(?:(?:[ \t]*\\d+(?:\\.\\d*)?[ \t]*)))?\\)",
+               "match": "\\bcolor\\.rgb[ \\t]*\\((?:([ \\t]*\\d+(?:\\.\\d*)?[ \\t]*),)(?:([ \\t]*\\d+(?:\\.\\d*)?[ \\t]*),)(?:([ \\t]*\\d+(?:\\.\\d*)?[ \\t]*))(?:,(?:(?:[ \\t]*\\d+(?:\\.\\d*)?[ \\t]*)))?\\)",
                "captures": {
                   "0": { "name": "support.constant" },
                   "1": { "name": "constant.color.red" },
@@ -463,21 +478,25 @@
          "patterns": [
             {
                "comment": "special type highlighting regex",
-               "match": "(?<=(?:,|\\(|^|var[ \t]|varip[ \t])[ \t]*)\\b(simple|literal|series|const|plot)\\b(?=[ \t]+[^[A-Za-z0-9_]])",
+               "match": "(?<=(?:,|\\(|^|var[ \\t]|varip[ \\t])[ \\t]*)\\b(simple|literal|series|const|plot)\\b(?=[ \\t]+[^[A-Za-z0-9_]])",
                "name": "storage.modifier"
             },
             {
                "comment": "highlights variables with all caps",
-               "match": "(?<!\/\/.*|\\.)\\b([A-Z_][A-Z0-9_]*)\\b(?=[ \t]*[^\\(\\.])",
+               "match": "(?<!\/\/.*|\\.)\\b([A-Z_][A-Z0-9_]*)\\b(?=[ \\t]*[^\\(\\.])",
                "name": "variable.parameter"
             },
             {
                "match": "\\b(true|false|na)\\b",
-               "name": "constant.language.boolean"
+               "name": "constant.language.pine"
+            },
+            {
+               "match": "(?<!\/\/.*)\\b[A-Z_][A-Z0-9_]*\\b(?!\\s*\\()",
+               "name": "constant.other.pine"
             },
             {
                "comment": "built in constants, ie: location.abovebar",
-               "match": "\\b(color|line|label|box|table|linefill|chart\\.point|polyline|adjustment|alert|bar_index|barmerge|barstate|box|chart|close|currency|dayofmonth|dayofweek|display|dividends|earnings|extend|font|format|high|hl2|hlc3|hlcc4|hline|hour|input|label|last_bar_index|last_bar_time|line|linefill|location|log|low|math|minute|month|na|ohlc4|open|order|plot|polyline|position|request|runtime|scale|second|session|shape|size|splits|str|strategy|syminfo|ta|table|text|ticker|time|time_close|time_tradingday|timeframe|timenow|volume|weekofyear|xloc|year|yloc)\\.([A-Za-z][A-Za-z0-9_]*)\\b(?=[ \t]*[^\\(<\\.])",
+               "match": "\\b(color|line|label|box|table|linefill|chart\\.point|polyline|adjustment|alert|bar_index|barmerge|barstate|box|chart|close|currency|dayofmonth|dayofweek|display|dividends|earnings|extend|font|format|high|hl2|hlc3|hlcc4|hline|hour|input|label|last_bar_index|last_bar_time|line|linefill|location|log|low|math|minute|month|na|ohlc4|open|order|plot|polyline|position|request|runtime|scale|second|session|shape|size|splits|str|strategy|syminfo|ta|table|text|ticker|time|time_close|time_tradingday|timeframe|timenow|volume|weekofyear|xloc|year|yloc)\\.([A-Za-z][A-Za-z0-9_]*)\\b(?=[ \\t]*[^\\(<\\.])",
                "captures": {
                   "1": { "name": "entity.other.inherited-class" },
                   "0": { "name": "constant.language" }
@@ -498,11 +517,11 @@
          "patterns": [
             {
                "comment": "",
-               "match": "(?<!\/\/.*|\\.)\\b(alert|alertcondition|barcolor|bgcolor|bool|line|label|table|box|linefill|color|dayofmonth|dayofweek|fill|fixnan|float|hline|hour|input|int|max_bars_back|minute|month|na|nz|plot|plotarrow|plotbar|plotcandle|plotchar|plotshape|second|string|time|time_close|timestamp|weekofyear|year)(?=[ \t]*\\()",
+               "match": "(?<!\/\/.*|\\.)\\b(alert|alertcondition|barcolor|bgcolor|bool|line|label|table|box|linefill|color|dayofmonth|dayofweek|fill|fixnan|float|hline|hour|input|int|max_bars_back|minute|month|na|nz|plot|plotarrow|plotbar|plotcandle|plotchar|plotshape|second|string|time|time_close|timestamp|weekofyear|year)(?=[ \\t]*\\()",
                "name": "entity.name.function"
             },
             {
-               "match": "\\b(log)\\.(?:(info)|(error)|(warning))(?=[ \t]*\\()",
+               "match": "\\b(log)\\.(?:(info)|(error)|(warning))(?=[ \\t]*\\()",
                "captures": {
                   "1": { "name": "support.module" },
                   "2": { "name": "token.info-token" },
@@ -512,7 +531,7 @@
             },
             {
                "comment": "user function regex",
-               "match": "(?<!\/\/.*|\\.)\\b([_A-Za-z][_A-Za-z0-9]*)\\b(?=[ \t]*\\()|(?<=^(?:export[ \t]+|method[ \t]+)*)([_A-Za-z][_A-Za-z0-9]*)[ \t]*(?=\\([^\\)]*\\)[ \t]*(=>))",
+               "match": "(?<!\/\/.*|\\.)\\b([_A-Za-z][_A-Za-z0-9]*)\\b(?=[ \\t]*\\()|(?<=^(?:export[ \\t]+|method[ \\t]+)*)([_A-Za-z][_A-Za-z0-9]*)[ \\t]*(?=\\([^\\)]*\\)[ \\t]*(=>))",
                "captures": {
                   "1": { "name": "entity.name.function.declaration" },
                   "2": { "name": "entity.name.function.declaration" },
@@ -521,7 +540,7 @@
             },
             {
                "comment": "Function calls",
-               "match": "\\b(chart\\.point|runtime|log|ticker|timeframe|syminfo|color|math|timeframe|request|ticker|str|ta|box|line|linefill|label|table|table|array|matrix)\\.([a-zA-Z_][A-Za-z0-9_]*)\\b(?=[ \t]*\\()",
+               "match": "\\b(chart\\.point|runtime|log|ticker|timeframe|syminfo|color|math|timeframe|request|ticker|str|ta|box|line|linefill|label|table|table|array|matrix)\\.([a-zA-Z_][A-Za-z0-9_]*)\\b(?=[ \\t]*\\()",
                "captures": {
                   "0": { "name": "entity.name.function" },
                   "1": { "name": "entity.name.module" },
@@ -530,7 +549,7 @@
             },
             {
                "comment": "Function calls",
-               "match": "\\b(?:(?!self|this|chart\\.point|runtime|log|ticker|timeframe|syminfo|color|math|timeframe|request|ticker|str|ta|box|line|linefill|label|table|table|array|matrix)([a-zA-Z0-9_]*(?:\\.))?([a-zA-Za-za-zA-Z0-9_]*(?:\\.))*)?([a-zA-Za-za-zA-Z0-9_]*)[ \t]*(?=\\([^\\\\)]*\\)(?=(?![ \t]*=>)))",
+               "match": "\\b(?:(?!self|this|chart\\.point|runtime|log|ticker|timeframe|syminfo|color|math|timeframe|request|ticker|str|ta|box|line|linefill|label|table|table|array|matrix)([a-zA-Z0-9_]*(?:\\.))?([a-zA-Za-za-zA-Z0-9_]*(?:\\.))*)?([a-zA-Za-za-zA-Z0-9_]*)[ \\t]*(?=\\([^\\\\)]*\\)(?=(?![ \\t]*=>)))",
                "captures": {
                   "1": { "name": "entity.name.function.support" },
                   "0": { "name": "entity.name.namespace" },
@@ -544,47 +563,45 @@
          "patterns": [
             {
                "comment": "Assignment operators: +=, -=, *=, /=, %=, :=",
-               "match": "(?<=(?:\\b|\\B)[ \t]*)(\\+=|\\-=|\\*=|\\/=|\\%=|\\:=)(?=[ \t]*(?:\\B|\\b))",
+               "match": "(?<=(?:\\b|\\B)[ \\t]*)(\\+=|\\-=|\\*=|\\/=|\\%=|\\:=)(?=\\B|\\b)",
                "name": "keyword.operator.assignment"
             },
             {
                "comment": "Comparison operators: ==, !=, <=, >=, <, >",
-               "match": "(?<=(?:\\b|\\B)[ \t]*)(==|!=|<=|>=|<|>)(?=[ \t]*(?:\\B|\\b))",
+               "match": "(?<=(?:\\b|\\B)[ \\t]*)(==|!=|<=|>=|<|>)(?=\\B|\\b)",
                "name": "keyword.operator.comparison"
             },
             {
                "comment": "Range operator: = and =>",
-               "match": "(?<=(?:\\b|\\B)[ \t]*)(=)(>)?(?=[ \t]*(?:\\B|\\b))",
+               "match": "(?<=\\b|\\B)(=)(>)?(?=\\B|\\b)",
                "name": "keyword.control"
             },
             {
                "comment": "Simple assignment operator: =",
-               "match": "(?<=\\b[ \t]*)(?![-:!=><\\+*%\/])=(?!>=)(?=[ \t]*(?:\\B|\\b))",
+               "match": "(?<=\\B|\\b)(?![-:!=><\\+*%\/])=(?!>=)(?=\\B|\\b)",
                "name": "keyword.operator.assignment"
             },
             {
                "comment": "Arithmetic operators: +, -, *, /, %",
-               "match": "(?<=\\b[ \t]*)(\\+|\\-|\\*|/|%)(?=[ \t]*(?:\\B|\\b))",
+               "match": "(?<=\\B|\\b)(\\+|\\-|\\*|/|%)(?=\\B|\\b)",
                "name": "keyword.operator.arithmetic"
             },
             {
                "comment": "Ternary operator: ?, :",
-               "match": "(?<=(?:\\b|\\B)[ \t]*)(\\?|\\:)(?=[ \t]*(?:\\B|\\b))",
+               "match": "(?<=(?:\\b|\\B)[ \\t]*)(\\?|\\:)(?=\\B|\\b)",
                "name": "keyword.operator.ternary"
             },
             {
-               "comment": "Parentheses: ( )",
                "match": "(\\(|\\))",
-               "name": "punctuation.definition.bold"
+               "name": "punctuation.definition.inserted.pine"
             },
             {
-               "comment": "Brackets and Braces: [ ], { }",
                "match": "(\\[|\\]|\\{|\\})",
-               "name": "punctuation.definition.bold"
+               "name": "meta.object-literal.key"
             },
             {
                "comment": "Control flow directives: →, continue, break (at the beginning of a line or after a comma)",
-               "match": "(?<=(^|,)[ \t]*)\\b(→|continue|break)\\b",
+               "match": "(?<=(^|,)[ \\t]*)\\b(→|continue|break)\\b",
                "name": "keyword.operator.control.directive"
             }
          ]
@@ -592,7 +609,7 @@
       "numbers": {
          "patterns": [
             {
-               "match": "\\b([+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?\\b)",
+               "match": "\\b([\\-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][\\-+]?[0-9]+)?\\b)",
                "captures": { "0": { "name": "constant.numeric" } }
             }
          ]
@@ -606,15 +623,15 @@
             },
             {
                "comment": "",
-               "match": "\\b(dayofmonth|dayofweek|second|hour|minute|month|weekofyear|year)\\b(?=:?)(?![ \t]*(?:=|:=))",
+               "match": "\\b(dayofmonth|dayofweek|second|hour|minute|month|weekofyear|year)\\b(?=:?)(?![ \\t]*(?:=|:=))",
                "name": "constant.language"
             },
             {
-               "match": "\\b(line|label|box|table|linefill|polyline)(?:[ \t]*\\.[ \t]*)(all)\\b",
+               "match": "\\b(line|label|box|table|linefill|polyline)(?:[ \\t]*\\.[ \\t]*)(all)\\b",
                "name": "entity.name.constant"
             },
             {
-               "match": "\\b(currency)(?:[ \t]*\\.[ \t]*)([A-Za-z]+)\\b",
+               "match": "\\b(currency)(?:[ \\t]*\\.[ \\t]*)([A-Za-z]+)\\b",
                "captures": {
                   "1": { "name": "constant.language" },
                   "2": { "name": "constant.other" }
@@ -622,7 +639,7 @@
             },
             {
                "comment": "",
-               "match": "\\b(ta)([ \t]*\\.[ \t]*)(wad|tr|vwap|obv|accdist|iii|nvi|pvi|pvt|wvad)(?=[ \t]*[^\\(])",
+               "match": "\\b(ta)([ \\t]*\\.[ \\t]*)(wad|tr|vwap|obv|accdist|iii|nvi|pvi|pvt|wvad)(?=[ \\t]*[^\\(])",
                "captures": {
                   "1": { "name": "support.constant" },
                   "2": { "name": "punctuation.accessor" },
@@ -631,7 +648,7 @@
             },
             {
                "comment": "",
-               "match": "\\b(strategy)[ \t]*\\.[ \t]*(max_runup|account_currency|cash|equity|eventrades|fixed|grossloss|grossprofit|initial_capital|long|losstrades|max_contracts_held_all|max_contracts_held_long|max_contracts_held_short|max_drawdown|netprofit|openprofit|percent_of_equity|position_avg_price|position_entry_name|position_size|short|wintrades)\\b",
+               "match": "\\b(strategy)[ \\t]*\\.[ \\t]*(max_runup|account_currency|cash|equity|eventrades|fixed|grossloss|grossprofit|initial_capital|long|losstrades|max_contracts_held_all|max_contracts_held_long|max_contracts_held_short|max_drawdown|netprofit|openprofit|percent_of_equity|position_avg_price|position_entry_name|position_size|short|wintrades)\\b",
                "captures": {
                   "0": { "name": "punctuation.accessor" },
                   "1": { "name": "entity.other.inherited-class" },
@@ -640,7 +657,7 @@
             },
             {
                "comment": "",
-               "match": "\\b(strategy)[ \t]*\\.[ \t]*(commission)[ \t]*\\.[ \t]*(cash_per_contract|cash_per_order|percent)\\b",
+               "match": "\\b(strategy)[ \\t]*\\.[ \\t]*(commission)[ \\t]*\\.[ \\t]*(cash_per_contract|cash_per_order|percent)\\b",
                "captures": {
                   "0": { "name": "punctuation.accessor" },
                   "1": { "name": "entity.other.inherited-class" },
@@ -650,7 +667,7 @@
             },
             {
                "comment": "",
-               "match": "\\b(strategy)[ \t]*\\.[ \t]*(direction)[ \t]*\\.[ \t]*(all|long|short)\\b",
+               "match": "\\b(strategy)[ \\t]*\\.[ \\t]*(direction)[ \\t]*\\.[ \\t]*(all|long|short)\\b",
                "captures": {
                   "0": { "name": "punctuation.accessor" },
                   "1": { "name": "entity.other.inherited-class" },
@@ -660,7 +677,7 @@
             },
             {
                "comment": "",
-               "match": "\\b(strategy)[ \t]*\\.[ \t]*(oca)[ \t]*\\.[ \t]*(cancel|none|reduce)\\b",
+               "match": "\\b(strategy)[ \\t]*\\.[ \\t]*(oca)[ \\t]*\\.[ \\t]*(cancel|none|reduce)\\b",
                "captures": {
                   "0": { "name": "punctuation.accessor" },
                   "1": { "name": "entity.other.inherited-class" },
@@ -670,7 +687,7 @@
             },
             {
                "comment": "",
-               "match": "\\b(strategy)\\.((?:opentrades|closedtrades)(?=[^\\.])|(?:margin_liquidation_price|grossloss_percent|max_runup_percent|netprofit_percent|openprofit_percent|grossprofit_percent|max_drawdown_percent))\\b(?![ \t]*\\()",
+               "match": "\\b(strategy)\\.((?:opentrades|closedtrades)(?=[^\\.])|(?:margin_liquidation_price|grossloss_percent|max_runup_percent|netprofit_percent|openprofit_percent|grossprofit_percent|max_drawdown_percent))\\b(?![ \\t]*\\()",
                "captures": {
                   "1": { "name": "entity.other.inherited-class" },
                   "2": { "name": "constant.language" }
@@ -678,7 +695,7 @@
             },
             {
                "comment": "",
-               "match": "\\b(strategy)\\.(?:([a-zA-Z_]+)\\.)?([a-zA-Z_]+)(?=[ \t]*\\()\\b",
+               "match": "\\b(strategy)\\.(?:([a-zA-Z_]+)\\.)?([a-zA-Z_]+)(?=[ \\t]*\\()\\b",
                "captures": {
                   "1": { "name": "entity.other.inherited-class" },
                   "2": { "name": "entity.name.namespace" },
@@ -687,7 +704,7 @@
             },
             {
                "comment": "",
-               "match": "(?=(?:^|var[ \t]+|varip[ \t]+|\\(|,)[ \t]*).*\\b(?:(simple|series|input|const|literal)[ \t]+)(?:([a-zA-Z_][A-Za-z0-9_]*\\.)?([a-zA-Z_][A-Za-z0-9_]*)[ \t]+)?(?=(?:[a-zA-Z_][A-Za-z0-9_]*)[ \t]*(?:=|,|\\)|$))",
+               "match": "(?=(?:^|var[ \\t]+|varip[ \\t]+|\\(|,)[ \\t]*).*\\b(?:(simple|series|input|const|literal)[ \\t]+)(?:([a-zA-Z_][A-Za-z0-9_]*\\.)?([a-zA-Z_][A-Za-z0-9_]*)[ \\t]+)?(?=(?:[a-zA-Z_][A-Za-z0-9_]*)[ \\t]*(?:=|,|\\)|$))",
                "captures": {
                   "1": { "name": "storage.modifier" },
                   "2": { "name": "entity.name.namespace" },
@@ -696,12 +713,12 @@
             },
             {
                "comment": "",
-               "match": "\\b(dayofmonth|dayofweek|second|hour|minute|month|weekofyear|year)(?![ \t]*(?:=|:=))\\b",
+               "match": "\\b(dayofmonth|dayofweek|second|hour|minute|month|weekofyear|year)(?![ \\t]*(?:=|:=))\\b",
                "name": "variable.language"
             },
             {
                "comment": "",
-               "match": "\\b(math)[ \t]*\\.[ \t]*(e|phi|pi|rphi)\\b",
+               "match": "\\b(math)[ \\t]*\\.[ \\t]*(e|phi|pi|rphi)\\b",
                "captures": {
                   "0": { "name": "punctuation.accessor" },
                   "1": { "name": "support.module" },
@@ -709,24 +726,24 @@
                }
             },
             {
-               "match": "\\b(?<=\\)|(?:[a-zA-Z_][A-Za-z0-9_]*))\\.([a-zA-Z_][A-Za-z0-9_]*)\\b(?=[ \t]*(?!^\\(|\\.|<))",
+               "match": "\\b(?<=\\)|(?:[a-zA-Z_][A-Za-z0-9_]*))\\.([a-zA-Z_][A-Za-z0-9_]*)\\b(?=[ \\t]*(?!^\\(|\\.|<))",
                "captures": { "1": { "name": "entity.other.attribute-name" } }
             },
             {
                "comment": "",
-               "match": "(?<!\\.)\\b(line|label|box|table|linefill|polyline)[ \t]*\\.[ \t]*(all)\\b",
+               "match": "(?<!\\.)\\b(line|label|box|table|linefill|polyline)[ \\t]*\\.[ \\t]*(all)\\b",
                "captures": {
                   "1": { "name": "entity.other.inherited-class" },
                   "2": { "name": "support.type.property-name" }
                }
             },
             {
-               "match": "(?<!\\.[ \t]*)\\b(?!this|self|if|else|while|switch|for)([a-zA-Z_][A-Za-z0-9_]*)\\b(?=[ \t]*(?!\\.?[A-Za-z0-9_]|\\(|\\<|\\[))",
+               "match": "(?<!\\.[ \\t]*)\\b(?!this|self|if|else|while|switch|for)([a-zA-Z_][A-Za-z0-9_]*)\\b(?=[ \\t]*(?!\\.?[A-Za-z0-9_]|\\(|\\<|\\[))",
                "captures": { "1": { "name": "entity.name" } }
             },
             {
                "comment": "highlights 'this' and 'self'",
-               "match": "(?<!\/\/.*)\\b(this|self)\\b[ \t]*(?=\\.[A-Za-z0-9_]|[ \t]*(?:,|\\)|$))",
+               "match": "(?<!\/\/.*)\\b(this|self)\\b[ \\t]*(?=\\.[A-Za-z0-9_]|[ \\t]*(?:,|\\)|$))",
                "captures": { "1": { "name": "storage.modifier.package" } }
             }
          ]
