@@ -28,8 +28,7 @@
     "TradingView"    ,
     "TradingView.com"
   ],
-  "maintainers": [
-    { "name": "kai gouthro" }
+  "activationEvents": [
   ],
   "icon": "media/PineLogo.png",
   "capabilities": {
@@ -52,9 +51,9 @@
     "themes": [
       { "label": "Pine-*Preferred"   , "id": "Dark Theme (*Preferred)"         , "uiTheme": "vs-dark", "path": "themes/Pine-Preferred.json"  },
       { "label": "Pine-Original-Dark", "id": "Dark Theme (Original)"           , "uiTheme": "vs-dark", "path": "themes/Pine-Original.json"   },
-      { "label": "Pine-V4-Classic"   , "id": "Dark V4    Theme (Deep Coverage)", "uiTheme": "vs-dark", "path": "themes/Pine-classic-v4.json" },
+      { "label": "Pine-V4-Classic"   , "id": "Dark V4 Theme (Deep Coverage)"   , "uiTheme": "vs-dark", "path": "themes/Pine-classic-v4.json" },
       { "label": "Pine-Cadbury"      , "id": "Dark Bunny Theme (Deep Coverage)", "uiTheme": "vs-dark", "path": "themes/Pine-Cadbury.json"    },
-      { "label": "Pine-1980"         , "id": "Dark TMNT  Theme (Deep Coverage)", "uiTheme": "vs-dark", "path": "themes/Pine-1980.json"       },
+      { "label": "Pine-1980"         , "id": "Dark TMNT Theme (Deep Coverage)" , "uiTheme": "vs-dark", "path": "themes/Pine-1980.json"       },
       { "label": "Pine-Basic"        , "id": "Dark Theme (Basic)"              , "uiTheme": "vs-dark", "path": "themes/Pine-Basic.json"      },
       { "label": "Pine-Universal"    , "id": "Dark Theme (Universal)"          , "uiTheme": "vs-dark", "path": "themes/Pine-Universal.json"  },
       { "label": "Pine-Cold"         , "id": "Dark Theme (Cold)"               , "uiTheme": "vs-dark", "path": "themes/Pine-Cold.json"       },
@@ -92,35 +91,33 @@
   "dependencies": {
     "debounce"  : "^2.1.1"  ,
     "lodash"    : "^4.17.21",
-    "node-fetch": "^3.3.2"  ,
-    "vscode"    : "^1.1.37"
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
-    "@types/debounce"                 : "^1.2.4"  ,
-    "@types/lodash"                   : "^4.17.15",
-    "@types/node"                     : "^22.5.4" ,
-    "@types/source-map-support"       : "^0.5.10" ,
-    "@types/vscode"                   : "^1.93.0" ,
-    "@typescript-eslint/eslint-plugin": "^7.0.0"  ,
-    "@typescript-eslint/parser"       : "^7.0.0"  ,
-    "@vscode/vsce"                    : "^3.1.0"  ,
-    "eslint"                          : "^8.0.0"  ,
-    "eslint-config-airbnb"            : "^19.0.4" ,
-    "eslint-config-airbnb-typescript" : "^18.0.0" ,
-    "eslint-plugin-import"            : "^2.30.0" ,
-    "eslint-plugin-jsx-a11y"          : "^6.10.0" ,
-    "eslint-plugin-react"             : "^7.35.2" ,
-    "eslint-plugin-react-hooks"       : "^4.6.2"  ,
-    "nodemon"                         : "^3.1.4"  ,
-    "remark-preset-wooorm"            : "^9.0.0"  ,
-    "source-map-support"              : "^0.5.21" ,
-    "ts-loader"                       : "^9.5.1"  ,
-    "type-coverage"                   : "^2.0.0"  ,
-    "typedoc"                         : "^0.27.7" ,
-    "typescript"                      : "^5.7.3"  ,
-    "webpack"                         : "^5.94.0" ,
-    "webpack-cli"                     : "^5.1.4"  ,
+    "@types/debounce"                 : "^1.2.4" ,
+    "@types/lodash"                   : "^4.17.7",
+    "@types/node"                     : "^22.5.4",
+    "@types/source-map-support"       : "^0.5.10",
+    "@types/vscode"                   : "^1.93.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0" ,
+    "@typescript-eslint/parser"       : "^7.0.0" ,
+    "@vscode/vsce"                    : "^3.1.0" ,
+    "eslint"                          : "^8.56.0",
+    "eslint-config-airbnb"            : "^19.0.4",
+    "eslint-config-airbnb-typescript" : "^18.0.0",
+    "eslint-plugin-import"            : "^2.30.0",
+    "eslint-plugin-jsx-a11y"          : "^6.10.0",
+    "eslint-plugin-react"             : "^7.35.2",
+    "eslint-plugin-react-hooks"       : "^4.6.2" ,
+    "nodemon"                         : "^3.1.4" ,
+    "remark-preset-wooorm"            : "^9.0.0" ,
+    "source-map-support"              : "^0.5.21",
+    "ts-loader"                       : "^9.5.1" ,
+    "type-coverage"                   : "^2.0.0" ,
+    "typedoc"                         : "^0.26.7",
+    "typescript"                      : "^5.7.3" ,
+    "webpack"                         : "^5.94.0",
+    "webpack-cli"                     : "^5.1.4" ,
     "xo"                              : "^0.54.0"
-  },
-  "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af"
+  }
 }
