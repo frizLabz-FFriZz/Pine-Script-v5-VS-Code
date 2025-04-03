@@ -24,6 +24,12 @@ public interface PineScriptTokenTypes {
     IElementType NAMESPACE = new PineScriptTokenType("NAMESPACE");
     IElementType ANNOTATION = new PineScriptTokenType("ANNOTATION");
     
+    // Special tokens for TradingView-like highlighting
+    IElementType TRUE_FALSE = new PineScriptTokenType("TRUE_FALSE");
+    IElementType NA = new PineScriptTokenType("NA");
+    IElementType COLOR_CONSTANT = new PineScriptTokenType("COLOR_CONSTANT");
+    IElementType EXIT_LABEL = new PineScriptTokenType("EXIT_LABEL");
+    
     // Punctuation
     IElementType DOT = new PineScriptTokenType("DOT");
     IElementType COMMA = new PineScriptTokenType("COMMA");

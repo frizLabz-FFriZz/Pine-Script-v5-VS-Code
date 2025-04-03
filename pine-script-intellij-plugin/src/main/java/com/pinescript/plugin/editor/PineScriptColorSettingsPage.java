@@ -28,7 +28,12 @@ public class PineScriptColorSettingsPage implements ColorSettingsPage {
             new AttributesDescriptor("Semicolons", PineScriptSyntaxHighlighter.SEMICOLON),
             new AttributesDescriptor("Functions", PineScriptSyntaxHighlighter.FUNCTION),
             new AttributesDescriptor("Namespaces", PineScriptSyntaxHighlighter.NAMESPACE),
-            new AttributesDescriptor("Types", PineScriptSyntaxHighlighter.TYPE)
+            new AttributesDescriptor("Types", PineScriptSyntaxHighlighter.TYPE),
+            new AttributesDescriptor("Boolean Values", PineScriptSyntaxHighlighter.TRUE_FALSE),
+            new AttributesDescriptor("NA Values", PineScriptSyntaxHighlighter.NA),
+            new AttributesDescriptor("Color Constants", PineScriptSyntaxHighlighter.COLOR_CONSTANT),
+            new AttributesDescriptor("Exit Labels", PineScriptSyntaxHighlighter.EXIT_LABEL),
+            new AttributesDescriptor("Built-in Variables", PineScriptSyntaxHighlighter.BUILT_IN_VARIABLE)
     };
 
     @Nullable
@@ -52,6 +57,10 @@ public class PineScriptColorSettingsPage implements ColorSettingsPage {
                indicator("My Script", overlay=true)
                
                var float myVar = 3.14
+               myValue = na
+               isTrue = true
+               isFalse = false
+               
                myFunction(param1, param2) =>
                    result = math.max(param1, param2)
                    result
@@ -59,7 +68,17 @@ public class PineScriptColorSettingsPage implements ColorSettingsPage {
                if (ta.crossover(close, open))
                    label.new(bar_index, high, text="Crossover", color=color.green)
                
-               plot(close)
+               plot(close, color=color.blue, title="Close")
+               plot(open, color=color.red, title="Open")
+               
+               if (low <= trailStop)
+                   strategy.exit("Long TS Exit", from_entry=entry_id, stop=trailStop)
+               
+               if (high >= trailStop)
+                   strategy.exit("Short TS Exit", from_entry=entry_id, stop=trailStop)
+                   
+               // Demonstrate built-in variables
+               alertCondition(close > open, title="Price Up", message="Price moved up")
                """;
     }
 
