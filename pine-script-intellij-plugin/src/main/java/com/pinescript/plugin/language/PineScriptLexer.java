@@ -77,9 +77,6 @@ public class PineScriptLexer extends LexerBase {
         BUILT_IN_VARS.add("ohlc4"); BUILT_IN_VARS.add("bar_index"); BUILT_IN_VARS.add("barstate");
         BUILT_IN_VARS.add("title"); BUILT_IN_VARS.add("comment"); BUILT_IN_VARS.add("style"); BUILT_IN_VARS.add("from_entry");
         BUILT_IN_VARS.add("stop"); BUILT_IN_VARS.add("immediately"); BUILT_IN_VARS.add("entry_id");
-        BUILT_IN_VARS.add("entryPrice"); // Add common variable names from the example
-        BUILT_IN_VARS.add("trailActive"); BUILT_IN_VARS.add("extremePrice"); BUILT_IN_VARS.add("trailStop");
-        BUILT_IN_VARS.add("trailingStopLossDelta"); BUILT_IN_VARS.add("stopLossActivationDelta");
         
         // Namespaces
         NAMESPACES.add("math"); NAMESPACES.add("array"); NAMESPACES.add("matrix"); NAMESPACES.add("str");

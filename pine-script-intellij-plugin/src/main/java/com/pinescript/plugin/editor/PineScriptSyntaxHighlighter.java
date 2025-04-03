@@ -25,7 +25,7 @@ public class PineScriptSyntaxHighlighter extends SyntaxHighlighterBase {
     private static final Color COMMENT_COLOR = new Color(87, 166, 74);       // Green for comments
     private static final Color FUNCTION_COLOR = new Color(220, 220, 170);    // Light yellow for functions
     private static final Color OPERATOR_COLOR = new Color(180, 180, 180);    // Light gray for operators
-    private static final Color IDENTIFIER_COLOR = new Color(156, 220, 254);  // Light cyan for identifiers
+    private static final Color IDENTIFIER_COLOR = new Color(156, 220, 254);  // Light cyan for identifiers/variables
     private static final Color TYPE_COLOR = new Color(86, 156, 214);         // Blue for types (float, bool)
     private static final Color NAMESPACE_COLOR = new Color(78, 201, 176);    // Teal for namespaces
     private static final Color BUILT_IN_VAR_COLOR = new Color(189, 183, 107); // Khaki/yellow for built-in variables (open, high, low, close)
@@ -119,6 +119,7 @@ public class PineScriptSyntaxHighlighter extends SyntaxHighlighterBase {
         } else if (OPERATOR_TOKENS.contains(tokenType)) {
             return pack(OPERATOR);
         } else if (FUNCTION_TOKENS.contains(tokenType)) {
+            // Only highlight as function if it's a function token
             return pack(FUNCTION);
         } else if (NAMESPACE_TOKENS.contains(tokenType)) {
             return pack(NAMESPACE);
@@ -153,6 +154,7 @@ public class PineScriptSyntaxHighlighter extends SyntaxHighlighterBase {
             return pack(SEMICOLON);
         }
 
-        return TextAttributesKey.EMPTY_ARRAY;
+        // Default to identifier color for any unmatched tokens that might be variables
+        return pack(IDENTIFIER);
     }
 } 
