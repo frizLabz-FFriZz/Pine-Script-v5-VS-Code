@@ -1,0 +1,26 @@
+//@version=5
+strategy("${NAME}", overlay=true)
+
+// Input parameters
+length = input.int(14, "RSI Length", minval=1)
+overbought = input.int(70, "Overbought Level", minval=50, maxval=100)
+oversold = input.int(30, "Oversold Level", minval=0, maxval=50)
+
+// Calculate
+rsiValue = ta.rsi(close, length)
+
+// Define conditions
+buySignal = ta.crossover(rsiValue, oversold)
+sellSignal = ta.crossunder(rsiValue, overbought)
+
+// Execute strategy
+if (buySignal)
+    strategy.entry("Buy", strategy.long)
+
+if (sellSignal)
+    strategy.entry("Sell", strategy.short)
+
+// Plot
+plot(rsiValue, "RSI", color=color.purple)
+hline(overbought, "Overbought", color=color.red)
+hline(oversold, "Oversold", color=color.green) 

@@ -1,0 +1,11 @@
+//@version=5
+indicator("${NAME}", overlay=true)
+
+// Input parameters
+length = input.int(14, "Length", minval=1)
+
+// Calculate
+sma = ta.sma(close, length)
+
+// Plot
+plot(sma, "SMA", color=color.blue, linewidth=2) 

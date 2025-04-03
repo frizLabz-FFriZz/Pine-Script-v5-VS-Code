@@ -1,0 +1,7 @@
+<component name="FileTypeManager" version="13">
+  <extensionMap>
+    <mapping ext="pine" type="Pine Script"/>
+    <mapping ext="ps" type="Pine Script"/>
+    <mapping ext="pinescript" type="Pine Script"/>
+  </extensionMap>
+</component> 

@@ -1,0 +1,51 @@
+plugins {
+    id 'java'
+    id 'org.jetbrains.intellij' version '1.17.1'
+}
+
+group 'com.pinescript.plugin'
+version '0.1.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.jetbrains:annotations:24.0.1'
+    implementation 'de.jflex:jflex:1.9.1'
+}
+
+task generateLexer(type: JavaExec) {
+    classpath = configurations.runtimeClasspath
+    mainClass = 'jflex.Main'
+    args = ['-d', 'src/main/java/com/pinescript/plugin/language', 'src/main/java/com/pinescript/plugin/language/_PineScriptLexer.flex']
+}
+
+intellij {
+    version = '2023.3.4'
+    type = 'IC' // IntelliJ IDEA Community Edition
+    plugins = ['com.intellij.java']
+}
+
+patchPluginXml {
+    sinceBuild = '233'
+    untilBuild = '243.*'
+    changeNotes = """
+      <h3>0.1.0</h3>
+      <ul>
+        <li>Initial release</li>
+        <li>Pine Script syntax highlighting</li>
+        <li>Auto-completion for Pine Script functions and variables</li>
+      </ul>
+    """
+}
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile) {
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
+    options.encoding = 'UTF-8'
+} 
