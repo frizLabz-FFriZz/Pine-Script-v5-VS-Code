@@ -42,8 +42,7 @@
         <completion.contributor language="Pine Script" 
                                 implementationClass="com.pinescript.plugin.completion.PineScriptCompletionContributor" 
                                 order="first"/>
-        <!-- Color scheme -->
-        <bundledColorScheme path="/schemes/PineScriptScheme.xml"/>    </extensions>
+    </extensions>
     
     <actions>
         <action id="PineScript.NewFile" class="com.pinescript.plugin.actions.NewPineScriptFileAction" 

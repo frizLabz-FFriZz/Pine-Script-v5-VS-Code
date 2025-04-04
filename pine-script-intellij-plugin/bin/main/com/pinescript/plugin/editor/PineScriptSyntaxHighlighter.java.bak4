@@ -22,13 +22,13 @@ public class PineScriptSyntaxHighlighter extends SyntaxHighlighterBase {
     private static final Color KEYWORD_COLOR = new Color(83, 169, 149);      // Green for keywords      // Blue for keywords (var, if)
     private static final Color STRING_COLOR = new Color(80, 140, 70);        // Warm green for strings       // Orange-brown for strings
     private static final Color NUMBER_COLOR = new Color(230, 133, 55);       // Orange for numbers      // Light green for numbers
-    private static final Color COMMENT_COLOR = new Color(156, 156, 156);     // Grey for comments       // Green for comments
-    private static final Color FUNCTION_COLOR = new Color(56, 97, 246);      // Blue for functions     // Yellow for functions
-    private static final Color OPERATOR_COLOR = new Color(83, 169, 149);     // Green for operators    // Light gray for operators
-    private static final Color IDENTIFIER_COLOR = new Color(46, 46, 46);     // Black for variables  // White/very light gray for identifiers/variables
-    private static final Color TYPE_COLOR = new Color(188, 57, 50);          // Red-Orange for types         // Blue for types (float, bool)
-    private static final Color NAMESPACE_COLOR = new Color(83, 169, 149);    // Green for namespaces    // Teal for namespaces
-    private static final Color BUILT_IN_VAR_COLOR = new Color(188, 57, 50);  // Red-Orange for built-in variables // Yellow for built-in variables (open, high, low, close)
+    private static final Color COMMENT_COLOR = new Color(118, 185, 0);       // Green for comments
+    private static final Color FUNCTION_COLOR = new Color(255, 215, 95);     // Yellow for functions
+    private static final Color OPERATOR_COLOR = new Color(202, 202, 202);    // Light gray for operators
+    private static final Color IDENTIFIER_COLOR = new Color(242, 242, 242);  // White/very light gray for identifiers/variables
+    private static final Color TYPE_COLOR = new Color(66, 165, 245);         // Blue for types (float, bool)
+    private static final Color NAMESPACE_COLOR = new Color(96, 205, 200);    // Teal for namespaces
+    private static final Color BUILT_IN_VAR_COLOR = new Color(255, 215, 95); // Yellow for built-in variables (open, high, low, close)
     
     // Special colors for specific elements
     private static final Color TRUE_FALSE_COLOR = new Color(66, 165, 245);   // Blue for true/false
@@ -46,10 +46,10 @@ public class PineScriptSyntaxHighlighter extends SyntaxHighlighterBase {
     private static final TextAttributes FUNCTION_ATTRIBUTES = new TextAttributes(FUNCTION_COLOR, null, null, null, Font.PLAIN);
     private static final TextAttributes OPERATOR_ATTRIBUTES = new TextAttributes(OPERATOR_COLOR, null, null, null, Font.PLAIN);
     private static final TextAttributes IDENTIFIER_ATTRIBUTES = new TextAttributes(IDENTIFIER_COLOR, null, null, null, Font.PLAIN);
-    private static final TextAttributes TYPE_ATTRIBUTES = new TextAttributes(KEYWORD_COLOR, null, null, null, Font.BOLD);
+    private static final TextAttributes TYPE_ATTRIBUTES = new TextAttributes(TYPE_COLOR, null, null, null, Font.PLAIN);
     private static final TextAttributes NAMESPACE_ATTRIBUTES = new TextAttributes(NAMESPACE_COLOR, null, null, null, Font.PLAIN);
-    private static final TextAttributes TRUE_FALSE_ATTRIBUTES = new TextAttributes(BUILT_IN_VAR_COLOR, null, null, null, Font.PLAIN);
-    private static final TextAttributes NA_ATTRIBUTES = new TextAttributes(BUILT_IN_VAR_COLOR, null, null, null, Font.PLAIN);
+    private static final TextAttributes TRUE_FALSE_ATTRIBUTES = new TextAttributes(TRUE_FALSE_COLOR, null, null, null, Font.PLAIN);
+    private static final TextAttributes NA_ATTRIBUTES = new TextAttributes(NA_COLOR, null, null, null, Font.PLAIN);
     private static final TextAttributes COLOR_CONSTANT_ATTRIBUTES = new TextAttributes(COLOR_CONSTANTS, null, null, null, Font.PLAIN);
     private static final TextAttributes EXIT_LABEL_ATTRIBUTES = new TextAttributes(EXIT_LABEL_COLOR, null, null, null, Font.PLAIN);
     private static final TextAttributes BUILT_IN_VAR_ATTRIBUTES = new TextAttributes(BUILT_IN_VAR_COLOR, null, null, null, Font.PLAIN);
@@ -106,37 +106,20 @@ public class PineScriptSyntaxHighlighter extends SyntaxHighlighterBase {
     public TextAttributesKey @NotNull [] getTokenHighlights(IElementType tokenType) {
         if (tokenType == null) return TextAttributesKey.EMPTY_ARRAY;
 
-        // Get the token text for more precise checking
-        String tokenText = tokenType.toString();
-
         if (KEYWORD_TOKENS.contains(tokenType)) {
             return pack(KEYWORD);
         } else if (IDENTIFIER_TOKENS.contains(tokenType)) {
-            // Check for built-in variables with namespaces
-            if (tokenText.contains(".")) {
-                // Handle specific prefixes that should be highlighted as built-in variables
-                if (tokenText.startsWith("syminfo") || 
-                    tokenText.startsWith("strategy") || 
-                    tokenText.startsWith("barstate") ||
-                    tokenText.startsWith("ta") ||
-                    tokenText.contains("position_size") ||
-                    tokenText.contains("equity") ||
-                    tokenText.contains("tickerid")) {
-                    return pack(BUILT_IN_VARIABLE);
-                }
-            }
             return pack(IDENTIFIER);
         } else if (COMMENT_TOKENS.contains(tokenType)) {
             return pack(COMMENT);
         } else if (STRING_TOKENS.contains(tokenType)) {
-            // Ensure all strings get STRING color, regardless of content
             return pack(STRING);
         } else if (NUMBER_TOKENS.contains(tokenType)) {
             return pack(NUMBER);
         } else if (OPERATOR_TOKENS.contains(tokenType)) {
             return pack(OPERATOR);
         } else if (FUNCTION_TOKENS.contains(tokenType)) {
-            // Restore function highlighting - all function tokens should be highlighted as functions
+            // Only highlight as function if it's a function token
             return pack(FUNCTION);
         } else if (NAMESPACE_TOKENS.contains(tokenType)) {
             return pack(NAMESPACE);

@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>fileTypes</key>
+    <array>
+        <string>pine</string>
+        <string>ps</string>
+        <string>pinescript</string>
+    </array>
+    <key>name</key>
+    <string>Pine Script</string>
+    <key>patterns</key>
+    <array>
+        <dict>
+            <key>comment</key>
+            <string>Export and type declarations</string>
+            <key>match</key>
+            <string>^(export[ \t]+)?(type|enum)[ \t]+\b([a-zA-Z_][a-zA-Z_0-9]*)\b</string>
+            <key>captures</key>
+            <dict>
+                <key>1</key>
+                <dict>
+                    <key>name</key>
+                    <string>keyword.control.export</string>
+                </dict>
+                <key>2</key>
+                <dict>
+                    <key>name</key>
+                    <string>entity.name.type</string>
+                </dict>
+                <key>3</key>
+                <dict>
+                    <key>name</key>
+                    <string>entity.name.type</string>
+                </dict>
+            </dict>
+        </dict>
+        <dict>
+            <key>match</key>
+            <string>\b(indicator|library|strategy)\b(?=\()</string>
+            <key>name</key>
+            <string>entity.name.function.declaration</string>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>Single-line comments</string>
+            <key>match</key>
+            <string>//+.*$</string>
+            <key>name</key>
+            <string>comment.line</string>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>Keywords</string>
+            <key>match</key>
+            <string>\b(if|else|for|to|while|switch|case|default|continue|break|return|function|var|varip|type|enum|strategy|study|input|series|simple|const|bool|color|float|int|string|line|label|box|table|linefill|chart\.point|polyline|and|or|not|overlay)\b</string>
+            <key>name</key>
+            <string>keyword.control</string>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>Built-in variables</string>
+            <key>match</key>
+            <string>\b(open|high|low|close|volume|time|hl2|hlc3|ohlc4|bar_index|barstate|title|comment|style|from_entry|stop|immediately|entry_id)\b</string>
+            <key>name</key>
+            <string>variable.language</string>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>Boolean literals</string>
+            <key>match</key>
+            <string>\b(true|false)\b</string>
+            <key>name</key>
+            <string>constant.language.boolean</string>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>Not-a-Number value</string>
+            <key>match</key>
+            <string>\bna\b(?![ \t]*\()</string>
+            <key>name</key>
+            <string>constant.language.null</string>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>Numeric literals</string>
+            <key>match</key>
+            <string>\b([0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)\b</string>
+            <key>name</key>
+            <string>constant.numeric</string>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>Strings</string>
+            <key>begin</key>
+            <string>"</string>
+            <key>end</key>
+            <string>"</string>
+            <key>name</key>
+            <string>string.quoted.double</string>
+            <key>patterns</key>
+            <array>
+                <dict>
+                    <key>match</key>
+                    <string>\\.</string>
+                    <key>name</key>
+                    <string>constant.character.escape</string>
+                </dict>
+            </array>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>Strings (single quoted)</string>
+            <key>begin</key>
+            <string>'</string>
+            <key>end</key>
+            <string>'</string>
+            <key>name</key>
+            <string>string.quoted.single</string>
+            <key>patterns</key>
+            <array>
+                <dict>
+                    <key>match</key>
+                    <string>\\.</string>
+                    <key>name</key>
+                    <string>constant.character.escape</string>
+                </dict>
+            </array>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>Colors: Hex</string>
+            <key>match</key>
+            <string>#([0-9a-fA-F]{6,8})\b</string>
+            <key>captures</key>
+            <dict>
+                <key>0</key>
+                <dict>
+                    <key>name</key>
+                    <string>constant.numeric.hex</string>
+                </dict>
+            </dict>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>Predefined color constants</string>
+            <key>match</key>
+            <string>\bcolor\.(aqua|black|blue|fuchsia|gray|green|lime|maroon|navy|olive|purple|red|silver|teal|white|yellow)\b</string>
+            <key>name</key>
+            <string>support.constant</string>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>Function calls</string>
+            <key>match</key>
+            <string>\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(</string>
+            <key>captures</key>
+            <dict>
+                <key>1</key>
+                <dict>
+                    <key>name</key>
+                    <string>entity.name.function</string>
+                </dict>
+            </dict>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>Constants (ALL_CAPS)</string>
+            <key>match</key>
+            <string>\b([A-Z][A-Z0-9_]*)\b</string>
+            <key>name</key>
+            <string>constant.other</string>
+        </dict>
+        <dict>
+            <key>comment</key>
+            <string>Operators</string>
+            <key>match</key>
+            <string>=|\+|-|\*|/|%|&lt;|&gt;|&amp;|\||\^|!|~|\?|:|\.|\,|;</string>
+            <key>name</key>
+            <string>keyword.operator</string>
+        </dict>
+    </array>
+    <key>scopeName</key>
+    <string>source.pinescript</string>
+    <key>uuid</key>
+    <string>8EC9D2A7-5EF3-4E4B-9EF2-C9F6D1F96C06</string>
+    <key>firstLineMatch</key>
+    <string>/pine_script|indicator|strategy|study/</string>
+</dict>
+</plist> 

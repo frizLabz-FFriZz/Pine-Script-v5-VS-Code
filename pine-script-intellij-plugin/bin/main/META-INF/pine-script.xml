@@ -1,0 +1,8 @@
+<bundles>
+    <language id="Pine Script">
+        <highlighting>
+            <grammar path="/grammar/pine-script.json"/>
+            <bundle path="/highlighting/pine-script.tmbundle"/>
+        </highlighting>
+    </language>
+</bundles> 

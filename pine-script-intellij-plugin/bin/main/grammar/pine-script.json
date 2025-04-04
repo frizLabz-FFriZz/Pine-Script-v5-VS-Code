@@ -1,0 +1,152 @@
+{
+    "scopeName": "source.pine",
+    "name": "Pine Script",
+    "fileTypes": ["pine", "ps", "pinescript"],
+    "patterns": [
+        {
+            "comment": "Export and type declarations",
+            "match": "^(export[ \\t]+)?(type|enum)[ \\t]+\\b([a-zA-Z_][a-zA-Z_0-9]*)\\b",
+            "captures": {
+                "1": { "name": "keyword.control.export" },
+                "2": { "name": "entity.name.type" },
+                "3": { "name": "entity.name.type" }
+            }
+        },
+        {
+            "match": "\\b(indicator|library|strategy)\\b(?=\\()",
+            "name": "entity.name.function.declaration"
+        },
+        {
+            "comment": "Single-line comments",
+            "match": "\/\/+.*$",
+            "name": "comment.line"
+        },
+        {
+            "comment": "Math functions",
+            "match": "\\b(math)([ \\t]*\\.[ \\t]*)(pi|phi|rphi|e|pow|min|max|abs|log|log10|sqrt|sign|exp|sin|cos|tan|asin|acos|atan|ceil|floor|round|round_to_mintick|todegrees|toradians|random|sum|avg)(?=[ \\t]*\\()",
+            "captures": {
+                "1": { "name": "support.module" },
+                "2": { "name": "punctuation.accessor" },
+                "3": { "name": "support.function" }
+            }
+        },
+        {
+            "comment": "Array functions",
+            "match": "\\b(array)([ \\t]*\\.[ \\t]*)(new_float|new_int|new_color|new_bool|new_string|new_line|new_box|new_table|new_label|new_linefill|copy|slice|size|get|min|max|push|range|sum|set|from|fill|insert|join|remove|pop|clear|sort|sort_indices|percentrank|percentile_nearest_rank|percentile_linear_interpolation|abs|binary_search|binary_search_leftmost|binary_search_rightmost|concat|avg|stdev|variance|covariance|mode|median|standardize|indexof|lastindexof|includes|shift|unshift|reverse|first|last|every|some)\\b(?=[ \\t]*\\()",
+            "captures": {
+                "1": { "name": "entity.name.type" },
+                "2": { "name": "punctuation.accessor" },
+                "3": { "name": "support.function" }
+            }
+        },
+        {
+            "comment": "Matrix functions",
+            "match": "\\b(matrix)([ \\t]*\\.[ \\t]*)(?:(?:\\.(new)(?=[ \\t]*<)|(row|col|reshape|get|set|add_row|add_col|remove_row|remove_col|fill|submatrix|copy|columns|rows|elements_count|concat|swap_rows|swap_columns|reverse|sort|det|min|max|avg|median|mode|transpose|sum|diff|mult|pinv|inv|rank|trace|eigenvalues|eigenvectors|kron|pow|is_zero|is_identity|is_binary|is_symmetric|is_antisymmetric|is_diagonal|is_antidiagonal|is_triangular|is_stochastic|is_square)[ \\t]*(?=[ \\t]*\\()))",
+            "captures": {
+                "0": { "name": "storage.type" },
+                "1": { "name": "support.type" },
+                "2": { "name": "punctuation.accessor" },
+                "3": { "name": "support.function" }
+            }
+        },
+        {
+            "comment": "Map functions",
+            "match": "\\b(map)([ \\t]*\\.[ \\t]*)(?:\\.(new)(?=[ \\t]*<)|(copy|size|get|contains|keys|values|put|put_all|remove|clear)[ \\t]*(?=[ \\t]*\\())",
+            "captures": {
+                "0": { "name": "storage.type" },
+                "1": { "name": "support.type" },
+                "2": { "name": "punctuation.accessor" },
+                "3": { "name": "support.function" }
+            }
+        },
+        {
+            "comment": "Import, export, method, varip, var",
+            "match": "\\b(?:(import)|(export)|(method)|(var(?:ip)?))\\b(?=[ \\t]+[A-Za-z0-9_])",
+            "captures": {
+                "0": { "name": "storage.type" },
+                "1": { "name": "keyword.other.unit" },
+                "2": { "name": "storage.modifier" },
+                "3": { "name": "entity.name.function" }
+            }
+        },
+        {
+            "comment": "Not-a-Number value",
+            "match": "\\bna\\b(?![ \\t]*\\()",
+            "name": "constant.language.null"
+        },
+        {
+            "comment": "Colors: Hex",
+            "match": "#([0-9a-fA-F]{6,8})\\b",
+            "captures": { "0": { "name": "constant.numeric.hex" } }
+        },
+        {
+            "comment": "Predefined color constants",
+            "match": "\\bcolor\\.(aqua|black|blue|fuchsia|gray|green|lime|maroon|navy|olive|purple|red|silver|teal|white|yellow)\\b",
+            "captures": {
+                "0": { "name": "support.constant" },
+                "1": { "name": "constant.color.$1" }
+            }
+        },
+        {
+            "comment": "Keywords",
+            "match": "\\b(if|else|for|to|while|switch|case|default|continue|break|return|function|var|varip|type|enum|strategy|study|input|series|simple|const|bool|color|float|int|string|line|label|box|table|linefill|chart\\.point|polyline|and|or|not|overlay)\\b",
+            "name": "keyword.control"
+        },
+        {
+            "comment": "Built-in variables",
+            "match": "\\b(open|high|low|close|volume|time|hl2|hlc3|ohlc4|bar_index|barstate|title|comment|style|from_entry|stop|immediately|entry_id)\\b",
+            "name": "variable.language"
+        },
+        {
+            "comment": "Boolean literals",
+            "match": "\\b(true|false)\\b",
+            "name": "constant.language.boolean"
+        },
+        {
+            "comment": "Numeric literals",
+            "match": "\\b([0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)\\b",
+            "name": "constant.numeric"
+        },
+        {
+            "comment": "Strings",
+            "begin": "\"",
+            "end": "\"",
+            "name": "string.quoted.double",
+            "patterns": [
+                {
+                    "match": "\\\\.",
+                    "name": "constant.character.escape"
+                }
+            ]
+        },
+        {
+            "comment": "Strings (single quoted)",
+            "begin": "'",
+            "end": "'",
+            "name": "string.quoted.single",
+            "patterns": [
+                {
+                    "match": "\\\\.",
+                    "name": "constant.character.escape"
+                }
+            ]
+        },
+        {
+            "comment": "Function calls",
+            "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(",
+            "captures": {
+                "1": { "name": "entity.name.function" }
+            }
+        },
+        {
+            "comment": "Constants (ALL_CAPS)",
+            "match": "\\b([A-Z][A-Z0-9_]*)\\b",
+            "name": "constant.other"
+        },
+        {
+            "comment": "Operators",
+            "match": "\\=|\\+|\\-|\\*|\\/|\\%|\\<|\\>|\\&|\\||\\^|\\!|\\~|\\?|\\:|\\.|\\,|\\;",
+            "name": "keyword.operator"
+        }
+    ]
+} 
