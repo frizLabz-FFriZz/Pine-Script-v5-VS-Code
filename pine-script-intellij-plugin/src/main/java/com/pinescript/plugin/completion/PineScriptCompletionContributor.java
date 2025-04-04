@@ -248,6 +248,9 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     private void addFunctionParameterCompletions(CompletionResultSet result, String functionName) {
         LOG.info("Adding parameter completions for function: " + functionName);
         
+        // Get text before cursor to determine prefix for filtering
+        CompletionResultSet filteredResult = result;
+        
         // Get parameters for this function
         Map<String, String> params = FUNCTION_PARAMETERS.getOrDefault(functionName, Collections.emptyMap());
         
@@ -407,6 +410,29 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             methodName = parts[1];
         }
         
+        // Special handling for specific functions
+        if ("strategy.entry".equals(functionName)) {
+            if (paramIndex == 1) { // direction parameter
+                suggestions.put("\"long\"", "buy");
+                suggestions.put("\"short\"", "sell");
+            }
+        } else if ("strategy.exit".equals(functionName)) {
+            if (paramIndex == 1) { // from_entry parameter
+                suggestions.put("\"id\"", "entry ID to exit from");
+                suggestions.put("\"all\"", "exit all entries");
+            } else if (paramIndex == 3) { // qty_percent parameter
+                suggestions.put("100", "exit all quantity");
+                suggestions.put("50", "exit half quantity");
+            } else if (paramIndex == 4 || paramIndex == 6) { // profit or loss parameter
+                suggestions.put("10", "price points");
+            } else if (paramIndex >= 13 && paramIndex <= 16) { // comment parameters
+                suggestions.put("\"Exit Signal\"", "exit comment");
+                suggestions.put("\"Take Profit\"", "profit comment");
+                suggestions.put("\"Stop Loss\"", "loss comment");
+                suggestions.put("\"Trailing Stop\"", "trailing comment");
+            }
+        }
+        
         // Get function info
         PineScriptFunctionData.FunctionInfo[] functionInfos = 
             PineScriptFunctionData.getFunctionInfo(functionName);
@@ -441,17 +467,28 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 suggestions.put("20", "common period");
                 suggestions.put("50", "common period");
                 suggestions.put("200", "common period");
-            } else if (paramName.contains("title") || paramName.contains("text")) {
+            } else if (paramName.contains("title") || paramName.contains("text") ||
+                      paramName.contains("comment") || paramName.contains("id") ||
+                      paramName.contains("message")) {
                 suggestions.put("\"My Indicator\"", "text");
                 suggestions.put("\"Signal\"", "text");
+                suggestions.put("\"Entry Signal\"", "text");
+                suggestions.put("\"Exit Signal\"", "text");
             } else if (paramName.contains("style")) {
                 suggestions.put("line.style_solid", "line style");
                 suggestions.put("line.style_dotted", "line style");
                 suggestions.put("line.style_dashed", "line style");
+            } else if (paramName.contains("direction")) {
+                suggestions.put("\"long\"", "buy");
+                suggestions.put("\"short\"", "sell");
+            } else if (paramName.contains("disable") || paramName.contains("alert")) {
+                suggestions.put("true", "boolean");
+                suggestions.put("false", "boolean");
             }
             
             // Add generic true/false for boolean parameters
-            if (paramName.contains("bool") || paramName.endsWith("ed")) {
+            if (paramName.contains("bool") || paramName.endsWith("ed") || 
+                paramName.contains("disable") || paramName.contains("enable")) {
                 suggestions.put("true", "boolean");
                 suggestions.put("false", "boolean");
             }
@@ -724,32 +761,43 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     private static Map<String, Map<String, String>> initFunctionParameters() {
         Map<String, Map<String, String>> functionParams = new HashMap<>();
         
-        // Strategy.entry parameters
+        // Strategy.entry parameters - syntax: strategy.entry(id, direction, qty, limit, stop, oca_name, oca_type, comment, alert_message, disable_alert)
         Map<String, String> strategyEntryParams = new HashMap<>();
         strategyEntryParams.put("id", "string");
-        strategyEntryParams.put("long", "boolean");
+        strategyEntryParams.put("direction", "string");
         strategyEntryParams.put("qty", "float");
         strategyEntryParams.put("limit", "float");
         strategyEntryParams.put("stop", "float");
         strategyEntryParams.put("oca_name", "string");
         strategyEntryParams.put("oca_type", "string");
         strategyEntryParams.put("comment", "string");
-        strategyEntryParams.put("when", "boolean");
+        strategyEntryParams.put("alert_message", "string");
+        strategyEntryParams.put("disable_alert", "boolean");
         functionParams.put("strategy.entry", strategyEntryParams);
         
-        // Strategy.exit parameters
+        // Strategy.exit parameters - syntax: strategy.exit(id, from_entry, qty, qty_percent, profit, limit, loss, stop, trail_price, trail_points, trail_offset, oca_name, comment, comment_profit, comment_loss, comment_trailing, alert_message, alert_profit, alert_loss, alert_trailing, disable_alert)
         Map<String, String> strategyExitParams = new HashMap<>();
         strategyExitParams.put("id", "string");
         strategyExitParams.put("from_entry", "string");
         strategyExitParams.put("qty", "float");
         strategyExitParams.put("qty_percent", "float");
+        strategyExitParams.put("profit", "float");
         strategyExitParams.put("limit", "float");
+        strategyExitParams.put("loss", "float");
         strategyExitParams.put("stop", "float");
         strategyExitParams.put("trail_price", "float");
+        strategyExitParams.put("trail_points", "float");
         strategyExitParams.put("trail_offset", "float");
         strategyExitParams.put("oca_name", "string");
         strategyExitParams.put("comment", "string");
-        strategyExitParams.put("when", "boolean");
+        strategyExitParams.put("comment_profit", "string");
+        strategyExitParams.put("comment_loss", "string");
+        strategyExitParams.put("comment_trailing", "string");
+        strategyExitParams.put("alert_message", "string");
+        strategyExitParams.put("alert_profit", "string");
+        strategyExitParams.put("alert_loss", "string");
+        strategyExitParams.put("alert_trailing", "string");
+        strategyExitParams.put("disable_alert", "boolean");
         functionParams.put("strategy.exit", strategyExitParams);
         
         // Indicator parameters
