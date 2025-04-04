@@ -461,12 +461,8 @@ public class PineScriptLexer extends LexerBase {
     }
 
     private boolean isExitLabel(String word) {
-        // Strip quotes from the string
-        if (word.length() >= 2 && (word.startsWith("\"") || word.startsWith("'")) && 
-            (word.endsWith("\"") || word.endsWith("'"))) {
-            word = word.substring(1, word.length() - 1);
-        }
-        return EXIT_LABELS.contains(word);
+        // Disable special handling for exit labels - treat all as regular strings
+        return false;
     }
 
     private boolean isOperator(char c) {
