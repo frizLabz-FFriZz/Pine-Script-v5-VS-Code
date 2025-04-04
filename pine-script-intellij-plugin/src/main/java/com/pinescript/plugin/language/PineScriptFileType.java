@@ -11,6 +11,9 @@ import javax.swing.*;
 
 public class PineScriptFileType extends LanguageFileType {
     public static final PineScriptFileType INSTANCE = new PineScriptFileType();
+    
+    // Define the file extensions directly for better clarity
+    private static final String[] EXTENSIONS = {"pine", "ps", "pinescript"};
 
     private PineScriptFileType() {
         super(PineScriptLanguage.INSTANCE);
@@ -29,6 +32,11 @@ public class PineScriptFileType extends LanguageFileType {
     @Override
     public @NlsSafe @NotNull String getDefaultExtension() {
         return "pine";
+    }
+    
+    @NotNull
+    public String[] getExtensions() {
+        return EXTENSIONS;
     }
 
     @Nullable

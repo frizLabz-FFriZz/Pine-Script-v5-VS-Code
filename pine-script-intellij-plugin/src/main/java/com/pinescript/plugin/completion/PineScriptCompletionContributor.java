@@ -3,6 +3,9 @@ package com.pinescript.plugin.completion;
 import com.intellij.codeInsight.completion.*;
 import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
+import com.intellij.icons.AllIcons;
+import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.editor.Document;
 import com.intellij.patterns.PlatformPatterns;
 import com.intellij.psi.PsiElement;
 import com.intellij.util.ProcessingContext;
@@ -10,10 +13,12 @@ import com.pinescript.plugin.language.PineScriptLanguage;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class PineScriptCompletionContributor extends CompletionContributor {
+    private static final Logger LOG = Logger.getInstance(PineScriptCompletionContributor.class);
     private static final Map<String, String[]> NAMESPACE_METHODS = initNamespaceMethods();
     private static final String[] KEYWORDS = {
             "if", "else", "for", "to", "while", "var", "varip", "import", "export", "switch", 
@@ -39,7 +44,9 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     };
 
     public PineScriptCompletionContributor() {
-        // Add keyword completion
+        LOG.info("PineScriptCompletionContributor initialized");
+        
+        // Add completion for any element in Pine Script files
         extend(CompletionType.BASIC,
                 PlatformPatterns.psiElement().withLanguage(PineScriptLanguage.INSTANCE),
                 new CompletionProvider<>() {
@@ -47,94 +54,92 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                     protected void addCompletions(@NotNull CompletionParameters parameters,
                                                  @NotNull ProcessingContext context,
                                                  @NotNull CompletionResultSet result) {
-                        PsiElement position = parameters.getPosition();
-                        String documentText = parameters.getEditor().getDocument().getText();
-                        int offset = parameters.getOffset();
+                        LOG.info("Completion requested at offset: " + parameters.getOffset());
                         
-                        // Add keyword completions
-                        for (String keyword : KEYWORDS) {
-                            result.addElement(LookupElementBuilder.create(keyword)
-                                .bold()
-                                .withTypeText("keyword")
-                                .withIcon((Icon) null));
-                        }
-                        
-                        // Add built-in variables
-                        for (String variable : BUILT_IN_VARIABLES) {
-                            result.addElement(LookupElementBuilder.create(variable)
-                                .withTypeText("built-in")
-                                .withIcon((Icon) null));
-                        }
-                        
-                        // Add namespaces
-                        for (String namespace : NAMESPACES) {
-                            result.addElement(LookupElementBuilder.create(namespace)
-                                .withTypeText("namespace")
-                                .withIcon((Icon) null)
-                                .withTailText(".", true));
-                        }
-                        
-                        // Add types
-                        for (String type : TYPES) {
-                            result.addElement(LookupElementBuilder.create(type)
-                                .withTypeText("type")
-                                .withIcon((Icon) null));
-                        }
-                        
-                        // Add function completions
-                        for (Map.Entry<String, PineScriptFunctionData.FunctionInfo[]> entry : 
-                                PineScriptFunctionData.getFunctionMap().entrySet()) {
-                            for (PineScriptFunctionData.FunctionInfo functionInfo : entry.getValue()) {
-                                String presentableText = functionInfo.getName() + "(" + 
-                                    String.join(", ", functionInfo.getParameters()) + ")";
-                                
-                                result.addElement(LookupElementBuilder.create(functionInfo.getName())
-                                    .withPresentableText(presentableText)
-                                    .withTypeText(functionInfo.getReturnType())
-                                    .withTailText(" " + functionInfo.getDocumentation(), true)
-                                    .withInsertHandler(new ParenthesisInsertHandler())
-                                    .withIcon((Icon) null));
-                            }
-                        }
-                        
-                        // Add namespace method completions if we're after a dot
-                        int dotIndex = -1;
-                        for (int i = offset - 1; i >= 0; i--) {
-                            if (i >= documentText.length()) continue;
-                            char c = documentText.charAt(i);
-                            if (c == '.') {
-                                dotIndex = i;
-                                break;
-                            }
-                            if (!Character.isJavaIdentifierPart(c) && !Character.isWhitespace(c)) {
-                                break;
-                            }
-                        }
-                        
-                        if (dotIndex >= 0) {
-                            // Look for namespace before the dot
-                            int namespaceStart = dotIndex - 1;
-                            while (namespaceStart >= 0 && 
-                                   Character.isJavaIdentifierPart(documentText.charAt(namespaceStart))) {
-                                namespaceStart--;
-                            }
-                            namespaceStart++;
-                            
-                            if (namespaceStart < dotIndex) {
-                                String namespaceName = documentText.substring(namespaceStart, dotIndex);
-                                String[] methods = NAMESPACE_METHODS.get(namespaceName);
-                                if (methods != null) {
-                                    for (String method : methods) {
-                                        result.addElement(LookupElementBuilder.create(method)
-                                            .withTypeText(namespaceName + " method")
-                                            .withIcon((Icon) null)
-                                            .withInsertHandler(new ParenthesisInsertHandler()));
-                                    }
-                                }
-                            }
-                        }
+                        // Add all standard completions regardless of context
+                        addAllCompletions(result);
                     }
                 });
+    }
+    
+    private void addAllCompletions(CompletionResultSet result) {
+        LOG.info("Adding all Pine Script completions");
+        
+        // Add keyword completions
+        for (String keyword : KEYWORDS) {
+            result.addElement(LookupElementBuilder.create(keyword)
+                .bold()
+                .withTypeText("keyword")
+                .withIcon(AllIcons.Nodes.Favorite));
+        }
+        
+        // Add built-in variables
+        for (String variable : BUILT_IN_VARIABLES) {
+            result.addElement(LookupElementBuilder.create(variable)
+                .withTypeText("built-in")
+                .withIcon(AllIcons.Nodes.Variable));
+        }
+        
+        // Add namespaces
+        for (String namespace : NAMESPACES) {
+            result.addElement(LookupElementBuilder.create(namespace)
+                .withTypeText("namespace")
+                .withIcon(AllIcons.Nodes.Package)
+                .withTailText(".", true));
+        }
+        
+        // Add types
+        for (String type : TYPES) {
+            result.addElement(LookupElementBuilder.create(type)
+                .withTypeText("type")
+                .withIcon(AllIcons.Nodes.Class));
+        }
+        
+        // Add function completions
+        for (Map.Entry<String, PineScriptFunctionData.FunctionInfo[]> entry : 
+                PineScriptFunctionData.getFunctionMap().entrySet()) {
+            for (PineScriptFunctionData.FunctionInfo functionInfo : entry.getValue()) {
+                String presentableText = functionInfo.getName() + "(" + 
+                    String.join(", ", functionInfo.getParameters()) + ")";
+                
+                result.addElement(LookupElementBuilder.create(functionInfo.getName())
+                    .withPresentableText(presentableText)
+                    .withTypeText(functionInfo.getReturnType())
+                    .withTailText(" " + functionInfo.getDocumentation(), true)
+                    .withInsertHandler(new ParenthesisInsertHandler())
+                    .withIcon(AllIcons.Nodes.Function));
+            }
+        }
+        
+        // Add namespace methods with separate entries
+        for (Map.Entry<String, String[]> nsEntry : NAMESPACE_METHODS.entrySet()) {
+            String namespace = nsEntry.getKey();
+            String[] methods = nsEntry.getValue();
+            
+            for (String method : methods) {
+                result.addElement(LookupElementBuilder.create(namespace + "." + method)
+                    .withPresentableText(namespace + "." + method)
+                    .withTypeText(namespace + " method")
+                    .withIcon(AllIcons.Nodes.Method)
+                    .withInsertHandler(new ParenthesisInsertHandler()));
+            }
+        }
+    }
+    
+    @Override
+    public void fillCompletionVariants(@NotNull CompletionParameters parameters, @NotNull CompletionResultSet result) {
+        LOG.info("PineScriptCompletionContributor.fillCompletionVariants called");
+        if (parameters.getCompletionType() == CompletionType.BASIC) {
+            String prefix = result.getPrefixMatcher().getPrefix();
+            LOG.info("Completion prefix: " + prefix);
+            
+            // Create a case-insensitive matcher
+            CompletionResultSet insensitiveResult = result.withPrefixMatcher(
+                    new PlainPrefixMatcher(prefix, true));
+            
+            // Add all completions
+            addAllCompletions(insensitiveResult);
+        }
     }
     
     private static Map<String, String[]> initNamespaceMethods() {
@@ -194,17 +199,43 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             "timezone", "currency", "type", "volumetype"
         });
         
-        // Add more namespaces and methods as needed
-        
         return map;
     }
     
-    // Insert handler to add parentheses after functions
+    // Simple parenthesis insert handler
     private static class ParenthesisInsertHandler implements InsertHandler<LookupElement> {
         @Override
         public void handleInsert(@NotNull InsertionContext context, @NotNull LookupElement item) {
-            context.getDocument().insertString(context.getTailOffset(), "()");
-            context.getEditor().getCaretModel().moveToOffset(context.getTailOffset() - 1);
+            Document document = context.getDocument();
+            int offset = context.getTailOffset();
+            
+            document.insertString(offset, "()");
+            context.getEditor().getCaretModel().moveToOffset(offset + 1);
+        }
+    }
+    
+    // Custom prefix matcher for case-insensitive completion
+    private static class PlainPrefixMatcher extends PrefixMatcher {
+        private final boolean myCaseSensitive;
+
+        PlainPrefixMatcher(String prefix, boolean caseSensitive) {
+            super(prefix);
+            myCaseSensitive = caseSensitive;
+        }
+
+        @Override
+        public boolean prefixMatches(@NotNull String name) {
+            if (getPrefix().isEmpty()) {
+                return true;
+            }
+            return myCaseSensitive
+                   ? name.startsWith(getPrefix())
+                   : name.toLowerCase().startsWith(getPrefix().toLowerCase());
+        }
+
+        @Override
+        public @NotNull PrefixMatcher cloneWithPrefix(@NotNull String prefix) {
+            return new PlainPrefixMatcher(prefix, myCaseSensitive);
         }
     }
 } 

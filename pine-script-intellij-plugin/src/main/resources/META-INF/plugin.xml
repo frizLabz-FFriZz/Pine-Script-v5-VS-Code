@@ -25,6 +25,9 @@
         <textmate.bundle name="pinescript-grammar" path="/textmate/pinescript.tmbundle"/>
         <textmate.bundle name="pine-script-grammar" path="/highlighting/pine-script.tmbundle"/>
         
+        <!-- File type factory (legacy but more reliable approach) -->
+        <fileTypeFactory implementation="com.pinescript.plugin.language.PineScriptFileTypeFactory"/>
+        
         <!-- Register language and file type -->
         <fileType name="Pine Script"
                   implementationClass="com.pinescript.plugin.language.PineScriptFileType"
@@ -34,6 +37,10 @@
         <!-- Map TextMate grammar scope to our language -->
         <textmate.languageMapping mapping="source.pinescript" language="Pine Script"/>
         
+        <!-- Language parser definition -->
+        <lang.parserDefinition language="Pine Script"
+                               implementationClass="com.pinescript.plugin.language.PineScriptParserDefinition"/>
+        
         <!-- Associate our custom syntax highlighter with our language -->
         <lang.syntaxHighlighter language="Pine Script" 
                                implementationClass="com.pinescript.plugin.editor.PineScriptSyntaxHighlighter"/>
@@ -42,8 +49,26 @@
         <completion.contributor language="Pine Script" 
                                 implementationClass="com.pinescript.plugin.completion.PineScriptCompletionContributor" 
                                 order="first"/>
+        
+        <!-- Additional code completion contributors -->
+        <completion.contributor language="Pine Script"
+                                implementationClass="com.intellij.codeInsight.completion.CompletionContributor"/>
+        
         <!-- Color scheme -->
-        <bundledColorScheme path="/schemes/PineScriptScheme.xml"/>    </extensions>
+        <bundledColorScheme path="/schemes/PineScriptScheme.xml"/>
+        
+        <!-- Register file-specific annotation -->
+        <annotator language="Pine Script" 
+                   implementationClass="com.pinescript.plugin.annotator.PineScriptAnnotator"/>
+                   
+        <!-- Commenter for comments handling -->
+        <lang.commenter language="Pine Script"
+                       implementationClass="com.pinescript.plugin.language.PineScriptCommenter"/>
+                       
+        <!-- Completion confidence provider to improve autocompletion -->
+        <completion.confidence language="Pine Script" 
+                             implementationClass="com.intellij.codeInsight.completion.AlwaysSmart"/>
+    </extensions>
     
     <actions>
         <action id="PineScript.NewFile" class="com.pinescript.plugin.actions.NewPineScriptFileAction" 
