@@ -106,37 +106,22 @@ public class PineScriptSyntaxHighlighter extends SyntaxHighlighterBase {
     public TextAttributesKey @NotNull [] getTokenHighlights(IElementType tokenType) {
         if (tokenType == null) return TextAttributesKey.EMPTY_ARRAY;
 
-        // Get the token text for more precise checking
-        String tokenText = tokenType.toString();
+        // Special case to fix string highlighting
+        if (tokenType == PineScriptTokenTypes.STRING) {
+            return pack(STRING);
+        }
 
         if (KEYWORD_TOKENS.contains(tokenType)) {
             return pack(KEYWORD);
         } else if (IDENTIFIER_TOKENS.contains(tokenType)) {
-            // Check for built-in variables with namespaces
-            if (tokenText.contains(".")) {
-                // Handle specific prefixes that should be highlighted as built-in variables
-                if (tokenText.startsWith("syminfo") || 
-                    tokenText.startsWith("strategy") || 
-                    tokenText.startsWith("barstate") ||
-                    tokenText.startsWith("ta") ||
-                    tokenText.contains("position_size") ||
-                    tokenText.contains("equity") ||
-                    tokenText.contains("tickerid")) {
-                    return pack(BUILT_IN_VARIABLE);
-                }
-            }
             return pack(IDENTIFIER);
         } else if (COMMENT_TOKENS.contains(tokenType)) {
             return pack(COMMENT);
-        } else if (STRING_TOKENS.contains(tokenType)) {
-            // Ensure all strings get STRING color, regardless of content
-            return pack(STRING);
         } else if (NUMBER_TOKENS.contains(tokenType)) {
             return pack(NUMBER);
         } else if (OPERATOR_TOKENS.contains(tokenType)) {
             return pack(OPERATOR);
         } else if (FUNCTION_TOKENS.contains(tokenType)) {
-            // Restore function highlighting - all function tokens should be highlighted as functions
             return pack(FUNCTION);
         } else if (NAMESPACE_TOKENS.contains(tokenType)) {
             return pack(NAMESPACE);

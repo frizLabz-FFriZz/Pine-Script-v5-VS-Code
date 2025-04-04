@@ -22,7 +22,7 @@ public class PineScriptLexer extends LexerBase {
     
     // Pattern for identifying tokens more robustly
     private static final Pattern KEYWORD_PATTERN = Pattern.compile("\\b(if|else|for|to|while|var|varip|import|export|switch|case|default|continue|break|return|type|enum|function|method|strategy|indicator|library|series|simple|const|input|and|or|not|when|overlay)\\b");
-    private static final Pattern BUILT_IN_VAR_PATTERN = Pattern.compile("\\b(open|high|low|close|volume|time|hl2|hlc3|ohlc4|bar_index|barstate|title|comment|style|from_entry|stop|immediately|entry_id)\\b");
+    private static final Pattern BUILT_IN_VAR_PATTERN = Pattern.compile("\\b(open|high|low|close|volume|time|hl2|hlc3|ohlc4|bar_index|barstate|title|true|false|na)\\b");
     private static final Pattern NAMESPACE_PATTERN = Pattern.compile("\\b(math|array|matrix|str|color|table|chart|strategy|syminfo|ta|request|ticker|label|plot|plotshape|plotchar|bar_index|plotbar|hline|fill)\\b");
     private static final Pattern TYPE_PATTERN = Pattern.compile("\\b(int|float|bool|string|color|label|line|box|table)\\b");
     private static final Pattern BOOLEAN_PATTERN = Pattern.compile("\\b(true|false)\\b");
@@ -75,15 +75,17 @@ public class PineScriptLexer extends LexerBase {
         BUILT_IN_VARS.add("open"); BUILT_IN_VARS.add("high"); BUILT_IN_VARS.add("low"); BUILT_IN_VARS.add("close");
         BUILT_IN_VARS.add("volume"); BUILT_IN_VARS.add("time"); BUILT_IN_VARS.add("hl2"); BUILT_IN_VARS.add("hlc3");
         BUILT_IN_VARS.add("ohlc4"); BUILT_IN_VARS.add("bar_index"); BUILT_IN_VARS.add("barstate");
-        BUILT_IN_VARS.add("title"); BUILT_IN_VARS.add("comment"); BUILT_IN_VARS.add("style"); BUILT_IN_VARS.add("from_entry");
-        BUILT_IN_VARS.add("stop"); BUILT_IN_VARS.add("immediately"); BUILT_IN_VARS.add("entry_id");
+        BUILT_IN_VARS.add("title"); 
+        BUILT_IN_VARS.add("true"); BUILT_IN_VARS.add("false"); BUILT_IN_VARS.add("na");
         
-        // Namespaces
+        // Namespaces that should be treated as built-in when used with a dot
+        // Instead of hardcoding specific variables, we'll treat all variables with these namespaces as built-in
         NAMESPACES.add("math"); NAMESPACES.add("array"); NAMESPACES.add("matrix"); NAMESPACES.add("str");
         NAMESPACES.add("color"); NAMESPACES.add("table"); NAMESPACES.add("chart"); NAMESPACES.add("strategy");
         NAMESPACES.add("syminfo"); NAMESPACES.add("ta"); NAMESPACES.add("request"); NAMESPACES.add("ticker");
         NAMESPACES.add("label"); NAMESPACES.add("plot"); NAMESPACES.add("plotshape"); NAMESPACES.add("plotchar");
         NAMESPACES.add("bar_index"); NAMESPACES.add("plotbar"); NAMESPACES.add("hline"); NAMESPACES.add("fill");
+        NAMESPACES.add("barstate"); NAMESPACES.add("timenow"); NAMESPACES.add("timeframe");
         
         // Types
         TYPES.add("int"); TYPES.add("float"); TYPES.add("bool"); TYPES.add("string");
