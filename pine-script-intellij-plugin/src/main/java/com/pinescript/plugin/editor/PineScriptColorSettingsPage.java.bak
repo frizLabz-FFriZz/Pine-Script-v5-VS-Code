@@ -97,7 +97,7 @@ public class PineScriptColorSettingsPage implements ColorSettingsPage {
     @NotNull
     @Override
     public ColorDescriptor[] getColorDescriptors() {
-        return new ColorDescriptor[]{new ColorDescriptor("Selection Background", com.intellij.openapi.editor.colors.EditorColors.SELECTION_BACKGROUND_COLOR, ColorDescriptor.Kind.BACKGROUND)};
+        return ColorDescriptor.EMPTY_ARRAY;
     }
 
     @NotNull

@@ -28,7 +28,7 @@ public class PineScriptSyntaxHighlighter extends SyntaxHighlighterBase {
     private static final Color IDENTIFIER_COLOR = new Color(46, 46, 46);     // Black for variables  // White/very light gray for identifiers/variables
     private static final Color TYPE_COLOR = new Color(188, 57, 50);          // Red-Orange for types         // Blue for types (float, bool)
     private static final Color NAMESPACE_COLOR = new Color(83, 169, 149);    // Green for namespaces    // Teal for namespaces
-    private static final Color BUILT_IN_VAR_COLOR = new Color(188, 57, 50);  // Red-Orange for built-in variables // Yellow for built-in variables (open, high, low, close)
+    private static final Color BUILT_IN_VAR_COLOR = new Color(255, 215, 95); // Yellow for built-in variables (open, high, low, close)
     
     // Special colors for specific elements
     private static final Color TRUE_FALSE_COLOR = new Color(66, 165, 245);   // Blue for true/false
