@@ -343,10 +343,28 @@ public class PineScriptLexer extends LexerBase {
                 }
             }
             
+            // Check if it's a function parameter (followed by equals sign)
+            boolean isParameter = false;
+            if (currentPosition < bufferEnd) {
+                // Skip whitespace
+                int tempPos = currentPosition;
+                while (tempPos < bufferEnd && Character.isWhitespace(buffer.charAt(tempPos))) {
+                    tempPos++;
+                }
+                
+                // Check if there's an equals sign
+                if (tempPos < bufferEnd && buffer.charAt(tempPos) == '=') {
+                    isParameter = true;
+                }
+            }
+            
             String token = buffer.subSequence(tokenStart, currentPosition).toString();
             
             // Determine token type based on the content and context
-            if (hasDot) {
+            if (isParameter) {
+                // Function parameters like "color=" should be regular identifiers
+                currentToken = PineScriptTokenTypes.IDENTIFIER;
+            } else if (hasDot) {
                 String namespace = buffer.subSequence(tokenStart, dotPosition).toString();
                 
                 // Check if this is a function call (has parentheses) - should take priority
