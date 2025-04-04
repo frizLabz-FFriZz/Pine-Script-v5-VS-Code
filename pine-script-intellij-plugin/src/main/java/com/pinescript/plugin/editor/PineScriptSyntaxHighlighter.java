@@ -35,7 +35,7 @@ public class PineScriptSyntaxHighlighter extends SyntaxHighlighterBase {
     private static final Color DARK_KEYWORD_COLOR = new Color(83, 169, 149);       // Green for keywords
     private static final Color DARK_STRING_COLOR = new Color(80, 140, 70);         // Warm green for strings
     private static final Color DARK_NUMBER_COLOR = new Color(230, 133, 55);        // Orange for numbers
-    private static final Color DARK_COMMENT_COLOR = new Color(156, 156, 156);      // Grey for comments
+    private static final Color DARK_COMMENT_COLOR = new Color(114, 114, 114);      // Darker grey for comments (TradingView match)
     private static final Color DARK_FUNCTION_COLOR = new Color(106, 154, 239);     // Blue for functions (TradingView match)
     private static final Color DARK_OPERATOR_COLOR = new Color(83, 169, 149);      // Green for operators
     private static final Color DARK_IDENTIFIER_COLOR = new Color(210, 210, 210);   // Light gray for variables
