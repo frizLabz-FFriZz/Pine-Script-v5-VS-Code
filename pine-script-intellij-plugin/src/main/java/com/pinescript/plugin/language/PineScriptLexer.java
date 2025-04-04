@@ -349,27 +349,22 @@ public class PineScriptLexer extends LexerBase {
             if (hasDot) {
                 String namespace = buffer.subSequence(tokenStart, dotPosition).toString();
                 
-                if (namespace.equals("color")) {
-                    // Color constants like color.red
+                // Check if this is a function call (has parentheses) - should take priority
+                if (isFunction) {
+                    // All namespaced function calls like math.sin(), color.new() should be highlighted as functions
+                    currentToken = PineScriptTokenTypes.FUNCTION;
+                } else if (namespace.equals("color")) {
+                    // Only treat as color constant if it's not a function call
                     currentToken = PineScriptTokenTypes.COLOR_CONSTANT;
                 } else if (isBuiltInConstant(token)) {
                     // Other built-in constants like barmerge.lookahead_on
                     currentToken = PineScriptTokenTypes.BUILT_IN_VARIABLE;
                 } else if (isNamespace(namespace)) {
-                    if (isFunction) {
-                        // Namespace function calls like math.sin()
-                        currentToken = PineScriptTokenTypes.FUNCTION;
-                    } else {
-                        // Namespace property access
-                        currentToken = PineScriptTokenTypes.NAMESPACE;
-                    }
+                    // Namespace property access
+                    currentToken = PineScriptTokenTypes.NAMESPACE;
                 } else {
                     // Other dotted expressions
-                    if (isFunction) {
-                        currentToken = PineScriptTokenTypes.FUNCTION;
-                    } else {
-                        currentToken = PineScriptTokenTypes.IDENTIFIER;
-                    }
+                    currentToken = PineScriptTokenTypes.IDENTIFIER;
                 }
             } else {
                 // Simple tokens (not dotted)
