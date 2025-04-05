@@ -14,54 +14,90 @@ categories = [
 SEM_LIMIT = 10       # Limit how many pages open simultaneously
 TIMEOUT_MS = 60000   # 60 seconds page load timeout
 
-def extract_arguments(html: str):
+def extract_function_details(html: str, fragment: str) -> dict:
+    """
+    Extracts function details from the dynamically loaded HTML block with id equal to the URL fragment.
+    """
+    details = {
+        "info": "",
+        "description": "",
+        "arguments": [],
+        "syntax": "",
+        "returnType": "",
+        "returns": ""
+    }
     soup = BeautifulSoup(html, 'html.parser')
-    args_header = soup.find('div', string='Arguments')
-    if not args_header:
-        return []
+    info_div = soup.find('div', id=fragment)
+    if not info_div:
+        return details
 
-    args_list = []
-    # For every <div class="tv-pine-reference-item__text"> following 'Arguments'
-    for arg_div in args_header.find_next_siblings('div', class_='tv-pine-reference-item__text'):
-        arg_type_span = arg_div.find('span', class_='tv-pine-reference-item__arg-type')
-        if not arg_type_span:
-            break
-        arg_type_text = arg_type_span.text.strip()
+    details["info"] = str(info_div)
 
-        # Split on '(' and strip trailing ')'
-        arg_name, arg_type = arg_type_text.split('(', 1)
-        arg_name = arg_name.strip()
-        arg_type = arg_type.replace(')', '').strip()
-        args_list.append({"argument": arg_name, "type": arg_type})
+    # Extract description: first <div> with class 'tv-pine-reference-item__text tv-text'
+    desc_div = info_div.find('div', class_='tv-pine-reference-item__text tv-text')
+    if desc_div:
+        details["description"] = desc_div.get_text(strip=True)
+    else:
+        # Fallback: find the div immediately preceding a Syntax header
+        syntax_header = info_div.find('div', string=lambda text: text and text.startswith('Syntax'))
+        if syntax_header:
+            prev_div = syntax_header.find_previous_sibling('div', class_='tv-pine-reference-item__text tv-text')
+            if prev_div:
+                details["description"] = prev_div.get_text(strip=True)
 
-    return args_list
+    # Extract syntax: try for <pre> with class 'tv-pine-reference-item__syntax with-overloads selected' first
+    syntax_div = info_div.find('pre', class_='tv-pine-reference-item__syntax with-overloads selected')
+    if not syntax_div:
+        syntax_div = info_div.find('pre', class_='tv-pine-reference-item__syntax selected')
+    if syntax_div:
+        syntax_text = syntax_div.get_text(strip=True)
+        details["syntax"] = syntax_text
+        if '→' in syntax_text:
+            details["returnType"] = syntax_text.split('→')[-1].strip()
 
-def extract_return_type(soup: BeautifulSoup) -> str:
-    syntax = soup.find('pre', class_='tv-pine-reference-item__syntax')
-    if syntax and '→' in syntax.text:
-        return syntax.text.split('→')[-1].strip()
-    return ""
+    # Extract arguments: find all <span> elements with class 'tv-pine-reference-item__arg-type'
+    arg_spans = info_div.find_all('span', class_='tv-pine-reference-item__arg-type')
+    for span in arg_spans:
+        text = span.get_text(strip=True)
+        if '(' in text:
+            arg_name, arg_type = text.split('(', 1)
+            arg_name = arg_name.strip()
+            arg_type = arg_type.replace(')', '').strip()
+        else:
+            arg_name = text
+            arg_type = ""
+        details["arguments"].append({"argument": arg_name, "type": arg_type})
+
+    # Extract returns: find the <div> with text 'Returns' and then its next sibling with class 'tv-pine-reference-item__text tv-text'
+    returns_header = info_div.find('div', string='Returns')
+    if returns_header:
+        returns_div = returns_header.find_next_sibling('div', class_='tv-pine-reference-item__text tv-text')
+        if returns_div:
+            details["returns"] = returns_div.get_text(strip=True)
+
+    return details
 
 async def process_function(context, item, sem):
     async with sem:
         page = await context.new_page()
         try:
+            # Extract the fragment from the URL (the part after '#')
+            fragment = item['url'].split('#')[-1]
             await page.goto(item['url'], timeout=TIMEOUT_MS)
-            await page.wait_for_selector('div.tv-pine-reference-item__content', timeout=TIMEOUT_MS)
+            # Wait for the dynamically loaded <div> with the matching id
+            await page.wait_for_selector(f'div#{fragment}', timeout=TIMEOUT_MS)
 
             content_html = await page.content()
-            soup_item = BeautifulSoup(content_html, 'html.parser')
-            content_div = soup_item.find('div', class_='tv-pine-reference-item__content')
+            # Parse the function details from the specific <div> identified by the fragment
+            details = extract_function_details(content_html, fragment)
 
-            if content_div:
-                # Store entire content as HTML
-                item['info'] = str(content_div)
-
-                # Use your old extraction approach
-                item['arguments'] = extract_arguments(content_html)
-
-                # Return type
-                item['returnType'] = extract_return_type(content_div)
+            # Update item fields
+            item["info"] = details["info"]
+            item["description"] = details["description"]
+            item["arguments"] = details["arguments"]
+            item["syntax"] = details["syntax"]
+            item["returnType"] = details["returnType"]
+            item["returns"] = details["returns"]
 
         except PlaywrightTimeoutError:
             print(f"Timeout processing function {item['name']} at {item['url']}")
@@ -105,9 +141,11 @@ async def extract_category(browser, version, category, sem):
         for link in links
     ]
 
-    # Functions: gather arguments, return types, and info
+    # For testing: limit to first 5 functions only
     if category == 'Functions':
-        data = data[:5]  # for testing, only process first 5 functions
+        data = data[:5]  # remove or adjust if you want all
+
+        # Process each function in parallel
         tasks = [process_function(context, item, sem) for item in data]
         await asyncio.gather(*tasks)
 
@@ -123,6 +161,7 @@ async def extract_category(browser, version, category, sem):
     await context.close()
 
 async def process_version(browser, version, sem):
+    # Iterate through each category for the given version
     for cat in categories:
         await extract_category(browser, version, cat, sem)
 
