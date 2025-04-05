@@ -81,11 +81,11 @@ async def process_function(context, item, sem):
     async with sem:
         page = await context.new_page()
         try:
-            # Extract the fragment from the URL (the part after '#')
-            fragment = item['url'].split('#')[-1]
+            # Use the fragment provided in the item, or fallback to URL split
+            fragment = item.get('fragment', item['url'].split('#')[-1])
             await page.goto(item['url'], timeout=TIMEOUT_MS)
-            # Wait for the dynamically loaded <div> with the matching id
-            await page.wait_for_selector(f'div#{fragment}', timeout=TIMEOUT_MS)
+            # Wait for the dynamically loaded <div> with the matching id, escaping dots using attribute selector
+            await page.wait_for_selector(f'div[id="{fragment}"]', timeout=TIMEOUT_MS)
 
             content_html = await page.content()
             # Parse the function details from the specific <div> identified by the fragment
@@ -133,13 +133,23 @@ async def extract_category(browser, version, category, sem):
 
     # Gather data from each <a> link in that section
     links = body.find_all('a')
-    data = [
-        {
-            "name": link.text.strip(),
-            "url": f"https://www.tradingview.com/pine-script-reference/v{version}/{link.get('href').strip()}"
-        }
-        for link in links
-    ]
+    if category == 'Functions':
+        data = [
+            {
+                "name": link.text.strip(),
+                "url": f"https://www.tradingview.com/pine-script-reference/v{version}/{link.get('href').strip()}",
+                "fragment": link.get('href').strip().lstrip('#')
+            }
+            for link in links
+        ]
+    else:
+        data = [
+            {
+                "name": link.text.strip(),
+                "url": f"https://www.tradingview.com/pine-script-reference/v{version}/{link.get('href').strip()}"
+            }
+            for link in links
+        ]
 
     # For testing: limit to first 5 functions only
     if category == 'Functions':
