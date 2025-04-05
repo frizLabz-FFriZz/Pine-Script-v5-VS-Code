@@ -1,0 +1,806 @@
+[
+    {
+        "name": "adjustment.dividends",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_adjustment.dividends"
+    },
+    {
+        "name": "adjustment.none",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_adjustment.none"
+    },
+    {
+        "name": "adjustment.splits",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_adjustment.splits"
+    },
+    {
+        "name": "alert.freq_all",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_alert.freq_all"
+    },
+    {
+        "name": "alert.freq_once_per_bar",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_alert.freq_once_per_bar"
+    },
+    {
+        "name": "alert.freq_once_per_bar_close",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_alert.freq_once_per_bar_close"
+    },
+    {
+        "name": "backadjustment.inherit",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_backadjustment.inherit"
+    },
+    {
+        "name": "backadjustment.off",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_backadjustment.off"
+    },
+    {
+        "name": "backadjustment.on",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_backadjustment.on"
+    },
+    {
+        "name": "barmerge.gaps_off",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_barmerge.gaps_off"
+    },
+    {
+        "name": "barmerge.gaps_on",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_barmerge.gaps_on"
+    },
+    {
+        "name": "barmerge.lookahead_off",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_barmerge.lookahead_off"
+    },
+    {
+        "name": "barmerge.lookahead_on",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_barmerge.lookahead_on"
+    },
+    {
+        "name": "color.aqua",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_color.aqua"
+    },
+    {
+        "name": "color.black",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_color.black"
+    },
+    {
+        "name": "color.blue",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_color.blue"
+    },
+    {
+        "name": "color.fuchsia",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_color.fuchsia"
+    },
+    {
+        "name": "color.gray",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_color.gray"
+    },
+    {
+        "name": "color.green",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_color.green"
+    },
+    {
+        "name": "color.lime",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_color.lime"
+    },
+    {
+        "name": "color.maroon",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_color.maroon"
+    },
+    {
+        "name": "color.navy",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_color.navy"
+    },
+    {
+        "name": "color.olive",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_color.olive"
+    },
+    {
+        "name": "color.orange",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_color.orange"
+    },
+    {
+        "name": "color.purple",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_color.purple"
+    },
+    {
+        "name": "color.red",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_color.red"
+    },
+    {
+        "name": "color.silver",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_color.silver"
+    },
+    {
+        "name": "color.teal",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_color.teal"
+    },
+    {
+        "name": "color.white",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_color.white"
+    },
+    {
+        "name": "color.yellow",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_color.yellow"
+    },
+    {
+        "name": "currency.AUD",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.AUD"
+    },
+    {
+        "name": "currency.BTC",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.BTC"
+    },
+    {
+        "name": "currency.CAD",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.CAD"
+    },
+    {
+        "name": "currency.CHF",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.CHF"
+    },
+    {
+        "name": "currency.ETH",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.ETH"
+    },
+    {
+        "name": "currency.EUR",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.EUR"
+    },
+    {
+        "name": "currency.GBP",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.GBP"
+    },
+    {
+        "name": "currency.HKD",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.HKD"
+    },
+    {
+        "name": "currency.INR",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.INR"
+    },
+    {
+        "name": "currency.JPY",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.JPY"
+    },
+    {
+        "name": "currency.KRW",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.KRW"
+    },
+    {
+        "name": "currency.MYR",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.MYR"
+    },
+    {
+        "name": "currency.NOK",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.NOK"
+    },
+    {
+        "name": "currency.NONE",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.NONE"
+    },
+    {
+        "name": "currency.NZD",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.NZD"
+    },
+    {
+        "name": "currency.RUB",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.RUB"
+    },
+    {
+        "name": "currency.SEK",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.SEK"
+    },
+    {
+        "name": "currency.SGD",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.SGD"
+    },
+    {
+        "name": "currency.TRY",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.TRY"
+    },
+    {
+        "name": "currency.USD",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.USD"
+    },
+    {
+        "name": "currency.USDT",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.USDT"
+    },
+    {
+        "name": "currency.ZAR",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_currency.ZAR"
+    },
+    {
+        "name": "dayofweek.friday",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_dayofweek.friday"
+    },
+    {
+        "name": "dayofweek.monday",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_dayofweek.monday"
+    },
+    {
+        "name": "dayofweek.saturday",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_dayofweek.saturday"
+    },
+    {
+        "name": "dayofweek.sunday",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_dayofweek.sunday"
+    },
+    {
+        "name": "dayofweek.thursday",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_dayofweek.thursday"
+    },
+    {
+        "name": "dayofweek.tuesday",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_dayofweek.tuesday"
+    },
+    {
+        "name": "dayofweek.wednesday",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_dayofweek.wednesday"
+    },
+    {
+        "name": "display.all",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_display.all"
+    },
+    {
+        "name": "display.data_window",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_display.data_window"
+    },
+    {
+        "name": "display.none",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_display.none"
+    },
+    {
+        "name": "display.pane",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_display.pane"
+    },
+    {
+        "name": "display.price_scale",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_display.price_scale"
+    },
+    {
+        "name": "display.status_line",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_display.status_line"
+    },
+    {
+        "name": "dividends.gross",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_dividends.gross"
+    },
+    {
+        "name": "dividends.net",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_dividends.net"
+    },
+    {
+        "name": "earnings.actual",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_earnings.actual"
+    },
+    {
+        "name": "earnings.estimate",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_earnings.estimate"
+    },
+    {
+        "name": "earnings.standardized",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_earnings.standardized"
+    },
+    {
+        "name": "extend.both",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_extend.both"
+    },
+    {
+        "name": "extend.left",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_extend.left"
+    },
+    {
+        "name": "extend.none",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_extend.none"
+    },
+    {
+        "name": "extend.right",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_extend.right"
+    },
+    {
+        "name": "false",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_false"
+    },
+    {
+        "name": "font.family_default",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_font.family_default"
+    },
+    {
+        "name": "font.family_monospace",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_font.family_monospace"
+    },
+    {
+        "name": "format.inherit",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_format.inherit"
+    },
+    {
+        "name": "format.mintick",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_format.mintick"
+    },
+    {
+        "name": "format.percent",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_format.percent"
+    },
+    {
+        "name": "format.price",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_format.price"
+    },
+    {
+        "name": "format.volume",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_format.volume"
+    },
+    {
+        "name": "hline.style_dashed",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_hline.style_dashed"
+    },
+    {
+        "name": "hline.style_dotted",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_hline.style_dotted"
+    },
+    {
+        "name": "hline.style_solid",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_hline.style_solid"
+    },
+    {
+        "name": "label.style_arrowdown",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_arrowdown"
+    },
+    {
+        "name": "label.style_arrowup",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_arrowup"
+    },
+    {
+        "name": "label.style_circle",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_circle"
+    },
+    {
+        "name": "label.style_cross",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_cross"
+    },
+    {
+        "name": "label.style_diamond",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_diamond"
+    },
+    {
+        "name": "label.style_flag",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_flag"
+    },
+    {
+        "name": "label.style_label_center",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_label_center"
+    },
+    {
+        "name": "label.style_label_down",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_label_down"
+    },
+    {
+        "name": "label.style_label_left",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_label_left"
+    },
+    {
+        "name": "label.style_label_lower_left",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_label_lower_left"
+    },
+    {
+        "name": "label.style_label_lower_right",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_label_lower_right"
+    },
+    {
+        "name": "label.style_label_right",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_label_right"
+    },
+    {
+        "name": "label.style_label_up",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_label_up"
+    },
+    {
+        "name": "label.style_label_upper_left",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_label_upper_left"
+    },
+    {
+        "name": "label.style_label_upper_right",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_label_upper_right"
+    },
+    {
+        "name": "label.style_none",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_none"
+    },
+    {
+        "name": "label.style_square",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_square"
+    },
+    {
+        "name": "label.style_text_outline",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_text_outline"
+    },
+    {
+        "name": "label.style_triangledown",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_triangledown"
+    },
+    {
+        "name": "label.style_triangleup",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_triangleup"
+    },
+    {
+        "name": "label.style_xcross",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_label.style_xcross"
+    },
+    {
+        "name": "line.style_arrow_both",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_line.style_arrow_both"
+    },
+    {
+        "name": "line.style_arrow_left",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_line.style_arrow_left"
+    },
+    {
+        "name": "line.style_arrow_right",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_line.style_arrow_right"
+    },
+    {
+        "name": "line.style_dashed",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_line.style_dashed"
+    },
+    {
+        "name": "line.style_dotted",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_line.style_dotted"
+    },
+    {
+        "name": "line.style_solid",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_line.style_solid"
+    },
+    {
+        "name": "location.abovebar",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_location.abovebar"
+    },
+    {
+        "name": "location.absolute",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_location.absolute"
+    },
+    {
+        "name": "location.belowbar",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_location.belowbar"
+    },
+    {
+        "name": "location.bottom",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_location.bottom"
+    },
+    {
+        "name": "location.top",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_location.top"
+    },
+    {
+        "name": "math.e",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_math.e"
+    },
+    {
+        "name": "math.phi",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_math.phi"
+    },
+    {
+        "name": "math.pi",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_math.pi"
+    },
+    {
+        "name": "math.rphi",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_math.rphi"
+    },
+    {
+        "name": "order.ascending",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_order.ascending"
+    },
+    {
+        "name": "order.descending",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_order.descending"
+    },
+    {
+        "name": "plot.style_area",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_plot.style_area"
+    },
+    {
+        "name": "plot.style_areabr",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_plot.style_areabr"
+    },
+    {
+        "name": "plot.style_circles",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_plot.style_circles"
+    },
+    {
+        "name": "plot.style_columns",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_plot.style_columns"
+    },
+    {
+        "name": "plot.style_cross",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_plot.style_cross"
+    },
+    {
+        "name": "plot.style_histogram",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_plot.style_histogram"
+    },
+    {
+        "name": "plot.style_line",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_plot.style_line"
+    },
+    {
+        "name": "plot.style_linebr",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_plot.style_linebr"
+    },
+    {
+        "name": "plot.style_stepline",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_plot.style_stepline"
+    },
+    {
+        "name": "plot.style_stepline_diamond",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_plot.style_stepline_diamond"
+    },
+    {
+        "name": "plot.style_steplinebr",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_plot.style_steplinebr"
+    },
+    {
+        "name": "position.bottom_center",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_position.bottom_center"
+    },
+    {
+        "name": "position.bottom_left",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_position.bottom_left"
+    },
+    {
+        "name": "position.bottom_right",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_position.bottom_right"
+    },
+    {
+        "name": "position.middle_center",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_position.middle_center"
+    },
+    {
+        "name": "position.middle_left",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_position.middle_left"
+    },
+    {
+        "name": "position.middle_right",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_position.middle_right"
+    },
+    {
+        "name": "position.top_center",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_position.top_center"
+    },
+    {
+        "name": "position.top_left",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_position.top_left"
+    },
+    {
+        "name": "position.top_right",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_position.top_right"
+    },
+    {
+        "name": "scale.left",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_scale.left"
+    },
+    {
+        "name": "scale.none",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_scale.none"
+    },
+    {
+        "name": "scale.right",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_scale.right"
+    },
+    {
+        "name": "session.extended",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_session.extended"
+    },
+    {
+        "name": "session.regular",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_session.regular"
+    },
+    {
+        "name": "settlement_as_close.inherit",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_settlement_as_close.inherit"
+    },
+    {
+        "name": "settlement_as_close.off",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_settlement_as_close.off"
+    },
+    {
+        "name": "settlement_as_close.on",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_settlement_as_close.on"
+    },
+    {
+        "name": "shape.arrowdown",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_shape.arrowdown"
+    },
+    {
+        "name": "shape.arrowup",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_shape.arrowup"
+    },
+    {
+        "name": "shape.circle",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_shape.circle"
+    },
+    {
+        "name": "shape.cross",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_shape.cross"
+    },
+    {
+        "name": "shape.diamond",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_shape.diamond"
+    },
+    {
+        "name": "shape.flag",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_shape.flag"
+    },
+    {
+        "name": "shape.labeldown",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_shape.labeldown"
+    },
+    {
+        "name": "shape.labelup",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_shape.labelup"
+    },
+    {
+        "name": "shape.square",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_shape.square"
+    },
+    {
+        "name": "shape.triangledown",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_shape.triangledown"
+    },
+    {
+        "name": "shape.triangleup",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_shape.triangleup"
+    },
+    {
+        "name": "shape.xcross",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_shape.xcross"
+    },
+    {
+        "name": "size.auto",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_size.auto"
+    },
+    {
+        "name": "size.huge",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_size.huge"
+    },
+    {
+        "name": "size.large",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_size.large"
+    },
+    {
+        "name": "size.normal",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_size.normal"
+    },
+    {
+        "name": "size.small",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_size.small"
+    },
+    {
+        "name": "size.tiny",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_size.tiny"
+    },
+    {
+        "name": "splits.denominator",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_splits.denominator"
+    },
+    {
+        "name": "splits.numerator",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_splits.numerator"
+    },
+    {
+        "name": "strategy.cash",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_strategy.cash"
+    },
+    {
+        "name": "strategy.commission.cash_per_contract",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_strategy.commission.cash_per_contract"
+    },
+    {
+        "name": "strategy.commission.cash_per_order",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_strategy.commission.cash_per_order"
+    },
+    {
+        "name": "strategy.commission.percent",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_strategy.commission.percent"
+    },
+    {
+        "name": "strategy.direction.all",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_strategy.direction.all"
+    },
+    {
+        "name": "strategy.direction.long",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_strategy.direction.long"
+    },
+    {
+        "name": "strategy.direction.short",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_strategy.direction.short"
+    },
+    {
+        "name": "strategy.fixed",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_strategy.fixed"
+    },
+    {
+        "name": "strategy.long",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_strategy.long"
+    },
+    {
+        "name": "strategy.oca.cancel",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_strategy.oca.cancel"
+    },
+    {
+        "name": "strategy.oca.none",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_strategy.oca.none"
+    },
+    {
+        "name": "strategy.oca.reduce",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_strategy.oca.reduce"
+    },
+    {
+        "name": "strategy.percent_of_equity",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_strategy.percent_of_equity"
+    },
+    {
+        "name": "strategy.short",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_strategy.short"
+    },
+    {
+        "name": "text.align_bottom",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_text.align_bottom"
+    },
+    {
+        "name": "text.align_center",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_text.align_center"
+    },
+    {
+        "name": "text.align_left",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_text.align_left"
+    },
+    {
+        "name": "text.align_right",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_text.align_right"
+    },
+    {
+        "name": "text.align_top",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_text.align_top"
+    },
+    {
+        "name": "text.format_bold",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_text.format_bold"
+    },
+    {
+        "name": "text.format_italic",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_text.format_italic"
+    },
+    {
+        "name": "text.format_none",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_text.format_none"
+    },
+    {
+        "name": "text.wrap_auto",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_text.wrap_auto"
+    },
+    {
+        "name": "text.wrap_none",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_text.wrap_none"
+    },
+    {
+        "name": "true",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_true"
+    },
+    {
+        "name": "xloc.bar_index",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_xloc.bar_index"
+    },
+    {
+        "name": "xloc.bar_time",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_xloc.bar_time"
+    },
+    {
+        "name": "yloc.abovebar",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_yloc.abovebar"
+    },
+    {
+        "name": "yloc.belowbar",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_yloc.belowbar"
+    },
+    {
+        "name": "yloc.price",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#const_yloc.price"
+    }
+]

@@ -1,0 +1,74 @@
+[
+    {
+        "name": "-",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_-"
+    },
+    {
+        "name": "-=",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_-="
+    },
+    {
+        "name": "!=",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_!="
+    },
+    {
+        "name": "?:",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_?:"
+    },
+    {
+        "name": "[]",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_[]"
+    },
+    {
+        "name": "*",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_*"
+    },
+    {
+        "name": "*=",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_*="
+    },
+    {
+        "name": "/",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_/"
+    },
+    {
+        "name": "/=",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_/="
+    },
+    {
+        "name": "%",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_%"
+    },
+    {
+        "name": "%=",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_%="
+    },
+    {
+        "name": "+",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_+"
+    },
+    {
+        "name": "+=",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_+="
+    },
+    {
+        "name": "<",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_<"
+    },
+    {
+        "name": "<=",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_<="
+    },
+    {
+        "name": "==",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_=="
+    },
+    {
+        "name": ">",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_>"
+    },
+    {
+        "name": ">=",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#op_>="
+    }
+]

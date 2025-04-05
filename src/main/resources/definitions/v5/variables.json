@@ -1,0 +1,614 @@
+[
+    {
+        "name": "bar_index",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_bar_index"
+    },
+    {
+        "name": "barstate.isconfirmed",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_barstate.isconfirmed"
+    },
+    {
+        "name": "barstate.isfirst",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_barstate.isfirst"
+    },
+    {
+        "name": "barstate.ishistory",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_barstate.ishistory"
+    },
+    {
+        "name": "barstate.islast",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_barstate.islast"
+    },
+    {
+        "name": "barstate.islastconfirmedhistory",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_barstate.islastconfirmedhistory"
+    },
+    {
+        "name": "barstate.isnew",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_barstate.isnew"
+    },
+    {
+        "name": "barstate.isrealtime",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_barstate.isrealtime"
+    },
+    {
+        "name": "box.all",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_box.all"
+    },
+    {
+        "name": "chart.bg_color",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_chart.bg_color"
+    },
+    {
+        "name": "chart.fg_color",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_chart.fg_color"
+    },
+    {
+        "name": "chart.is_heikinashi",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_chart.is_heikinashi"
+    },
+    {
+        "name": "chart.is_kagi",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_chart.is_kagi"
+    },
+    {
+        "name": "chart.is_linebreak",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_chart.is_linebreak"
+    },
+    {
+        "name": "chart.is_pnf",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_chart.is_pnf"
+    },
+    {
+        "name": "chart.is_range",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_chart.is_range"
+    },
+    {
+        "name": "chart.is_renko",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_chart.is_renko"
+    },
+    {
+        "name": "chart.is_standard",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_chart.is_standard"
+    },
+    {
+        "name": "chart.left_visible_bar_time",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_chart.left_visible_bar_time"
+    },
+    {
+        "name": "chart.right_visible_bar_time",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_chart.right_visible_bar_time"
+    },
+    {
+        "name": "close",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_close"
+    },
+    {
+        "name": "dayofmonth",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_dayofmonth"
+    },
+    {
+        "name": "dayofweek",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_dayofweek"
+    },
+    {
+        "name": "dividends.future_amount",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_dividends.future_amount"
+    },
+    {
+        "name": "dividends.future_ex_date",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_dividends.future_ex_date"
+    },
+    {
+        "name": "dividends.future_pay_date",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_dividends.future_pay_date"
+    },
+    {
+        "name": "earnings.future_eps",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_earnings.future_eps"
+    },
+    {
+        "name": "earnings.future_period_end_time",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_earnings.future_period_end_time"
+    },
+    {
+        "name": "earnings.future_revenue",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_earnings.future_revenue"
+    },
+    {
+        "name": "earnings.future_time",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_earnings.future_time"
+    },
+    {
+        "name": "high",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_high"
+    },
+    {
+        "name": "hl2",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_hl2"
+    },
+    {
+        "name": "hlc3",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_hlc3"
+    },
+    {
+        "name": "hlcc4",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_hlcc4"
+    },
+    {
+        "name": "hour",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_hour"
+    },
+    {
+        "name": "label.all",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_label.all"
+    },
+    {
+        "name": "last_bar_index",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_last_bar_index"
+    },
+    {
+        "name": "last_bar_time",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_last_bar_time"
+    },
+    {
+        "name": "line.all",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_line.all"
+    },
+    {
+        "name": "linefill.all",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_linefill.all"
+    },
+    {
+        "name": "low",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_low"
+    },
+    {
+        "name": "minute",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_minute"
+    },
+    {
+        "name": "month",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_month"
+    },
+    {
+        "name": "na",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_na"
+    },
+    {
+        "name": "ohlc4",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_ohlc4"
+    },
+    {
+        "name": "open",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_open"
+    },
+    {
+        "name": "polyline.all",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_polyline.all"
+    },
+    {
+        "name": "second",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_second"
+    },
+    {
+        "name": "session.isfirstbar",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_session.isfirstbar"
+    },
+    {
+        "name": "session.isfirstbar_regular",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_session.isfirstbar_regular"
+    },
+    {
+        "name": "session.islastbar",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_session.islastbar"
+    },
+    {
+        "name": "session.islastbar_regular",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_session.islastbar_regular"
+    },
+    {
+        "name": "session.ismarket",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_session.ismarket"
+    },
+    {
+        "name": "session.ispostmarket",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_session.ispostmarket"
+    },
+    {
+        "name": "session.ispremarket",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_session.ispremarket"
+    },
+    {
+        "name": "strategy.account_currency",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.account_currency"
+    },
+    {
+        "name": "strategy.avg_losing_trade",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.avg_losing_trade"
+    },
+    {
+        "name": "strategy.avg_losing_trade_percent",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.avg_losing_trade_percent"
+    },
+    {
+        "name": "strategy.avg_trade",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.avg_trade"
+    },
+    {
+        "name": "strategy.avg_trade_percent",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.avg_trade_percent"
+    },
+    {
+        "name": "strategy.avg_winning_trade",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.avg_winning_trade"
+    },
+    {
+        "name": "strategy.avg_winning_trade_percent",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.avg_winning_trade_percent"
+    },
+    {
+        "name": "strategy.closedtrades",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.closedtrades"
+    },
+    {
+        "name": "strategy.equity",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.equity"
+    },
+    {
+        "name": "strategy.eventrades",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.eventrades"
+    },
+    {
+        "name": "strategy.grossloss",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.grossloss"
+    },
+    {
+        "name": "strategy.grossloss_percent",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.grossloss_percent"
+    },
+    {
+        "name": "strategy.grossprofit",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.grossprofit"
+    },
+    {
+        "name": "strategy.grossprofit_percent",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.grossprofit_percent"
+    },
+    {
+        "name": "strategy.initial_capital",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.initial_capital"
+    },
+    {
+        "name": "strategy.losstrades",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.losstrades"
+    },
+    {
+        "name": "strategy.margin_liquidation_price",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.margin_liquidation_price"
+    },
+    {
+        "name": "strategy.max_contracts_held_all",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.max_contracts_held_all"
+    },
+    {
+        "name": "strategy.max_contracts_held_long",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.max_contracts_held_long"
+    },
+    {
+        "name": "strategy.max_contracts_held_short",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.max_contracts_held_short"
+    },
+    {
+        "name": "strategy.max_drawdown",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.max_drawdown"
+    },
+    {
+        "name": "strategy.max_drawdown_percent",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.max_drawdown_percent"
+    },
+    {
+        "name": "strategy.max_runup",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.max_runup"
+    },
+    {
+        "name": "strategy.max_runup_percent",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.max_runup_percent"
+    },
+    {
+        "name": "strategy.netprofit",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.netprofit"
+    },
+    {
+        "name": "strategy.netprofit_percent",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.netprofit_percent"
+    },
+    {
+        "name": "strategy.openprofit",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.openprofit"
+    },
+    {
+        "name": "strategy.openprofit_percent",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.openprofit_percent"
+    },
+    {
+        "name": "strategy.opentrades",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.opentrades"
+    },
+    {
+        "name": "strategy.opentrades.capital_held",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.opentrades.capital_held"
+    },
+    {
+        "name": "strategy.position_avg_price",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.position_avg_price"
+    },
+    {
+        "name": "strategy.position_entry_name",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.position_entry_name"
+    },
+    {
+        "name": "strategy.position_size",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.position_size"
+    },
+    {
+        "name": "strategy.wintrades",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_strategy.wintrades"
+    },
+    {
+        "name": "syminfo.basecurrency",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.basecurrency"
+    },
+    {
+        "name": "syminfo.country",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.country"
+    },
+    {
+        "name": "syminfo.currency",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.currency"
+    },
+    {
+        "name": "syminfo.description",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.description"
+    },
+    {
+        "name": "syminfo.employees",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.employees"
+    },
+    {
+        "name": "syminfo.expiration_date",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.expiration_date"
+    },
+    {
+        "name": "syminfo.industry",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.industry"
+    },
+    {
+        "name": "syminfo.minmove",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.minmove"
+    },
+    {
+        "name": "syminfo.mintick",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.mintick"
+    },
+    {
+        "name": "syminfo.pointvalue",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.pointvalue"
+    },
+    {
+        "name": "syminfo.prefix",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.prefix"
+    },
+    {
+        "name": "syminfo.pricescale",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.pricescale"
+    },
+    {
+        "name": "syminfo.recommendations_buy",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.recommendations_buy"
+    },
+    {
+        "name": "syminfo.recommendations_buy_strong",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.recommendations_buy_strong"
+    },
+    {
+        "name": "syminfo.recommendations_date",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.recommendations_date"
+    },
+    {
+        "name": "syminfo.recommendations_hold",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.recommendations_hold"
+    },
+    {
+        "name": "syminfo.recommendations_sell",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.recommendations_sell"
+    },
+    {
+        "name": "syminfo.recommendations_sell_strong",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.recommendations_sell_strong"
+    },
+    {
+        "name": "syminfo.recommendations_total",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.recommendations_total"
+    },
+    {
+        "name": "syminfo.root",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.root"
+    },
+    {
+        "name": "syminfo.sector",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.sector"
+    },
+    {
+        "name": "syminfo.session",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.session"
+    },
+    {
+        "name": "syminfo.shareholders",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.shareholders"
+    },
+    {
+        "name": "syminfo.shares_outstanding_float",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.shares_outstanding_float"
+    },
+    {
+        "name": "syminfo.shares_outstanding_total",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.shares_outstanding_total"
+    },
+    {
+        "name": "syminfo.target_price_average",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.target_price_average"
+    },
+    {
+        "name": "syminfo.target_price_date",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.target_price_date"
+    },
+    {
+        "name": "syminfo.target_price_estimates",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.target_price_estimates"
+    },
+    {
+        "name": "syminfo.target_price_high",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.target_price_high"
+    },
+    {
+        "name": "syminfo.target_price_low",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.target_price_low"
+    },
+    {
+        "name": "syminfo.target_price_median",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.target_price_median"
+    },
+    {
+        "name": "syminfo.ticker",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.ticker"
+    },
+    {
+        "name": "syminfo.tickerid",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.tickerid"
+    },
+    {
+        "name": "syminfo.timezone",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.timezone"
+    },
+    {
+        "name": "syminfo.type",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.type"
+    },
+    {
+        "name": "syminfo.volumetype",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_syminfo.volumetype"
+    },
+    {
+        "name": "ta.accdist",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_ta.accdist"
+    },
+    {
+        "name": "ta.iii",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_ta.iii"
+    },
+    {
+        "name": "ta.nvi",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_ta.nvi"
+    },
+    {
+        "name": "ta.obv",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_ta.obv"
+    },
+    {
+        "name": "ta.pvi",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_ta.pvi"
+    },
+    {
+        "name": "ta.pvt",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_ta.pvt"
+    },
+    {
+        "name": "ta.tr",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_ta.tr"
+    },
+    {
+        "name": "ta.vwap",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_ta.vwap"
+    },
+    {
+        "name": "ta.wad",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_ta.wad"
+    },
+    {
+        "name": "ta.wvad",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_ta.wvad"
+    },
+    {
+        "name": "table.all",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_table.all"
+    },
+    {
+        "name": "time",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_time"
+    },
+    {
+        "name": "time_close",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_time_close"
+    },
+    {
+        "name": "time_tradingday",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_time_tradingday"
+    },
+    {
+        "name": "timeframe.isdaily",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_timeframe.isdaily"
+    },
+    {
+        "name": "timeframe.isdwm",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_timeframe.isdwm"
+    },
+    {
+        "name": "timeframe.isintraday",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_timeframe.isintraday"
+    },
+    {
+        "name": "timeframe.isminutes",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_timeframe.isminutes"
+    },
+    {
+        "name": "timeframe.ismonthly",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_timeframe.ismonthly"
+    },
+    {
+        "name": "timeframe.isseconds",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_timeframe.isseconds"
+    },
+    {
+        "name": "timeframe.isticks",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_timeframe.isticks"
+    },
+    {
+        "name": "timeframe.isweekly",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_timeframe.isweekly"
+    },
+    {
+        "name": "timeframe.multiplier",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_timeframe.multiplier"
+    },
+    {
+        "name": "timeframe.period",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_timeframe.period"
+    },
+    {
+        "name": "timenow",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_timenow"
+    },
+    {
+        "name": "volume",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_volume"
+    },
+    {
+        "name": "weekofyear",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_weekofyear"
+    },
+    {
+        "name": "year",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#var_year"
+    }
+]

@@ -1,0 +1,62 @@
+[
+    {
+        "name": "and",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#kw_and"
+    },
+    {
+        "name": "enum",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#kw_enum"
+    },
+    {
+        "name": "export",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#kw_export"
+    },
+    {
+        "name": "for",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#kw_for"
+    },
+    {
+        "name": "for...in",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#kw_for...in"
+    },
+    {
+        "name": "if",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#kw_if"
+    },
+    {
+        "name": "import",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#kw_import"
+    },
+    {
+        "name": "method",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#kw_method"
+    },
+    {
+        "name": "not",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#kw_not"
+    },
+    {
+        "name": "or",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#kw_or"
+    },
+    {
+        "name": "switch",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#kw_switch"
+    },
+    {
+        "name": "type",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#kw_type"
+    },
+    {
+        "name": "var",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#kw_var"
+    },
+    {
+        "name": "varip",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#kw_varip"
+    },
+    {
+        "name": "while",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#kw_while"
+    }
+]

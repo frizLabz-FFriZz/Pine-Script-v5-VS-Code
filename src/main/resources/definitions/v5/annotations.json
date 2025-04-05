@@ -1,0 +1,42 @@
+[
+    {
+        "name": "@description",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#an_@description"
+    },
+    {
+        "name": "@enum",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#an_@enum"
+    },
+    {
+        "name": "@field",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#an_@field"
+    },
+    {
+        "name": "@function",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#an_@function"
+    },
+    {
+        "name": "@param",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#an_@param"
+    },
+    {
+        "name": "@returns",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#an_@returns"
+    },
+    {
+        "name": "@strategy_alert_message",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#an_@strategy_alert_message"
+    },
+    {
+        "name": "@type",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#an_@type"
+    },
+    {
+        "name": "@variable",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#an_@variable"
+    },
+    {
+        "name": "@version=",
+        "url": "https://www.tradingview.com/pine-script-reference/v5/#an_@version="
+    }
+]
