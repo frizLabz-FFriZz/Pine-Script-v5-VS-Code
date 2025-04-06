@@ -615,12 +615,41 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         
         String documentText = parameters.getEditor().getDocument().getText();
         
-        // Very simplified scan for variable declarations (var/varip identifier =)
+        // Track variables we've already found to avoid duplicates
+        Set<String> foundVariables = new HashSet<>();
+        
+        // Scan for variable declarations with var/varip
         Pattern varPattern = Pattern.compile("(?:var|varip)\\s+([a-zA-Z_]\\w*)\\s*=");
         Matcher varMatcher = varPattern.matcher(documentText);
         
         while (varMatcher.find()) {
             String varName = varMatcher.group(1);
+            foundVariables.add(varName);
+            LookupElementBuilder element = LookupElementBuilder.create(varName)
+                    .withIcon(AllIcons.Nodes.Variable)
+                    .withTypeText("local var");
+            result.addElement(PrioritizedLookupElement.withPriority(element, 600));
+        }
+        
+        // Also scan for direct assignments like "identifier = value"
+        // This regex looks for word at start of line or after whitespace, followed by '='
+        // and avoids matches for '==', '<=', '>=', '!='
+        Pattern assignPattern = Pattern.compile("(?:^|\\s)([a-zA-Z_]\\w*)\\s*=[^=<>!]");
+        Matcher assignMatcher = assignPattern.matcher(documentText);
+        
+        while (assignMatcher.find()) {
+            String varName = assignMatcher.group(1);
+            // Skip keywords, built-ins, already found vars, and common non-var names
+            if (Arrays.asList(KEYWORDS).contains(varName) || 
+                Arrays.asList(BUILT_IN_VARIABLES).contains(varName) ||
+                Arrays.asList(NAMESPACES).contains(varName) ||
+                Arrays.asList(TYPES).contains(varName) ||
+                foundVariables.contains(varName) ||
+                varName.equals("if") || varName.equals("for")) {
+                continue;
+            }
+            
+            foundVariables.add(varName);
             LookupElementBuilder element = LookupElementBuilder.create(varName)
                     .withIcon(AllIcons.Nodes.Variable)
                     .withTypeText("local var");
