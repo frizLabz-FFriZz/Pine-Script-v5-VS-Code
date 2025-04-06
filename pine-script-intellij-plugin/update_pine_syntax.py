@@ -181,6 +181,31 @@ async def process_variable(context, item, sem):
         finally:
             await page.close()
 
+async def process_constant(context, item, sem):
+    async with sem:
+        page = await context.new_page()
+        try:
+            # Use the fragment provided in the item, or fallback to URL split
+            fragment = item.get('fragment', item['url'].split('#')[-1])
+            await page.goto(item['url'], timeout=TIMEOUT_MS)
+            # Wait for the dynamically loaded <div> with the matching id, escaping dots using attribute selector
+            await page.wait_for_selector(f'div[id="{fragment}"]', timeout=TIMEOUT_MS)
+
+            content_html = await page.content()
+            # Parse the constant details using the same extraction as variables
+            details = extract_variable_details(content_html, fragment)
+
+            # Update item fields
+            item["info"] = details["info"]
+            item["description"] = details["description"]
+            item["type"] = details["type"]
+            item["remarks"] = details["remarks"]
+
+        except PlaywrightTimeoutError:
+            print(f"Timeout processing constant {item['name']} at {item['url']}")
+        finally:
+            await page.close()
+
 async def extract_category(browser, version, category, sem):
     context = await browser.new_context()
     page = await context.new_page()
@@ -210,7 +235,7 @@ async def extract_category(browser, version, category, sem):
 
     # Gather data from each <a> link in that section
     links = body.find_all('a')
-    if category in ['Functions', 'Variables']:
+    if category in ['Functions', 'Variables', 'Constants']:
         data = [
             {
                 "name": link.text.strip(),
@@ -228,12 +253,14 @@ async def extract_category(browser, version, category, sem):
             for link in links
         ]
 
-    if category in ['Functions', 'Variables']:
+    if category in ['Functions', 'Variables', 'Constants']:
         data = data[:5]  # For testing: limit to first 5 items; remove or adjust as needed
         tasks = []
         for item in data:
             if category == 'Functions':
                 tasks.append(process_function(context, item, sem))
+            elif category == 'Constants':
+                tasks.append(process_constant(context, item, sem))
             else:  # category == 'Variables'
                 tasks.append(process_variable(context, item, sem))
         await asyncio.gather(*tasks)
