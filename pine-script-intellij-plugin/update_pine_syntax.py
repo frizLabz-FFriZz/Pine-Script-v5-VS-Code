@@ -254,7 +254,8 @@ async def extract_category(browser, version, category, sem):
         ]
 
     if category in ['Functions', 'Variables', 'Constants']:
-        data = data[:5]  # For testing: limit to first 5 items; remove or adjust as needed
+        # For testing: the next line limits the items to 5. Comment it out to process all items.
+        # data = data[:5]
         tasks = []
         for item in data:
             if category == 'Functions':

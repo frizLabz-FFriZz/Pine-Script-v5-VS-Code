@@ -1,0 +1,38 @@
+[
+    {
+        "name": "and",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#kw_and"
+    },
+    {
+        "name": "false",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#kw_false"
+    },
+    {
+        "name": "for",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#kw_for"
+    },
+    {
+        "name": "if",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#kw_if"
+    },
+    {
+        "name": "not",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#kw_not"
+    },
+    {
+        "name": "or",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#kw_or"
+    },
+    {
+        "name": "true",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#kw_true"
+    },
+    {
+        "name": "var",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#kw_var"
+    },
+    {
+        "name": "varip",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#kw_varip"
+    }
+]

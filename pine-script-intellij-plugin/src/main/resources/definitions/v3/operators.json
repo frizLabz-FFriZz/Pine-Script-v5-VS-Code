@@ -1,0 +1,54 @@
+[
+    {
+        "name": "-",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#op_-"
+    },
+    {
+        "name": "!=",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#op_!="
+    },
+    {
+        "name": "?:",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#op_?:"
+    },
+    {
+        "name": "[]",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#op_[]"
+    },
+    {
+        "name": "*",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#op_*"
+    },
+    {
+        "name": "/",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#op_/"
+    },
+    {
+        "name": "%",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#op_%"
+    },
+    {
+        "name": "+",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#op_+"
+    },
+    {
+        "name": "<",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#op_<"
+    },
+    {
+        "name": "<=",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#op_<="
+    },
+    {
+        "name": "==",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#op_=="
+    },
+    {
+        "name": ">",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#op_>"
+    },
+    {
+        "name": ">=",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#op_>="
+    }
+]
