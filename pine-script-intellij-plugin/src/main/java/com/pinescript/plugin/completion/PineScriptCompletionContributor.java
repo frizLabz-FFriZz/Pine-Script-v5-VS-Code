@@ -18,15 +18,41 @@ import com.pinescript.plugin.language.PineScriptLanguage;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class PineScriptCompletionContributor extends CompletionContributor {
     private static final Logger LOG = Logger.getInstance(PineScriptCompletionContributor.class);
-    private static final Map<String, String[]> NAMESPACE_METHODS = initNamespaceMethods();
-    private static final Map<String, Map<String, String>> FUNCTION_PARAMETERS = initFunctionParameters();
     
+    // Cache for storing loaded definition maps
+    private static final Map<String, List<String>> CACHED_DEFINITIONS = new ConcurrentHashMap<>();
+    private static final Map<String, Map<String, String[]>> NAMESPACE_METHODS_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, Map<String, Map<String, String>>> FUNCTION_PARAMETERS_CACHE = new ConcurrentHashMap<>();
+    // Track which definitions are functions, variables or constants
+    private static final Map<String, Set<String>> FUNCTIONS_MAP = new ConcurrentHashMap<>();
+    private static final Map<String, Set<String>> VARIABLES_MAP = new ConcurrentHashMap<>();
+    private static final Map<String, Set<String>> CONSTANTS_MAP = new ConcurrentHashMap<>();
+
+    // Default to version 5 if version is not specified
+    private static final String DEFAULT_VERSION = "5";
+    
+    // Pattern to match version in Pine Script files
+    private static final Pattern VERSION_PATTERN = Pattern.compile("//@version=(\\d+)");
+
+    // Static initialization to load definitions for default version on startup
+    static {
+        loadDefinitionsForVersion(DEFAULT_VERSION);
+    }
+
     private static final String[] KEYWORDS = {
             "if", "else", "for", "to", "while", "var", "varip", "import", "export", "switch", 
             "case", "default", "continue", "break", "return", "type", "enum", "function", "method", 
@@ -70,6 +96,13 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                        int offset = parameters.getOffset();
                        String documentText = document.getText();
                        
+                       // Detect Pine Script version from the document
+                       String version = detectPineScriptVersion(documentText);
+                       // Ensure definitions for this version are loaded
+                       if (!CACHED_DEFINITIONS.containsKey(version)) {
+                           loadDefinitionsForVersion(version);
+                       }
+                       
                        if (offset > 0) {
                            // Get text up to cursor position
                            String textBeforeCursor = documentText.substring(0, offset);
@@ -82,7 +115,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                
                                if (namespace != null && Arrays.asList(NAMESPACES).contains(namespace)) {
                                    LOG.info("Adding methods for namespace: " + namespace);
-                                   addNamespaceMethodCompletions(result, namespace);
+                                   addNamespaceMethodCompletions(result, namespace, version);
                                }
                                return; // Stop processing after handling namespace methods
                            }
@@ -93,16 +126,131 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                LOG.info("Detected inside function call: " + functionName);
                                
                                if (functionName != null) {
-                                   addFunctionParameterCompletions(result, functionName);
+                                   addFunctionParameterCompletions(result, functionName, version);
                                    return; // Stop processing after handling function parameters
                                }
                            }
                        }
                        
                        // Continue with standard completions
-                       processStandardCompletions(parameters, result);
+                       processStandardCompletions(parameters, result, version);
                    }
                });
+    }
+    
+    /**
+     * Detects the Pine Script version from the document text.
+     * @param documentText The full text of the document
+     * @return The detected version as a string, or the default version if not found
+     */
+    private String detectPineScriptVersion(String documentText) {
+        Matcher matcher = VERSION_PATTERN.matcher(documentText);
+        if (matcher.find()) {
+            String version = matcher.group(1);
+            LOG.info("Detected Pine Script version: " + version);
+            return version;
+        }
+        LOG.info("No Pine Script version found, using default: " + DEFAULT_VERSION);
+        return DEFAULT_VERSION;
+    }
+    
+    /**
+     * Loads all JSON definition files for a specific Pine Script version.
+     * @param version The Pine Script version
+     */
+    private static synchronized void loadDefinitionsForVersion(String version) {
+        if (CACHED_DEFINITIONS.containsKey(version)) {
+            LOG.info("Definitions for version " + version + " already loaded");
+            return;
+        }
+        
+        LOG.info("Loading definitions for Pine Script version: " + version);
+        
+        // Load variables
+        List<String> variableNames = loadNamesFromDefinitionFile(version, "variables.json");
+        VARIABLES_MAP.put(version, new HashSet<>(variableNames));
+        
+        // Load constants
+        List<String> constantNames = loadNamesFromDefinitionFile(version, "constants.json");
+        CONSTANTS_MAP.put(version, new HashSet<>(constantNames));
+        
+        // Load functions
+        List<String> functionNames = loadNamesFromDefinitionFile(version, "functions.json");
+        Set<String> functionsSet = new HashSet<>();
+        // Store clean function names (without parentheses) for proper completion
+        List<String> cleanFunctionNames = new ArrayList<>();
+        for (String funcName : functionNames) {
+            String cleanName = funcName;
+            if (cleanName.endsWith("()")) {
+                cleanName = cleanName.substring(0, cleanName.length() - 2);
+            }
+            functionsSet.add(cleanName);
+            cleanFunctionNames.add(cleanName);
+        }
+        FUNCTIONS_MAP.put(version, functionsSet);
+        
+        // Combine all definitions
+        List<String> allDefinitions = new ArrayList<>();
+        allDefinitions.addAll(variableNames);
+        allDefinitions.addAll(constantNames);
+        allDefinitions.addAll(cleanFunctionNames);
+        
+        // Cache the combined definitions
+        CACHED_DEFINITIONS.put(version, allDefinitions);
+        
+        // Also initialize namespace methods for this version
+        NAMESPACE_METHODS_CACHE.put(version, initNamespaceMethodsForVersion(version, cleanFunctionNames));
+        
+        // And function parameters
+        FUNCTION_PARAMETERS_CACHE.put(version, initFunctionParametersForVersion(version));
+        
+        LOG.info("Loaded " + allDefinitions.size() + " definitions for version " + version);
+    }
+    
+    /**
+     * Loads names from a specific JSON definition file.
+     * @param version The Pine Script version
+     * @param filename The JSON file name
+     * @return A list of names from the JSON file
+     */
+    private static List<String> loadNamesFromDefinitionFile(String version, String filename) {
+        List<String> names = new ArrayList<>();
+        String resourcePath = "/definitions/v" + version + "/" + filename;
+        
+        try (InputStream is = PineScriptCompletionContributor.class.getResourceAsStream(resourcePath)) {
+            if (is == null) {
+                LOG.warn("Resource not found: " + resourcePath);
+                return names;
+            }
+            
+            StringBuilder jsonContent = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    jsonContent.append(line);
+                }
+            }
+            
+            JSONArray jsonArray = new JSONArray(jsonContent.toString());
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject item = jsonArray.getJSONObject(i);
+                if (item.has("name")) {
+                    String name = item.getString("name");
+                    // For functions.json, store the original name for display but strip "()" for lookup
+                    if (filename.equals("functions.json") && name.endsWith("()")) {
+                        names.add(name.substring(0, name.length() - 2));
+                    } else {
+                        names.add(name);
+                    }
+                }
+            }
+            
+            LOG.info("Loaded " + names.size() + " names from " + resourcePath);
+        } catch (IOException e) {
+            LOG.error("Error loading definitions from " + resourcePath, e);
+        }
+        
+        return names;
     }
     
     /**
@@ -176,7 +324,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      * Process standard completions that are not specific to namespaces or function parameters.
      */
     private void processStandardCompletions(@NotNull CompletionParameters parameters,
-                                           @NotNull CompletionResultSet result) {
+                                           @NotNull CompletionResultSet result,
+                                           String version) {
         PsiElement position = parameters.getPosition();
         Document document = parameters.getEditor().getDocument();
         String documentText = document.getText();
@@ -188,580 +337,377 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         if (isInsideFunctionCall && currentFunctionName != null) {
             // Add parameter-specific completions
             LOG.info("Inside function call: " + currentFunctionName + ", param index: " + currentParamIndex);
-            addParameterCompletions(result, currentFunctionName, currentParamIndex);
+            addParameterCompletions(result, currentFunctionName, currentParamIndex, version);
         }
         
         // Add standard completions
-        LOG.info("Adding standard completions");
-        addStandardCompletions(parameters, result, documentText, offset);
+        LOG.info("Adding standard completions for version: " + version);
+        addStandardCompletions(parameters, result, documentText, offset, version);
         
         // Add variables and functions from the current document
         addScannedCompletions(parameters, result);
     }
     
     /**
-     * Adds method completions for a specific namespace.
-     *
-     * @param result The completion result set
-     * @param namespace The namespace to add methods for
+     * Adds namespace method completions to the result.
      */
-    private void addNamespaceMethodCompletions(CompletionResultSet result, String namespace) {
-        LOG.info("Adding method completions for namespace: " + namespace);
+    private void addNamespaceMethodCompletions(CompletionResultSet result, String namespace, String version) {
+        Map<String, String[]> namespaceMethods = NAMESPACE_METHODS_CACHE.getOrDefault(version, 
+                                                 initNamespaceMethodsForVersion(version, CACHED_DEFINITIONS.getOrDefault(version, new ArrayList<>())));
         
-        String[] methods = NAMESPACE_METHODS.getOrDefault(namespace, new String[0]);
-        LOG.info("Found " + methods.length + " methods for namespace: " + namespace);
-        
-        for (String method : methods) {
-            // Check if we have detailed function info
-            String fullMethodName = namespace + "." + method;
-            PineScriptFunctionData.FunctionInfo[] functionInfos = 
-                PineScriptFunctionData.getFunctionInfo(fullMethodName);
-            
-            // Build the lookup element
-            LookupElementBuilder element;
-            if (functionInfos != null && functionInfos.length > 0) {
-                String paramList = String.join(", ", functionInfos[0].getParameters());
-                String presentableText = method + "(" + paramList + ")";
-                
-                element = LookupElementBuilder.create(method)
-                    .withPresentableText(presentableText)
-                    .withTypeText(functionInfos[0].getReturnType())
-                    .withTailText(" " + functionInfos[0].getDescription(), true)
-                    .withIcon(AllIcons.Nodes.Method)
-                    .withInsertHandler(new SmartInsertHandler(true, true));
-            } else {
-                element = LookupElementBuilder.create(method)
-                    .withPresentableText(method)
-                    .withTypeText(namespace + " method")
-                    .withIcon(AllIcons.Nodes.Method)
-                    .withInsertHandler(new SmartInsertHandler(true, true));
-            }
-            
-            // Add with high priority to ensure namespace methods appear at the top
-            result.addElement(PrioritizedLookupElement.withPriority(element, 2000));
-        }
-    }
-    
-    /**
-     * Adds function parameter name completions for a function.
-     */
-    private void addFunctionParameterCompletions(CompletionResultSet result, String functionName) {
-        LOG.info("Adding parameter completions for function: " + functionName);
-        
-        // Get text before cursor to determine prefix for filtering
-        CompletionResultSet filteredResult = result;
-        
-        // Get parameters for this function
-        Map<String, String> params = FUNCTION_PARAMETERS.getOrDefault(functionName, Collections.emptyMap());
-        
-        // If no specific parameters found and this is a namespace method, try with the namespace
-        if (params.isEmpty() && functionName.contains(".")) {
-            String namespace = functionName.split("\\.")[0];
-            String method = functionName.split("\\.")[1];
-            
-            // Try to get function parameters from PineScriptFunctionData
-            PineScriptFunctionData.FunctionInfo[] functionInfos = 
-                PineScriptFunctionData.getFunctionInfo(functionName);
-                
-            if (functionInfos != null && functionInfos.length > 0) {
-                for (String paramName : functionInfos[0].getParameters()) {
-                    params.put(paramName + "=", "parameter");
-                }
-            }
-        }
-        
-        // Add each parameter as a completion option
-        for (Map.Entry<String, String> param : params.entrySet()) {
-            result.addElement(
-                PrioritizedLookupElement.withPriority(
-                    LookupElementBuilder.create(param.getKey())
-                        .withTypeText(param.getValue())
-                        .withIcon(AllIcons.Nodes.Parameter)
-                        .withInsertHandler((context, item) -> {
-                            // Position cursor after the equals sign
-                            Editor editor = context.getEditor();
-                            int offset = context.getTailOffset();
-                            editor.getCaretModel().moveToOffset(offset);
-                        }),
-                    1000 // High priority
-                )
-            );
-        }
-    }
-    
-    /**
-     * Detects if the current cursor position is inside a function call and extracts
-     * the function name and parameter index.
-     * 
-     * @param documentText The text of the current document
-     * @param offset The current cursor position
-     */
-    private void checkFunctionCallContext(String documentText, int offset) {
-        isInsideFunctionCall = false;
-        currentFunctionName = null;
-        currentParamIndex = 0;
-        
-        // Find the most recent opening parenthesis
-        int openParenIndex = -1;
-        int parenCount = 0;
-        
-        for (int i = offset - 1; i >= 0 && i < documentText.length(); i--) {
-            char c = documentText.charAt(i);
-            if (c == ')') {
-                parenCount++;
-            } else if (c == '(') {
-                parenCount--;
-                if (parenCount < 0) {
-                    openParenIndex = i;
-                    break;
-                }
-            }
-        }
-        
-        if (openParenIndex > 0) {
-            // Look for function name before the parenthesis
-            int nameStart = openParenIndex - 1;
-            while (nameStart >= 0 && 
-                   (Character.isJavaIdentifierPart(documentText.charAt(nameStart)) || 
-                    documentText.charAt(nameStart) == '.')) {
-                nameStart--;
-            }
-            nameStart++;
-            
-            if (nameStart < openParenIndex) {
-                currentFunctionName = documentText.substring(nameStart, openParenIndex);
-                isInsideFunctionCall = true;
-                
-                // Calculate which parameter we're on
-                int commaCount = 0;
-                parenCount = 0;
-                for (int i = openParenIndex + 1; i < offset && i < documentText.length(); i++) {
-                    char c = documentText.charAt(i);
-                    if (c == '(') parenCount++;
-                    else if (c == ')') parenCount--;
-                    else if (c == ',' && parenCount == 0) commaCount++;
-                }
-                currentParamIndex = commaCount;
-            }
-        }
-    }
-    
-    /**
-     * Adds parameter-specific completions based on the function and parameter index.
-     * 
-     * @param result The completion result set
-     * @param functionName The name of the function
-     * @param paramIndex The index of the parameter
-     */
-    private void addParameterCompletions(CompletionResultSet result, String functionName, int paramIndex) {
-        // Get appropriate suggestions based on the function and parameter index
-        Map<String, String> suggestions = getParameterSuggestions(functionName, paramIndex);
-        
-        // Add the parameter names as well
-        if (FUNCTION_PARAMETERS.containsKey(functionName)) {
-            Map<String, String> params = FUNCTION_PARAMETERS.get(functionName);
-            for (Map.Entry<String, String> entry : params.entrySet()) {
-                suggestions.put(entry.getKey() + "=", "named parameter");
-            }
-        }
-        
-        // Try to get function parameters from PineScriptFunctionData if it's a namespace method
-        if (functionName.contains(".")) {
-            PineScriptFunctionData.FunctionInfo[] functionInfos = 
-                PineScriptFunctionData.getFunctionInfo(functionName);
-                
-            if (functionInfos != null && functionInfos.length > 0 && 
-                paramIndex < functionInfos[0].getParameters().length) {
-                String paramName = functionInfos[0].getParameters()[paramIndex];
-                suggestions.put(paramName + "=", "named parameter");
-            }
-        }
-        
-        for (Map.Entry<String, String> entry : suggestions.entrySet()) {
-            result.addElement(
-                PrioritizedLookupElement.withPriority(
-                    LookupElementBuilder.create(entry.getKey())
-                        .withTypeText("parameter")
-                        .withTailText(" " + entry.getValue(), true)
-                        .withIcon(AllIcons.Nodes.Parameter),
-                    900 // High priority but lower than named parameters
-                )
-            );
-        }
-    }
-    
-    /**
-     * Returns parameter-specific suggestions based on the function and parameter index.
-     * 
-     * @param functionName The name of the function
-     * @param paramIndex The index of the parameter
-     * @return A map of suggestions (value -> description)
-     */
-    private Map<String, String> getParameterSuggestions(String functionName, int paramIndex) {
-        Map<String, String> suggestions = new HashMap<>();
-        
-        // Determine if this is a namespace method
-        String namespace = null;
-        String methodName = functionName;
-        
-        if (functionName.contains(".")) {
-            String[] parts = functionName.split("\\.", 2);
-            namespace = parts[0];
-            methodName = parts[1];
-        }
-        
-        // Special handling for specific functions
-        if ("strategy.entry".equals(functionName)) {
-            if (paramIndex == 1) { // direction parameter
-                suggestions.put("\"long\"", "buy");
-                suggestions.put("\"short\"", "sell");
-            }
-        } else if ("strategy.exit".equals(functionName)) {
-            if (paramIndex == 1) { // from_entry parameter
-                suggestions.put("\"id\"", "entry ID to exit from");
-                suggestions.put("\"all\"", "exit all entries");
-            } else if (paramIndex == 3) { // qty_percent parameter
-                suggestions.put("100", "exit all quantity");
-                suggestions.put("50", "exit half quantity");
-            } else if (paramIndex == 4 || paramIndex == 6) { // profit or loss parameter
-                suggestions.put("10", "price points");
-            } else if (paramIndex >= 13 && paramIndex <= 16) { // comment parameters
-                suggestions.put("\"Exit Signal\"", "exit comment");
-                suggestions.put("\"Take Profit\"", "profit comment");
-                suggestions.put("\"Stop Loss\"", "loss comment");
-                suggestions.put("\"Trailing Stop\"", "trailing comment");
-            }
-        }
-        
-        // Get function info
-        PineScriptFunctionData.FunctionInfo[] functionInfos = 
-            PineScriptFunctionData.getFunctionInfo(functionName);
-        
-        if (functionInfos != null && functionInfos.length > 0 && 
-            paramIndex < functionInfos[0].getParameters().length) {
-            
-            String paramName = functionInfos[0].getParameters()[paramIndex];
-            
-            // Add suggestions based on parameter type/name
-            if (paramName.contains("color")) {
-                for (String colorValue : NAMESPACE_METHODS.getOrDefault("color", new String[0])) {
-                    suggestions.put(colorValue, "color value");
-                }
-                suggestions.put("color.rgb(255, 255, 255)", "white");
-                suggestions.put("color.new(color.blue, 70)", "transparent blue");
-            } else if (paramName.contains("series") || paramName.equals("source")) {
-                for (String variable : BUILT_IN_VARIABLES) {
-                    if (variable.contains("open") || variable.contains("high") || 
-                        variable.contains("low") || variable.contains("close") || 
-                        variable.contains("volume")) {
-                        suggestions.put(variable, "price data");
-                    }
-                }
-                suggestions.put("close", "closing price");
-                suggestions.put("open", "opening price");
-                suggestions.put("high", "highest price");
-                suggestions.put("low", "lowest price");
-            } else if (paramName.contains("length") || paramName.contains("size") || 
-                      paramName.contains("periods")) {
-                suggestions.put("14", "common period");
-                suggestions.put("20", "common period");
-                suggestions.put("50", "common period");
-                suggestions.put("200", "common period");
-            } else if (paramName.contains("title") || paramName.contains("text") ||
-                      paramName.contains("comment") || paramName.contains("id") ||
-                      paramName.contains("message")) {
-                suggestions.put("\"My Indicator\"", "text");
-                suggestions.put("\"Signal\"", "text");
-                suggestions.put("\"Entry Signal\"", "text");
-                suggestions.put("\"Exit Signal\"", "text");
-            } else if (paramName.contains("style")) {
-                suggestions.put("line.style_solid", "line style");
-                suggestions.put("line.style_dotted", "line style");
-                suggestions.put("line.style_dashed", "line style");
-            } else if (paramName.contains("direction")) {
-                suggestions.put("\"long\"", "buy");
-                suggestions.put("\"short\"", "sell");
-            } else if (paramName.contains("disable") || paramName.contains("alert")) {
-                suggestions.put("true", "boolean");
-                suggestions.put("false", "boolean");
-            }
-            
-            // Add generic true/false for boolean parameters
-            if (paramName.contains("bool") || paramName.endsWith("ed") || 
-                paramName.contains("disable") || paramName.contains("enable")) {
-                suggestions.put("true", "boolean");
-                suggestions.put("false", "boolean");
-            }
-        }
-        
-        return suggestions;
-    }
-    
-    /**
-     * Adds standard Pine Script completions like keywords, built-in variables, and functions.
-     * 
-     * @param parameters The completion parameters
-     * @param result The completion result set
-     * @param documentText The text of the current document
-     * @param offset The current cursor position
-     */
-    private void addStandardCompletions(@NotNull CompletionParameters parameters, 
-                                       @NotNull CompletionResultSet result,
-                                       String documentText, int offset) {
-        LOG.info("Adding keywords, built-ins, and other completions");
-        
-        // Add keyword completions
-        for (String keyword : KEYWORDS) {
-            LookupElementBuilder element = LookupElementBuilder.create(keyword)
-                .bold()
-                .withTypeText("keyword")
-                .withIcon(AllIcons.Nodes.Favorite);
-            
-            result.addElement(element);
-        }
-        
-        // Add built-in variables
-        for (String variable : BUILT_IN_VARIABLES) {
-            result.addElement(LookupElementBuilder.create(variable)
-                .withTypeText("built-in")
-                .withIcon(AllIcons.Nodes.Variable));
-        }
-        
-        // Add namespaces - with higher priority
-        for (String namespace : NAMESPACES) {
-            // Give namespaces a higher priority so they appear at the top of suggestions
-            result.addElement(PrioritizedLookupElement.withPriority(
-                LookupElementBuilder.create(namespace)
-                    .withTypeText("namespace")
-                    .withIcon(AllIcons.Nodes.Package)
-                    .withTailText(".", true)
-                    .withInsertHandler((context, item) -> {
-                        // Add a dot after the namespace when it's selected, to trigger method suggestions
-                        try {
-                            Editor editor = context.getEditor();
-                            Document document = editor.getDocument();
-                            int tailOffset = context.getTailOffset();
+        if (namespaceMethods.containsKey(namespace)) {
+            String[] methods = namespaceMethods.get(namespace);
+            for (String method : methods) {
+                LookupElementBuilder element = LookupElementBuilder.create(method)
+                        .withIcon(AllIcons.Nodes.Method)
+                        .withTypeText(namespace + " method")
+                        .withInsertHandler((ctx, item) -> {
+                            // Add parentheses for methods and position caret inside them
+                            Editor editor = ctx.getEditor();
+                            EditorModificationUtil.insertStringAtCaret(editor, "()");
+                            editor.getCaretModel().moveToOffset(ctx.getTailOffset() - 1);
                             
-                            // Check if there's already a dot
-                            boolean hasDot = tailOffset < document.getTextLength() && 
-                                           document.getText().charAt(tailOffset) == '.';
-                            
-                            // Add a dot if there isn't one already
-                            if (!hasDot) {
-                                document.insertString(tailOffset, ".");
-                                editor.getCaretModel().moveToOffset(tailOffset + 1);
-                                
-                                // Force re-trigger completion with application thread
-                                ApplicationManager.getApplication().invokeLater(() -> {
-                                    AutoPopupController.getInstance(editor.getProject())
-                                        .scheduleAutoPopup(editor, CompletionType.BASIC, null);
-                                });
-                            }
-                        } catch (Exception e) {
-                            LOG.error("Error in namespace insert handler", e);
-                        }
-                    }),
-                1000 // High priority for namespaces
-            ));
-        }
-        
-        // Add types
-        for (String type : TYPES) {
-            result.addElement(LookupElementBuilder.create(type)
-                .withTypeText("type")
-                .withIcon(AllIcons.Nodes.Class));
-        }
-        
-        // Add function completions
-        for (Map.Entry<String, PineScriptFunctionData.FunctionInfo[]> entry : 
-                PineScriptFunctionData.getFunctionMap().entrySet()) {
-            for (PineScriptFunctionData.FunctionInfo functionInfo : entry.getValue()) {
-                String presentableText = functionInfo.getName() + "(" + 
-                    String.join(", ", functionInfo.getParameters()) + ")";
-                
-                LookupElementBuilder element = LookupElementBuilder.create(functionInfo.getName())
-                    .withPresentableText(presentableText)
-                    .withTypeText(functionInfo.getReturnType())
-                    .withTailText(" " + functionInfo.getDescription(), true)
-                    .withIcon(AllIcons.Nodes.Function)
-                    .withInsertHandler(new SmartInsertHandler(true, true));
-                
+                            // Trigger parameter info popup
+                            ApplicationManager.getApplication().invokeLater(() -> {
+                                AutoPopupController.getInstance(ctx.getProject()).autoPopupParameterInfo(editor, null);
+                            });
+                        });
                 result.addElement(element);
             }
         }
     }
     
     /**
-     * Adds completions for variables, functions, and types found in the current document.
-     * 
-     * @param parameters The completion parameters
-     * @param result The completion result set
+     * Adds function parameter completions to the result.
      */
-    private void addScannedCompletions(@NotNull CompletionParameters parameters, 
-                                      @NotNull CompletionResultSet result) {
-        LOG.info("Adding scanned completions from document");
+    private void addFunctionParameterCompletions(CompletionResultSet result, String functionName, String version) {
+        Map<String, Map<String, String>> functionParams = FUNCTION_PARAMETERS_CACHE.getOrDefault(version, 
+                                                          initFunctionParametersForVersion(version));
         
-        try {
-            // Scan the document for declarations
-            Map<String, Object> scanResults = PineScriptScanner.scanDocument(parameters);
-            
-            // Add variables
-            @SuppressWarnings("unchecked")
-            List<PineScriptScanner.VarInfo> vars = 
-                (List<PineScriptScanner.VarInfo>) scanResults.get("variables");
-            if (vars != null) {
-                for (PineScriptScanner.VarInfo var : vars) {
-                    result.addElement(LookupElementBuilder.create(var.name)
-                        .withTypeText(var.type.isEmpty() ? "var" : var.type)
-                        .withIcon(AllIcons.Nodes.Variable));
-                }
+        if (functionParams.containsKey(functionName)) {
+            Map<String, String> params = functionParams.get(functionName);
+            for (Map.Entry<String, String> entry : params.entrySet()) {
+                String paramName = entry.getKey();
+                String paramType = entry.getValue();
+                
+                LookupElementBuilder element = LookupElementBuilder.create(paramName + "=")
+                        .withIcon(AllIcons.Nodes.Parameter)
+                        .withTypeText(paramType)
+                        .withInsertHandler((ctx, item) -> {
+                            // Move caret after equals sign to let user input the value
+                            Editor editor = ctx.getEditor();
+                            editor.getCaretModel().moveToOffset(ctx.getTailOffset());
+                        });
+                result.addElement(PrioritizedLookupElement.withPriority(element, 100));
             }
-            
-            // Add functions
-            @SuppressWarnings("unchecked")
-            List<PineScriptScanner.FunctionInfo> functions = 
-                (List<PineScriptScanner.FunctionInfo>) scanResults.get("functions");
-            if (functions != null) {
-                for (PineScriptScanner.FunctionInfo function : functions) {
-                    String params = function.params.stream()
-                        .map(p -> p.name)
-                        .reduce((a, b) -> a + ", " + b)
-                        .orElse("");
-                    
-                    String presentableText = function.name + "(" + params + ")";
-                    
-                    result.addElement(LookupElementBuilder.create(function.name)
-                        .withPresentableText(presentableText)
-                        .withTypeText("function")
-                        .withIcon(AllIcons.Nodes.Function)
-                        .withInsertHandler(new SmartInsertHandler(true, true)));
-                }
-            }
-            
-            // Add methods
-            @SuppressWarnings("unchecked")
-            List<PineScriptScanner.FunctionInfo> methods = 
-                (List<PineScriptScanner.FunctionInfo>) scanResults.get("methods");
-            if (methods != null) {
-                for (PineScriptScanner.FunctionInfo method : methods) {
-                    String params = method.params.stream()
-                        .map(p -> p.name)
-                        .reduce((a, b) -> a + ", " + b)
-                        .orElse("");
-                    
-                    String presentableText = method.name + "(" + params + ")";
-                    
-                    result.addElement(LookupElementBuilder.create(method.name)
-                        .withPresentableText(presentableText)
-                        .withTypeText("method")
-                        .withIcon(AllIcons.Nodes.Method)
-                        .withInsertHandler(new SmartInsertHandler(true, true)));
-                }
-            }
-            
-            // Add types
-            @SuppressWarnings("unchecked")
-            Map<String, Integer> types = (Map<String, Integer>) scanResults.get("types");
-            if (types != null) {
-                for (String type : types.keySet()) {
-                    result.addElement(LookupElementBuilder.create(type)
-                        .withTypeText("type")
-                        .withIcon(AllIcons.Nodes.Class));
-                }
-            }
-        } catch (Exception e) {
-            LOG.error("Error adding scanned completions", e);
         }
     }
     
     /**
-     * Initialize the map of namespace methods.
-     * 
-     * @return The initialized map
+     * Check if we're inside a function call and determine the current parameter index.
      */
-    private static Map<String, String[]> initNamespaceMethods() {
-        Map<String, String[]> map = new HashMap<>();
+    private void checkFunctionCallContext(String documentText, int offset) {
+        isInsideFunctionCall = false;
+        currentFunctionName = null;
+        currentParamIndex = 0;
         
-        // TA namespace methods
-        map.put("ta", new String[]{
-            "sma", "ema", "rma", "wma", "vwma", "swma", "dema", "tema", "alma", "rsi", "tr", "atr", 
-            "sar", "supertrend", "macd", "bb", "stoch", "obv", "vwap", "cci", "mom", "mfi", "cmo", 
-            "kc", "pivot", "highest", "lowest", "valuewhen", "cross", "crossover", "crossunder"
-        });
+        // Check if we're inside a function call
+        int openParenCount = 0;
+        int commaCount = 0;
+        boolean insideString = false;
+        int functionNameStart = -1;
         
-        // Math namespace methods
-        map.put("math", new String[]{
-            "abs", "avg", "ceil", "exp", "floor", "log", "log10", "max", "min", "pow", "round", 
-            "sign", "sqrt", "sum", "tan", "cos", "sin", "asin", "acos", "atan", "random"
-        });
+        for (int i = 0; i < offset; i++) {
+            char c = documentText.charAt(i);
+            
+            if (c == '"' && (i == 0 || documentText.charAt(i - 1) != '\\')) {
+                insideString = !insideString;
+            }
+            
+            if (!insideString) {
+                if (c == '(') {
+                    if (openParenCount == 0) {
+                        // Look backwards to find function name
+                        functionNameStart = i - 1;
+                        while (functionNameStart >= 0 && 
+                               (Character.isJavaIdentifierPart(documentText.charAt(functionNameStart)) || 
+                                documentText.charAt(functionNameStart) == '.')) {
+                            functionNameStart--;
+                        }
+                        functionNameStart++;
+                    }
+                    openParenCount++;
+                } else if (c == ')') {
+                    openParenCount--;
+                    if (openParenCount == 0) {
+                        functionNameStart = -1;
+                        commaCount = 0;
+                    }
+                } else if (c == ',' && openParenCount > 0) {
+                    commaCount++;
+                }
+            }
+        }
         
-        // String namespace methods
-        map.put("str", new String[]{
-            "format", "tostring", "length", "lower", "upper", "replace", "split", "startswith", 
-            "endswith", "substring", "tonumber", "contains", "pos", "trim"
-        });
-        
-        // Color namespace methods
-        map.put("color", new String[]{
-            "rgb", "new", "red", "green", "blue", "white", "black", "yellow", "orange", "purple", 
-            "lime", "teal", "navy", "maroon", "olive", "aqua", "fuchsia", "silver", "gray"
-        });
-        
-        // Array namespace methods
-        map.put("array", new String[]{
-            "new_float", "new_int", "new_bool", "new_string", "new_color", "size", "get", "set", 
-            "push", "pop", "insert", "remove", "shift", "unshift", "slice", "sort", "avg", "min", 
-            "max", "median", "variance", "stdev", "covariance", "correlation", "join", "concat"
-        });
-        
-        // Chart namespace methods
-        map.put("chart", new String[]{
-            "point", "bar_index", "is_visible", "is_last_visible_bar", "is_hovered", "is_realtime",
-            "set_bgcolor", "set_timezone", "get_yaxis", "set_frame_width", "set_crosshair_pos"
-        });
-        
-        // Strategy namespace methods
-        map.put("strategy", new String[]{
-            "entry", "exit", "close", "close_all", "cancel", "cancel_all", "risk.allow_entry_in", 
-            "risk.max_cons_loss_days", "risk.max_drawdown", "risk.max_intraday_loss", "initial_capital", 
-            "currency", "commission.cash_per_contract", "commission.percent", "slippage", "margin_long", 
-            "margin_short", "opentrades", "position_size", "position_avg_price", "equity", "netprofit"
-        });
-        
-        // Map namespace methods
-        map.put("map", new String[]{
-            "new", "get", "set", "remove", "contains", "keys", "values", "size", "clear"
-        });
-        
-        // Matrix namespace methods
-        map.put("matrix", new String[]{
-            "new", "get", "set", "rows", "columns", "reshape", "submatrix", "inv", "transpose",
-            "det", "eigenvalues", "mean", "avg", "sum", "add", "mult", "pow"
-        });
-        
-        // Request namespace methods
-        map.put("request", new String[]{
-            "security", "financial", "quandl", "security_lower_tf", "dividends", "earnings", "splits"
-        });
-        
-        // Syminfo namespace methods
-        map.put("syminfo", new String[]{
-            "ticker", "prefix", "root", "currency", "description", "timezone", "session", 
-            "session_regular", "session_extended", "mintick", "pointvalue", "type", "industry", "sector"
-        });
-        
-        return map;
+        if (openParenCount > 0 && functionNameStart >= 0 && functionNameStart < offset) {
+            isInsideFunctionCall = true;
+            currentParamIndex = commaCount;
+            
+            // Extract the function name
+            int functionNameEnd = documentText.indexOf('(', functionNameStart);
+            if (functionNameEnd > functionNameStart) {
+                currentFunctionName = documentText.substring(functionNameStart, functionNameEnd);
+                LOG.info("Inside function call: " + currentFunctionName + ", parameter index: " + currentParamIndex);
+            }
+        }
     }
     
     /**
-     * Initialize the map of function parameters.
-     * 
-     * @return The initialized map
+     * Adds parameter-specific completions for the given function and parameter index.
      */
-    private static Map<String, Map<String, String>> initFunctionParameters() {
-        Map<String, Map<String, String>> functionParams = new HashMap<>();
+    private void addParameterCompletions(CompletionResultSet result, String functionName, int paramIndex, String version) {
+        // Check if we have special completion for this parameter
+        Map<String, String> suggestions = getParameterSuggestions(functionName, paramIndex);
+        if (!suggestions.isEmpty()) {
+            for (Map.Entry<String, String> entry : suggestions.entrySet()) {
+                LookupElementBuilder element = LookupElementBuilder.create(entry.getKey())
+                        .withTypeText(entry.getValue());
+                result.addElement(PrioritizedLookupElement.withPriority(element, 200));
+            }
+        }
+    }
+    
+    /**
+     * Returns special suggestions for specific function parameters.
+     */
+    private Map<String, String> getParameterSuggestions(String functionName, int paramIndex) {
+        Map<String, String> suggestions = new HashMap<>();
         
-        // Strategy.entry parameters - syntax: strategy.entry(id, direction, qty, limit, stop, oca_name, oca_type, comment, alert_message, disable_alert)
+        // Special case for strategy.entry direction parameter (1)
+        if (functionName.equals("strategy.entry") && paramIndex == 1) {
+            suggestions.put("\"long\"", "buy");
+            suggestions.put("\"short\"", "sell");
+        }
+        // Special case for strategy.exit from_entry parameter (1)
+        else if (functionName.equals("strategy.exit") && paramIndex == 1) {
+            suggestions.put("\"id\"", "entry ID to exit from");
+            suggestions.put("\"all\"", "exit all entries");
+        }
+        // Special case for strategy.exit qty_percent parameter (3)
+        else if (functionName.equals("strategy.exit") && paramIndex == 3) {
+            suggestions.put("100", "exit all quantity");
+            suggestions.put("50", "exit half quantity");
+        }
+        // Special case for strategy.exit profit/loss parameters (4, 6)
+        else if (functionName.equals("strategy.exit") && (paramIndex == 4 || paramIndex == 6)) {
+            suggestions.put("10", "price points");
+        }
+        // Special case for strategy.exit comment parameters (13-16)
+        else if (functionName.equals("strategy.exit") && (paramIndex >= 13 && paramIndex <= 16)) {
+            suggestions.put("\"Exit Signal\"", "exit comment");
+            suggestions.put("\"Take Profit\"", "profit exit comment");
+            suggestions.put("\"Stop Loss\"", "loss exit comment");
+            suggestions.put("\"Trailing Stop\"", "trailing exit comment");
+        }
+        // Color parameters suggestions
+        else if (functionName.endsWith("color") || 
+                (functionName.contains("bgcolor") || functionName.contains("textcolor"))) {
+            suggestions.put("color.blue", "blue color");
+            suggestions.put("color.red", "red color");
+            suggestions.put("color.green", "green color");
+            suggestions.put("color.yellow", "yellow color");
+            suggestions.put("color.purple", "purple color");
+            suggestions.put("color.orange", "orange color");
+        }
+        
+        return suggestions;
+    }
+    
+    /**
+     * Adds standard completions to the result.
+     */
+    private void addStandardCompletions(@NotNull CompletionParameters parameters, 
+                                       @NotNull CompletionResultSet result,
+                                       String documentText, int offset,
+                                       String version) {
+        // Add keywords with high priority
+        for (String keyword : KEYWORDS) {
+            LookupElementBuilder element = LookupElementBuilder.create(keyword)
+                    .withIcon(AllIcons.Nodes.Favorite)
+                    .withTypeText("keyword");
+            result.addElement(PrioritizedLookupElement.withPriority(element, 1000));
+        }
+        
+        // Get sets for this version
+        Set<String> functions = FUNCTIONS_MAP.getOrDefault(version, new HashSet<>());
+        Set<String> variables = VARIABLES_MAP.getOrDefault(version, new HashSet<>());
+        Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
+        
+        // Add built-in variables from the cached definitions
+        List<String> definitions = CACHED_DEFINITIONS.getOrDefault(version, new ArrayList<>());
+        for (String definition : definitions) {
+            LookupElementBuilder element;
+            if (Arrays.asList(NAMESPACES).contains(definition)) {
+                // For namespaces, add a dot automatically
+                element = LookupElementBuilder.create(definition)
+                        .withIcon(AllIcons.Nodes.Package)
+                        .withTypeText("namespace")
+                        .withInsertHandler((ctx, item) -> {
+                            Editor editor = ctx.getEditor();
+                            EditorModificationUtil.insertStringAtCaret(editor, ".");
+                            
+                            // Trigger autocompletion for namespace methods
+                            ApplicationManager.getApplication().invokeLater(() -> {
+                                AutoPopupController.getInstance(ctx.getProject()).autoPopupMemberLookup(editor, null);
+                            });
+                        });
+                result.addElement(PrioritizedLookupElement.withPriority(element, 900));
+            } else if (functions.contains(definition)) {
+                // Function with appropriate icon
+                element = LookupElementBuilder.create(definition)
+                        .withIcon(AllIcons.Nodes.Function)
+                        .withTypeText("function")
+                        .withTailText("()", true)
+                        .withInsertHandler((ctx, item) -> {
+                            // Add parentheses for functions and position cursor inside
+                            Editor editor = ctx.getEditor();
+                            EditorModificationUtil.insertStringAtCaret(editor, "()");
+                            editor.getCaretModel().moveToOffset(ctx.getTailOffset() - 1);
+                            
+                            // Trigger parameter info popup
+                            ApplicationManager.getApplication().invokeLater(() -> {
+                                AutoPopupController.getInstance(ctx.getProject()).autoPopupParameterInfo(editor, null);
+                            });
+                        });
+                result.addElement(PrioritizedLookupElement.withPriority(element, 800));
+            } else if (constants.contains(definition)) {
+                // Constant with appropriate icon
+                element = LookupElementBuilder.create(definition)
+                        .withIcon(AllIcons.Nodes.Constant)
+                        .withTypeText("constant")
+                        .withBoldness(true);
+                result.addElement(PrioritizedLookupElement.withPriority(element, 850));
+            } else {
+                // Variable with appropriate icon
+                element = LookupElementBuilder.create(definition)
+                        .withIcon(AllIcons.Nodes.Variable)
+                        .withTypeText("variable");
+                result.addElement(PrioritizedLookupElement.withPriority(element, 800));
+            }
+        }
+        
+        // Add type names
+        for (String type : TYPES) {
+            LookupElementBuilder element = LookupElementBuilder.create(type)
+                    .withIcon(AllIcons.Nodes.Type)
+                    .withTypeText("type");
+            result.addElement(PrioritizedLookupElement.withPriority(element, 700));
+        }
+    }
+    
+    /**
+     * Adds completions from variables and functions scanned in the current document.
+     */
+    private void addScannedCompletions(@NotNull CompletionParameters parameters, 
+                                      @NotNull CompletionResultSet result) {
+        // This is a simplified implementation
+        // A more comprehensive solution would parse the document to find local variables and functions
+        
+        String documentText = parameters.getEditor().getDocument().getText();
+        
+        // Very simplified scan for variable declarations (var/varip identifier =)
+        Pattern varPattern = Pattern.compile("(?:var|varip)\\s+([a-zA-Z_]\\w*)\\s*=");
+        Matcher varMatcher = varPattern.matcher(documentText);
+        
+        while (varMatcher.find()) {
+            String varName = varMatcher.group(1);
+            LookupElementBuilder element = LookupElementBuilder.create(varName)
+                    .withIcon(AllIcons.Nodes.Variable)
+                    .withTypeText("local var");
+            result.addElement(PrioritizedLookupElement.withPriority(element, 600));
+        }
+        
+        // Very simplified scan for function declarations
+        Pattern funcPattern = Pattern.compile("(?:method|function)\\s+([a-zA-Z_]\\w*)\\s*\\(");
+        Matcher funcMatcher = funcPattern.matcher(documentText);
+        
+        while (funcMatcher.find()) {
+            String funcName = funcMatcher.group(1);
+            LookupElementBuilder element = LookupElementBuilder.create(funcName)
+                    .withIcon(AllIcons.Nodes.Function)
+                    .withTypeText("local function")
+                    .withInsertHandler((ctx, item) -> {
+                        // Add parentheses and move cursor inside
+                        Editor editor = ctx.getEditor();
+                        EditorModificationUtil.insertStringAtCaret(editor, "()");
+                        editor.getCaretModel().moveToOffset(ctx.getTailOffset() - 1);
+                    });
+            result.addElement(PrioritizedLookupElement.withPriority(element, 600));
+        }
+    }
+    
+    /**
+     * Initializes namespace methods for a specific version.
+     */
+    private static Map<String, String[]> initNamespaceMethodsForVersion(String version, List<String> functionNames) {
+        Map<String, String[]> result = new HashMap<>();
+        
+        // Filter function names that belong to each namespace
+        Map<String, List<String>> namespaceMethodsMap = new HashMap<>();
+        
+        for (String namespace : new String[]{"ta", "math", "array", "str", "color", 
+                                             "chart", "strategy", "syminfo", "request", "ticker"}) {
+            namespaceMethodsMap.put(namespace, new ArrayList<>());
+        }
+        
+        for (String functionName : functionNames) {
+            if (functionName.contains(".")) {
+                String[] parts = functionName.split("\\.", 2);
+                if (parts.length == 2 && namespaceMethodsMap.containsKey(parts[0])) {
+                    namespaceMethodsMap.get(parts[0]).add(parts[1]);
+                }
+            }
+        }
+        
+        // Convert lists to arrays for the final map
+        for (Map.Entry<String, List<String>> entry : namespaceMethodsMap.entrySet()) {
+            result.put(entry.getKey(), entry.getValue().toArray(new String[0]));
+        }
+        
+        // Add predefined method sets for common namespaces (without trailing parentheses)
+        result.put("str", new String[]{
+            "length", "format", "tostring", "tonumber", "replace", "replace_all", 
+            "lower", "upper", "startswith", "endswith", "contains", "split",
+            "substring", "pos", "match"
+        });
+        
+        result.put("math", new String[]{
+            "abs", "acos", "asin", "atan", "avg", "ceil", "cos", "exp", 
+            "floor", "log", "log10", "max", "min", "pow", "random", 
+            "round", "round_to_mintick", "sign", "sin", "sqrt", "sum", 
+            "tan", "todegrees", "toradians"
+        });
+        
+        result.put("array", new String[]{
+            "new", "new_float", "new_int", "new_bool", "new_string", "new_color",
+            "new_line", "new_label", "new_box", "new_table", "new_linefill",
+            "get", "set", "push", "pop", "insert", "remove", "clear",
+            "size", "copy", "slice", "concat", "fill", "join",
+            "min", "max", "avg", "median", "mode", "stdev", "variance",
+            "sort", "reverse", "binary_search", "includes", "indexof", "lastindexof",
+            "shift", "unshift"
+        });
+        
+        return result;
+    }
+    
+    /**
+     * Initializes function parameters map for a specific version.
+     */
+    private static Map<String, Map<String, String>> initFunctionParametersForVersion(String version) {
+        Map<String, Map<String, String>> result = new HashMap<>();
+        
+        // Strategy functions
         Map<String, String> strategyEntryParams = new HashMap<>();
         strategyEntryParams.put("id", "string");
         strategyEntryParams.put("direction", "string");
@@ -772,10 +718,9 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         strategyEntryParams.put("oca_type", "string");
         strategyEntryParams.put("comment", "string");
         strategyEntryParams.put("alert_message", "string");
-        strategyEntryParams.put("disable_alert", "boolean");
-        functionParams.put("strategy.entry", strategyEntryParams);
+        strategyEntryParams.put("disable_alert", "bool");
+        result.put("strategy.entry", strategyEntryParams);
         
-        // Strategy.exit parameters - syntax: strategy.exit(id, from_entry, qty, qty_percent, profit, limit, loss, stop, trail_price, trail_points, trail_offset, oca_name, comment, comment_profit, comment_loss, comment_trailing, alert_message, alert_profit, alert_loss, alert_trailing, disable_alert)
         Map<String, String> strategyExitParams = new HashMap<>();
         strategyExitParams.put("id", "string");
         strategyExitParams.put("from_entry", "string");
@@ -797,45 +742,38 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         strategyExitParams.put("alert_profit", "string");
         strategyExitParams.put("alert_loss", "string");
         strategyExitParams.put("alert_trailing", "string");
-        strategyExitParams.put("disable_alert", "boolean");
-        functionParams.put("strategy.exit", strategyExitParams);
+        strategyExitParams.put("disable_alert", "bool");
+        result.put("strategy.exit", strategyExitParams);
         
         // Indicator parameters
         Map<String, String> indicatorParams = new HashMap<>();
         indicatorParams.put("title", "string");
         indicatorParams.put("shorttitle", "string");
-        indicatorParams.put("overlay", "boolean");
-        indicatorParams.put("format", "string");
-        indicatorParams.put("precision", "integer");
-        indicatorParams.put("scale", "string");
-        indicatorParams.put("max_bars_back", "integer");
+        indicatorParams.put("overlay", "bool");
+        indicatorParams.put("format", "const string");
+        indicatorParams.put("precision", "int");
+        indicatorParams.put("scale", "const scale");
+        indicatorParams.put("max_bars_back", "int");
         indicatorParams.put("timeframe", "string");
-        functionParams.put("indicator", indicatorParams);
+        result.put("indicator", indicatorParams);
         
-        // Plot parameters
+        // Plot functions
         Map<String, String> plotParams = new HashMap<>();
+        plotParams.put("series", "series");
         plotParams.put("title", "string");
         plotParams.put("color", "color");
-        plotParams.put("linewidth", "integer");
-        plotParams.put("style", "integer");
-        plotParams.put("trackprice", "boolean");
+        plotParams.put("linewidth", "int");
+        plotParams.put("style", "const plot_style");
+        plotParams.put("transp", "int");
         plotParams.put("histbase", "float");
-        plotParams.put("offset", "integer");
-        plotParams.put("join", "boolean");
-        plotParams.put("editable", "boolean");
-        plotParams.put("show_last", "integer");
-        functionParams.put("plot", plotParams);
+        plotParams.put("offset", "int");
+        plotParams.put("join", "bool");
+        plotParams.put("editable", "bool");
+        plotParams.put("show_last", "int");
+        result.put("plot", plotParams);
         
-        // Input parameters
-        Map<String, String> inputParams = new HashMap<>();
-        inputParams.put("defval", "value");
-        inputParams.put("title", "string");
-        inputParams.put("tooltip", "string");
-        inputParams.put("inline", "string");
-        inputParams.put("group", "string");
-        inputParams.put("confirm", "boolean");
-        functionParams.put("input", inputParams);
+        // More function parameters can be added here
         
-        return functionParams;
+        return result;
     }
 } 

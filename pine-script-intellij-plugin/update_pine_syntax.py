@@ -267,7 +267,7 @@ async def extract_category(browser, version, category, sem):
         await asyncio.gather(*tasks)
 
     # Save the results to JSON
-    out_dir = f"./src/main/resources/definitions/v{version}"
+    out_dir = f".pine-script-intellij-plugin/src/main/resources/definitions/v{version}"
     os.makedirs(out_dir, exist_ok=True)
     filename = os.path.join(out_dir, f"{category.lower()}.json")
 
