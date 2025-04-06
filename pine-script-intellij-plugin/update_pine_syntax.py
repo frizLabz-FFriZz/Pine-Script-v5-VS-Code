@@ -77,6 +77,51 @@ def extract_function_details(html: str, fragment: str) -> dict:
 
     return details
 
+def extract_variable_details(html: str, fragment: str) -> dict:
+    """
+    Extracts variable details from the dynamically loaded HTML block with id equal to the URL fragment.
+    """
+    details = {
+        "info": "",
+        "description": "",
+        "type": "",
+        "remarks": ""
+    }
+    soup = BeautifulSoup(html, 'html.parser')
+    info_div = soup.find('div', id=fragment)
+    if not info_div:
+        return details
+
+    details["info"] = str(info_div)
+
+    # Extract description: first <div> with class 'tv-pine-reference-item__text tv-text'
+    desc_div = info_div.find('div', class_='tv-pine-reference-item__text tv-text')
+    if desc_div:
+        details["description"] = desc_div.get_text(strip=True)
+    else:
+        # Fallback: find the div immediately preceding a 'Type' header
+        type_header = info_div.find('div', string=lambda text: text and text.startswith('Type'))
+        if type_header:
+            prev_div = type_header.find_previous_sibling('div', class_='tv-pine-reference-item__text tv-text')
+            if prev_div:
+                details["description"] = prev_div.get_text(strip=True)
+
+    # Extract type: find the <div> with text 'Type' and then its next sibling with class 'tv-pine-reference-item__text tv-text'
+    type_header = info_div.find('div', string='Type')
+    if type_header:
+        type_div = type_header.find_next_sibling('div', class_='tv-pine-reference-item__text tv-text')
+        if type_div:
+            details["type"] = type_div.get_text(strip=True)
+
+    # Extract remarks: find the <div> with text 'Remarks' and then its next sibling with class 'tv-pine-reference-item__text tv-text'
+    remarks_header = info_div.find('div', string='Remarks')
+    if remarks_header:
+        remarks_div = remarks_header.find_next_sibling('div', class_='tv-pine-reference-item__text tv-text')
+        if remarks_div:
+            details["remarks"] = remarks_div.get_text(strip=True)
+
+    return details
+
 async def process_function(context, item, sem):
     async with sem:
         page = await context.new_page()
@@ -101,6 +146,31 @@ async def process_function(context, item, sem):
 
         except PlaywrightTimeoutError:
             print(f"Timeout processing function {item['name']} at {item['url']}")
+        finally:
+            await page.close()
+
+async def process_variable(context, item, sem):
+    async with sem:
+        page = await context.new_page()
+        try:
+            # Use the fragment provided in the item, or fallback to URL split
+            fragment = item.get('fragment', item['url'].split('#')[-1])
+            await page.goto(item['url'], timeout=TIMEOUT_MS)
+            # Wait for the dynamically loaded <div> with the matching id, escaping dots using attribute selector
+            await page.wait_for_selector(f'div[id="{fragment}"]', timeout=TIMEOUT_MS)
+
+            content_html = await page.content()
+            # Parse the variable details from the specific <div> identified by the fragment
+            details = extract_variable_details(content_html, fragment)
+
+            # Update item fields
+            item["info"] = details["info"]
+            item["description"] = details["description"]
+            item["type"] = details["type"]
+            item["remarks"] = details["remarks"]
+
+        except PlaywrightTimeoutError:
+            print(f"Timeout processing variable {item['name']} at {item['url']}")
         finally:
             await page.close()
 
@@ -133,7 +203,7 @@ async def extract_category(browser, version, category, sem):
 
     # Gather data from each <a> link in that section
     links = body.find_all('a')
-    if category == 'Functions':
+    if category in ['Functions', 'Variables']:
         data = [
             {
                 "name": link.text.strip(),
@@ -151,12 +221,14 @@ async def extract_category(browser, version, category, sem):
             for link in links
         ]
 
-    # For testing: limit to first 5 functions only
-    if category == 'Functions':
-        data = data[:5]  # remove or adjust if you want all
-
-        # Process each function in parallel
-        tasks = [process_function(context, item, sem) for item in data]
+    if category in ['Functions', 'Variables']:
+        data = data[:5]  # For testing: limit to first 5 items; remove or adjust as needed
+        tasks = []
+        for item in data:
+            if category == 'Functions':
+                tasks.append(process_function(context, item, sem))
+            else:  # category == 'Variables'
+                tasks.append(process_variable(context, item, sem))
         await asyncio.gather(*tasks)
 
     # Save the results to JSON
