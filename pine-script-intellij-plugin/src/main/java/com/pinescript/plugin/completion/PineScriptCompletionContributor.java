@@ -423,7 +423,18 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         // Check if we're inside a function call for parameter completion
         checkFunctionCallContext(documentText, offset);
         
-        if (isInsideFunctionCall && currentFunctionName != null) {
+        // Check if we're after a parameter equals sign - need full completions there
+        boolean isAfterParamEquals = false;
+        if (offset > 1) {
+            // Look for an equals sign followed by optional whitespace before the cursor
+            String textBeforeCursor = documentText.substring(0, offset);
+            if (textBeforeCursor.matches(".*\\w+\\s*=\\s*$")) {
+                isAfterParamEquals = true;
+                LOG.info("Detected position after parameter equals sign, providing full completions");
+            }
+        }
+        
+        if (isInsideFunctionCall && currentFunctionName != null && !isAfterParamEquals) {
             // Add parameter-specific completions
             LOG.info("Inside function call: " + currentFunctionName + ", param index: " + currentParamIndex);
             addParameterCompletions(result, currentFunctionName, currentParamIndex, version);
@@ -1046,8 +1057,28 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         oldHandler.execute(editor, c, dataContext);
                     }
                     
-                    // Trigger completion popup for parentheses or comma
-                    if (c == '(' || c == ',') {
+                    // Get document and current offset
+                    Document document = editor.getDocument();
+                    int offset = editor.getCaretModel().getOffset();
+                    if (offset <= 0) return;
+                    
+                    String documentText = document.getText();
+                    boolean isInsideFunction = false;
+                    
+                    // Check if we're inside function parentheses
+                    int openCount = 0;
+                    int closeCount = 0;
+                    for (int i = 0; i < offset; i++) {
+                        char ch = documentText.charAt(i);
+                        if (ch == '(') openCount++;
+                        else if (ch == ')') closeCount++;
+                    }
+                    isInsideFunction = openCount > closeCount;
+                    
+                    // Trigger completion popup for parentheses, comma, or space inside function
+                    if (c == '(' || c == ',' || 
+                        (c == ' ' && isInsideFunction) || 
+                        c == '=') {
                         Project project = editor.getProject();
                         if (project != null) {
                             ApplicationManager.getApplication().invokeLater(() -> {
