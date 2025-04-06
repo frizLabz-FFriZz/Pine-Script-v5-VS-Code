@@ -36,14 +36,14 @@ def extract_function_details(html: str, fragment: str) -> dict:
     # Extract description: first <div> with class 'tv-pine-reference-item__text tv-text'
     desc_div = info_div.find('div', class_='tv-pine-reference-item__text tv-text')
     if desc_div:
-        details["description"] = desc_div.get_text(strip=True)
+        details["description"] = desc_div.decode_contents().strip()
     else:
         # Fallback: find the div immediately preceding a Syntax header
         syntax_header = info_div.find('div', string=lambda text: text and text.startswith('Syntax'))
         if syntax_header:
             prev_div = syntax_header.find_previous_sibling('div', class_='tv-pine-reference-item__text tv-text')
             if prev_div:
-                details["description"] = prev_div.get_text(strip=True)
+                details["description"] = prev_div.decode_contents().strip()
 
     # Extract syntax: try for <pre> with class 'tv-pine-reference-item__syntax with-overloads selected' first
     syntax_div = info_div.find('pre', class_='tv-pine-reference-item__syntax with-overloads selected')
@@ -97,14 +97,14 @@ def extract_variable_details(html: str, fragment: str) -> dict:
     # Extract description: first <div> with class 'tv-pine-reference-item__text tv-text'
     desc_div = info_div.find('div', class_='tv-pine-reference-item__text tv-text')
     if desc_div:
-        details["description"] = desc_div.get_text(strip=True)
+        details["description"] = desc_div.decode_contents().strip()
     else:
         # Fallback: find the div immediately preceding a 'Type' header
         type_header = info_div.find('div', string=lambda text: text and text.startswith('Type'))
         if type_header:
             prev_div = type_header.find_previous_sibling('div', class_='tv-pine-reference-item__text tv-text')
             if prev_div:
-                details["description"] = prev_div.get_text(strip=True)
+                details["description"] = prev_div.decode_contents().strip()
 
     # Extract type: find the <div> with text 'Type' and then its next sibling with class 'tv-pine-reference-item__text tv-text'
     type_header = info_div.find('div', string='Type')
@@ -113,12 +113,19 @@ def extract_variable_details(html: str, fragment: str) -> dict:
         if type_div:
             details["type"] = type_div.get_text(strip=True)
 
-    # Extract remarks: find the <div> with text 'Remarks' and then its next sibling with class 'tv-pine-reference-item__text tv-text'
+    # Extract remarks: collect all <div class="tv-pine-reference-item__text tv-text"> after the 'Remarks' header until the next sub-header
     remarks_header = info_div.find('div', string='Remarks')
     if remarks_header:
-        remarks_div = remarks_header.find_next_sibling('div', class_='tv-pine-reference-item__text tv-text')
-        if remarks_div:
-            details["remarks"] = remarks_div.get_text(strip=True)
+        remarks_list = []
+        for sibling in remarks_header.find_next_siblings():
+            # Stop if a new sub-header is encountered
+            if sibling.has_attr('class') and 'tv-pine-reference-item__sub-header' in sibling.get('class', []):
+                break
+            if sibling.name == 'div' and sibling.has_attr('class'):
+                classes = sibling.get('class')
+                if 'tv-pine-reference-item__text' in classes and 'tv-text' in classes:
+                    remarks_list.append(sibling.decode_contents().strip())
+        details["remarks"] = remarks_list
 
     return details
 
