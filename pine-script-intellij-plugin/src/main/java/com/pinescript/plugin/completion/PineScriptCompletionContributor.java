@@ -10,6 +10,12 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorModificationUtil;
+import com.intellij.openapi.editor.actionSystem.EditorActionManager;
+import com.intellij.openapi.editor.actionSystem.TypedAction;
+import com.intellij.openapi.editor.actionSystem.TypedActionHandler;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.Disposable;
+import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.patterns.PlatformPatterns;
 import com.intellij.psi.PsiElement;
 import com.intellij.util.ProcessingContext;
@@ -41,6 +47,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     private static final Map<String, Set<String>> FUNCTIONS_MAP = new ConcurrentHashMap<>();
     private static final Map<String, Set<String>> VARIABLES_MAP = new ConcurrentHashMap<>();
     private static final Map<String, Set<String>> CONSTANTS_MAP = new ConcurrentHashMap<>();
+    // Store function arguments from JSON definition files
+    private static final Map<String, Map<String, List<Map<String, String>>>> FUNCTION_ARGUMENTS_CACHE = new ConcurrentHashMap<>();
 
     // Default to version 5 if version is not specified
     private static final String DEFAULT_VERSION = "5";
@@ -120,13 +128,22 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                return; // Stop processing after handling namespace methods
                            }
                            
-                           // Special handling for function parameters
+                           // Special handling for function parameters - detect if inside parentheses
                            if (isInFunctionCall(textBeforeCursor)) {
                                String functionName = extractFunctionName(textBeforeCursor);
                                LOG.info("Detected inside function call: " + functionName);
                                
                                if (functionName != null) {
-                                   addFunctionParameterCompletions(result, functionName, version);
+                                   // Check function call context to determine current parameter
+                                   checkFunctionCallContext(documentText, offset);
+                                   
+                                   if (isInsideFunctionCall && currentFunctionName != null) {
+                                       LOG.info("Suggesting parameters for: " + currentFunctionName + ", param index: " + currentParamIndex);
+                                       addParameterCompletions(result, currentFunctionName, currentParamIndex, version);
+                                   } else {
+                                       // Fallback to function parameters if context check failed
+                                       addFunctionParameterCompletions(result, functionName, version);
+                                   }
                                    return; // Stop processing after handling function parameters
                                }
                            }
@@ -136,6 +153,11 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                        processStandardCompletions(parameters, result, version);
                    }
                });
+                
+        // Register completion auto-popup trigger for parentheses and commas
+        ApplicationManager.getApplication().invokeLater(() -> {
+            CompletionAutoPopupHandler.install(null);
+        });
     }
     
     /**
@@ -188,6 +210,10 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             cleanFunctionNames.add(cleanName);
         }
         FUNCTIONS_MAP.put(version, functionsSet);
+
+        // Load function arguments from functions.json
+        Map<String, List<Map<String, String>>> functionArgs = loadFunctionArguments(version);
+        FUNCTION_ARGUMENTS_CACHE.put(version, functionArgs);
         
         // Combine all definitions
         List<String> allDefinitions = new ArrayList<>();
@@ -251,6 +277,69 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         }
         
         return names;
+    }
+    
+    /**
+     * Loads function arguments from the functions.json file
+     * @param version The Pine Script version
+     * @return A map of function names to their argument lists
+     */
+    private static Map<String, List<Map<String, String>>> loadFunctionArguments(String version) {
+        Map<String, List<Map<String, String>>> result = new HashMap<>();
+        String resourcePath = "/definitions/v" + version + "/functions.json";
+        
+        try (InputStream is = PineScriptCompletionContributor.class.getResourceAsStream(resourcePath)) {
+            if (is == null) {
+                LOG.warn("Resource not found: " + resourcePath);
+                return result;
+            }
+            
+            StringBuilder jsonContent = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    jsonContent.append(line);
+                }
+            }
+            
+            JSONArray jsonArray = new JSONArray(jsonContent.toString());
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject item = jsonArray.getJSONObject(i);
+                if (item.has("name") && item.has("arguments")) {
+                    String name = item.getString("name");
+                    // Remove trailing parentheses if they exist
+                    if (name.endsWith("()")) {
+                        name = name.substring(0, name.length() - 2);
+                    }
+                    
+                    List<Map<String, String>> argList = new ArrayList<>();
+                    JSONArray arguments = item.getJSONArray("arguments");
+                    
+                    for (int j = 0; j < arguments.length(); j++) {
+                        JSONObject arg = arguments.getJSONObject(j);
+                        Map<String, String> argMap = new HashMap<>();
+                        
+                        if (arg.has("argument")) {
+                            argMap.put("name", arg.getString("argument"));
+                        }
+                        
+                        if (arg.has("type")) {
+                            argMap.put("type", arg.getString("type"));
+                        }
+                        
+                        argList.add(argMap);
+                    }
+                    
+                    result.put(name, argList);
+                }
+            }
+            
+            LOG.info("Loaded arguments for " + result.size() + " functions from " + resourcePath);
+        } catch (IOException e) {
+            LOG.error("Error loading function arguments from " + resourcePath, e);
+        }
+        
+        return result;
     }
     
     /**
@@ -466,19 +555,156 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      * Adds parameter-specific completions for the given function and parameter index.
      */
     private void addParameterCompletions(CompletionResultSet result, String functionName, int paramIndex, String version) {
-        // Check if we have special completion for this parameter
-        Map<String, String> suggestions = getParameterSuggestions(functionName, paramIndex);
-        if (!suggestions.isEmpty()) {
-            for (Map.Entry<String, String> entry : suggestions.entrySet()) {
+        // Get function arguments from cache for this version
+        Map<String, List<Map<String, String>>> functionArgs = FUNCTION_ARGUMENTS_CACHE.getOrDefault(version, new HashMap<>());
+        
+        // If we have argument definitions for this function
+        if (functionArgs.containsKey(functionName)) {
+            List<Map<String, String>> args = functionArgs.get(functionName);
+            
+            // If there are arguments defined and the current parameter index is valid
+            if (!args.isEmpty() && paramIndex < args.size()) {
+                // Get the current parameter information
+                Map<String, String> param = args.get(paramIndex);
+                String paramName = param.getOrDefault("name", "");
+                String paramType = param.getOrDefault("type", "");
+                
+                if (!paramName.isEmpty()) {
+                    // Add named parameter option
+                    LookupElementBuilder namedElement = LookupElementBuilder.create(paramName + "=")
+                            .withIcon(AllIcons.Nodes.Parameter)
+                            .withTypeText(paramType)
+                            .withTailText(" (named)", true)
+                            .withInsertHandler((ctx, item) -> {
+                                // Move caret after equals sign to let user input the value
+                                Editor editor = ctx.getEditor();
+                                editor.getCaretModel().moveToOffset(ctx.getTailOffset());
+                            });
+                    result.addElement(PrioritizedLookupElement.withPriority(namedElement, 300));
+                    
+                    // Also suggest possible values based on parameter type
+                    Map<String, String> valueSuggestions = getValueSuggestionsForType(paramType, paramName, functionName, paramIndex);
+                    for (Map.Entry<String, String> entry : valueSuggestions.entrySet()) {
+                        LookupElementBuilder element = LookupElementBuilder.create(entry.getKey())
+                                .withTypeText(entry.getValue())
+                                .withIcon(AllIcons.Nodes.Parameter);
+                        result.addElement(PrioritizedLookupElement.withPriority(element, 250));
+                    }
+                }
+            }
+            
+            // Suggest all other parameter names (for named parameters)
+            for (int i = 0; i < args.size(); i++) {
+                if (i != paramIndex) { // Skip current parameter as it's already suggested above
+                    Map<String, String> otherParam = args.get(i);
+                    String otherParamName = otherParam.getOrDefault("name", "");
+                    String otherParamType = otherParam.getOrDefault("type", "");
+                    
+                    if (!otherParamName.isEmpty()) {
+                        LookupElementBuilder element = LookupElementBuilder.create(otherParamName + "=")
+                                .withIcon(AllIcons.Nodes.Parameter)
+                                .withTypeText(otherParamType)
+                                .withTailText(" (named)", true)
+                                .withInsertHandler((ctx, item) -> {
+                                    // Move caret after equals sign to let user input the value
+                                    Editor editor = ctx.getEditor();
+                                    editor.getCaretModel().moveToOffset(ctx.getTailOffset());
+                                });
+                        result.addElement(PrioritizedLookupElement.withPriority(element, 200));
+                    }
+                }
+            }
+        }
+        
+        // Check if we have special value completions for this parameter
+        Map<String, String> specialSuggestions = getParameterSuggestions(functionName, paramIndex);
+        if (!specialSuggestions.isEmpty()) {
+            for (Map.Entry<String, String> entry : specialSuggestions.entrySet()) {
                 LookupElementBuilder element = LookupElementBuilder.create(entry.getKey())
-                        .withTypeText(entry.getValue());
-                result.addElement(PrioritizedLookupElement.withPriority(element, 200));
+                        .withTypeText(entry.getValue())
+                        .withIcon(AllIcons.Nodes.Parameter);
+                result.addElement(PrioritizedLookupElement.withPriority(element, 220));
             }
         }
     }
     
     /**
+     * Returns value suggestions based on parameter type
+     */
+    private Map<String, String> getValueSuggestionsForType(String paramType, String paramName, String functionName, int paramIndex) {
+        Map<String, String> suggestions = new HashMap<>();
+        
+        // Suggest values based on parameter type
+        if (paramType.contains("bool") || paramType.contains("boolean")) {
+            suggestions.put("true", "boolean value");
+            suggestions.put("false", "boolean value");
+        } else if (paramType.contains("string")) {
+            suggestions.put("\"text\"", "string value");
+            
+            // If parameter name suggests a specific type of string
+            if (paramName.contains("id") || paramName.equals("id")) {
+                suggestions.put("\"myId\"", "identifier");
+            } else if (paramName.contains("title") || paramName.contains("name")) {
+                suggestions.put("\"My Title\"", "title");
+            } else if (paramName.contains("comment")) {
+                suggestions.put("\"Comment\"", "comment text");
+            }
+        } else if (paramType.contains("color")) {
+            suggestions.put("color.blue", "blue");
+            suggestions.put("color.red", "red");
+            suggestions.put("color.green", "green");
+            suggestions.put("color.yellow", "yellow");
+            suggestions.put("color.purple", "purple");
+            suggestions.put("color.orange", "orange");
+            suggestions.put("color.white", "white");
+            suggestions.put("color.black", "black");
+        } else if (paramType.contains("int")) {
+            suggestions.put("0", "integer");
+            suggestions.put("1", "integer");
+            suggestions.put("10", "integer");
+            
+            // Suggest appropriate values based on parameter name
+            if (paramName.contains("length") || paramName.contains("period")) {
+                suggestions.put("14", "period");
+                suggestions.put("20", "period");
+                suggestions.put("50", "period");
+                suggestions.put("200", "period");
+            } else if (paramName.contains("width") || paramName.contains("size")) {
+                suggestions.put("1", "size");
+                suggestions.put("2", "size");
+                suggestions.put("3", "size");
+            }
+        } else if (paramType.contains("float")) {
+            suggestions.put("0.0", "float");
+            suggestions.put("1.0", "float");
+            
+            // If parameter relates to trading quantity
+            if (paramName.contains("qty") || paramName.contains("quantity")) {
+                suggestions.put("1.0", "quantity");
+                suggestions.put("0.5", "quantity");
+            }
+        } else if (paramType.contains("array")) {
+            // For array parameters
+            if (paramName.equals("id")) {
+                suggestions.put("myArray", "array variable");
+            }
+        } else if (paramType.contains("series")) {
+            // Suggest common series values
+            suggestions.put("close", "price series");
+            suggestions.put("open", "price series");
+            suggestions.put("high", "price series");
+            suggestions.put("low", "price series");
+            suggestions.put("volume", "volume series");
+            suggestions.put("time", "time series");
+        }
+        
+        return suggestions;
+    }
+    
+    /**
      * Returns special suggestions for specific function parameters.
+     * This provides predefined suggestions for common function parameters
+     * that are not easily derived from the type information.
      */
     private Map<String, String> getParameterSuggestions(String functionName, int paramIndex) {
         Map<String, String> suggestions = new HashMap<>();
@@ -804,5 +1030,33 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         // More function parameters can be added here
         
         return result;
+    }
+
+    // Define a class to handle auto-popup for parameter completion
+    private static class CompletionAutoPopupHandler {
+        public static void install(Disposable disposable) {
+            EditorActionManager actionManager = EditorActionManager.getInstance();
+            TypedAction typedAction = actionManager.getTypedAction();
+            TypedActionHandler oldHandler = typedAction.getRawHandler();
+            
+            typedAction.setupRawHandler(new TypedActionHandler() {
+                @Override
+                public void execute(@NotNull Editor editor, char c, @NotNull DataContext dataContext) {
+                    if (oldHandler != null) {
+                        oldHandler.execute(editor, c, dataContext);
+                    }
+                    
+                    // Trigger completion popup for parentheses or comma
+                    if (c == '(' || c == ',') {
+                        Project project = editor.getProject();
+                        if (project != null) {
+                            ApplicationManager.getApplication().invokeLater(() -> {
+                                AutoPopupController.getInstance(project).scheduleAutoPopup(editor);
+                            });
+                        }
+                    }
+                }
+            });
+        }
     }
 } 
