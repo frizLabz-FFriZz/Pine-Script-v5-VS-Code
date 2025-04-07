@@ -911,6 +911,10 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         CompletionResultSet exactResult = result.withPrefixMatcher("");
         LOG.warn("🔍 [addNamespaceMethodCompletions] Created new result set with empty prefix matcher");
         
+        // Keep track of all members added to avoid duplicates
+        Set<String> addedMembers = new HashSet<>();
+        int totalAddedCount = 0;
+        
         // First check if it's a built-in namespace
         if (Arrays.asList(NAMESPACES).contains(namespace)) {
             Map<String, String[]> namespaceMethods = NAMESPACE_METHODS_CACHE.getOrDefault(version, 
@@ -927,6 +931,13 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 
                 int addedCount = 0;
                 for (String method : methods) {
+                    // Skip if already added
+                    if (addedMembers.contains(method)) {
+                        continue;
+                    }
+                    
+                    addedMembers.add(method);
+                    
                     LookupElementBuilder element = LookupElementBuilder.create(method)
                             .withIcon(AllIcons.Nodes.Method)
                             .withTypeText(namespace + " method")
@@ -947,6 +958,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                     addedCount++;
                 }
                 LOG.warn("🔍 [addNamespaceMethodCompletions] Added " + addedCount + " built-in namespace method completions");
+                totalAddedCount += addedCount;
             } else {
                 LOG.warn("🔍 [addNamespaceMethodCompletions] No methods found for built-in namespace: " + namespace);
             }
@@ -954,7 +966,10 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             LOG.warn("🔍 [addNamespaceMethodCompletions] Not a built-in namespace: " + namespace);
         }
         
-        // Add function namespace members
+        // Collect all namespace members from all categories (functions, variables, constants)
+        // but treat them consistently based on their behavior
+        
+        // Function-like members (shown with () and parameter info)
         Set<String> functionMembers = new HashSet<>();
         for (String func : functions) {
             if (func.contains(".") && func.startsWith(namespace + ".")) {
@@ -963,24 +978,54 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 if (member.contains(".")) {
                     // Extract only the next level
                     member = member.substring(0, member.indexOf('.'));
-                    functionMembers.add(member);
-                } else {
-                    functionMembers.add(member);
                 }
+                functionMembers.add(member);
             }
         }
         
-        LOG.warn("🔍 [addNamespaceMethodCompletions] Found " + functionMembers.size() + " function members for namespace: " + namespace);
-        if (functionMembers.size() > 0) {
-            LOG.warn("🔍 [addNamespaceMethodCompletions] Function members: " + functionMembers);
+        // Variable-like members (shown as properties)
+        Set<String> propertyMembers = new HashSet<>();
+        // Collect from variables
+        for (String var : variables) {
+            if (var.contains(".") && var.startsWith(namespace + ".")) {
+                String member = var.substring(namespace.length() + 1);
+                // Handle possible multi-level namespaces
+                if (member.contains(".")) {
+                    // Extract only the next level
+                    member = member.substring(0, member.indexOf('.'));
+                }
+                propertyMembers.add(member);
+            }
+        }
+        // Collect from constants
+        for (String cons : constants) {
+            if (cons.contains(".") && cons.startsWith(namespace + ".")) {
+                String member = cons.substring(namespace.length() + 1);
+                // Handle possible multi-level namespaces
+                if (member.contains(".")) {
+                    // Extract only the next level
+                    member = member.substring(0, member.indexOf('.'));
+                }
+                propertyMembers.add(member);
+            }
         }
         
-        // Add function members with appropriate icons and insert handlers
-        int addedFunctionMembers = 0;
+        LOG.warn("🔍 [addNamespaceMethodCompletions] Found: " +
+                functionMembers.size() + " function members, " +
+                propertyMembers.size() + " property members");
+        
+        // Add function members
         for (String member : functionMembers) {
+            // Skip if already added from built-in methods
+            if (addedMembers.contains(member)) {
+                continue;
+            }
+            
+            addedMembers.add(member);
+            
             LookupElementBuilder element = LookupElementBuilder.create(member)
-                    .withIcon(AllIcons.Nodes.Function)
-                    .withTypeText(namespace + " function")
+                    .withIcon(AllIcons.Nodes.Method)
+                    .withTypeText(namespace + " method")
                     .withInsertHandler((ctx, item) -> {
                         // Check if this is a function or a sub-namespace
                         boolean isFunction = false;
@@ -1010,56 +1055,40 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         }
                     });
             exactResult.addElement(PrioritizedLookupElement.withPriority(element, 850));
-            addedFunctionMembers++;
-        }
-        LOG.warn("🔍 [addNamespaceMethodCompletions] Added " + addedFunctionMembers + " function member completions");
-        
-        // Add namespace members for variables
-        Set<String> variableMembers = new HashSet<>();
-        for (String var : variables) {
-            if (var.contains(".") && var.startsWith(namespace + ".")) {
-                String member = var.substring(namespace.length() + 1);
-                // Handle possible multi-level namespaces
-                if (member.contains(".")) {
-                    // Extract only the next level
-                    member = member.substring(0, member.indexOf('.'));
-                    variableMembers.add(member);
-                } else {
-                    variableMembers.add(member);
-                }
-            }
+            totalAddedCount++;
         }
         
-        LOG.warn("🔍 [addNamespaceMethodCompletions] Found " + variableMembers.size() + " variable members for namespace: " + namespace);
-        if (variableMembers.size() > 0) {
-            LOG.warn("🔍 [addNamespaceMethodCompletions] Variable members: " + variableMembers);
-        }
-        
-        // Add variable members with appropriate icons and insert handlers
-        int addedVariableMembers = 0;
-        for (String member : variableMembers) {
-            // Skip if we already added this member as a function
-            if (functionMembers.contains(member)) {
-                LOG.warn("🔍 [addNamespaceMethodCompletions] Skipping variable member '" + member + "' as it was already added as a function member");
+        // Add property members
+        for (String member : propertyMembers) {
+            // Skip if already added as a function member
+            if (addedMembers.contains(member)) {
                 continue;
             }
             
+            addedMembers.add(member);
+            
             LookupElementBuilder element = LookupElementBuilder.create(member)
-                    .withIcon(AllIcons.Nodes.Variable)
-                    .withTypeText(namespace + " variable")
+                    .withIcon(AllIcons.Nodes.Property)
+                    .withTypeText(namespace + " property")
                     .withInsertHandler((ctx, item) -> {
-                        // Check if this is a variable or a sub-namespace
-                        boolean isVariable = false;
+                        // Check if this might be a sub-namespace
+                        boolean isProperty = false;
                         for (String var : variables) {
                             if (var.equals(namespace + "." + member)) {
-                                isVariable = true;
+                                isProperty = true;
+                                break;
+                            }
+                        }
+                        for (String cons : constants) {
+                            if (cons.equals(namespace + "." + member)) {
+                                isProperty = true;
                                 break;
                             }
                         }
                         
                         Editor editor = ctx.getEditor();
-                        if (!isVariable) {
-                            // It's a sub-namespace, add a dot and trigger member lookup
+                        if (!isProperty) {
+                            // It's possibly a sub-namespace, add a dot and trigger member lookup
                             EditorModificationUtil.insertStringAtCaret(editor, ".");
                             ApplicationManager.getApplication().invokeLater(() -> {
                                 AutoPopupController.getInstance(ctx.getProject()).scheduleAutoPopup(editor);
@@ -1067,101 +1096,23 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         }
                     });
             exactResult.addElement(PrioritizedLookupElement.withPriority(element, 750));
-            addedVariableMembers++;
-        }
-        LOG.warn("🔍 [addNamespaceMethodCompletions] Added " + addedVariableMembers + " variable member completions");
-        
-        // Add namespace members for constants
-        Set<String> constantMembers = new HashSet<>();
-        for (String cons : constants) {
-            if (cons.contains(".") && cons.startsWith(namespace + ".")) {
-                String member = cons.substring(namespace.length() + 1);
-                // Handle possible multi-level namespaces
-                if (member.contains(".")) {
-                    // Extract only the next level
-                    member = member.substring(0, member.indexOf('.'));
-                    constantMembers.add(member);
-                } else {
-                    constantMembers.add(member);
-                }
-            }
+            totalAddedCount++;
         }
         
-        LOG.warn("🔍 [addNamespaceMethodCompletions] Found " + constantMembers.size() + " constant members for namespace: " + namespace);
-        if (constantMembers.size() > 0) {
-            LOG.warn("🔍 [addNamespaceMethodCompletions] Constant members: " + constantMembers);
-        }
+        LOG.warn("🔍 [addNamespaceMethodCompletions] Total members added: " + totalAddedCount);
         
-        // Add constant members with appropriate icons and insert handlers
-        int addedConstantMembers = 0;
-        for (String member : constantMembers) {
-            // Skip if we already added this member as a function or variable
-            if (functionMembers.contains(member) || variableMembers.contains(member)) {
-                LOG.warn("🔍 [addNamespaceMethodCompletions] Skipping constant member '" + member + "' as it was already added as a function or variable member");
-                continue;
-            }
-            
-            LookupElementBuilder element = LookupElementBuilder.create(member)
-                    .withIcon(AllIcons.Nodes.Constant)
-                    .withTypeText(namespace + " constant")
-                    .withInsertHandler((ctx, item) -> {
-                        // Check if this is a constant or a sub-namespace
-                        boolean isConstant = false;
-                        for (String cons : constants) {
-                            if (cons.equals(namespace + "." + member)) {
-                                isConstant = true;
-                                break;
-                            }
-                        }
-                        
-                        Editor editor = ctx.getEditor();
-                        if (!isConstant) {
-                            // It's a sub-namespace, add a dot and trigger member lookup
-                            EditorModificationUtil.insertStringAtCaret(editor, ".");
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                AutoPopupController.getInstance(ctx.getProject()).scheduleAutoPopup(editor);
-                            });
-                        }
-                    });
-            exactResult.addElement(PrioritizedLookupElement.withPriority(element, 800));
-            addedConstantMembers++;
-        }
-        LOG.warn("🔍 [addNamespaceMethodCompletions] Added " + addedConstantMembers + " constant member completions");
-        
-        // Make sure we deduplicate members
-        Set<String> allAddedMembers = new HashSet<>();
-        allAddedMembers.addAll(functionMembers);
-        allAddedMembers.addAll(variableMembers);
-        allAddedMembers.addAll(constantMembers);
-        
-        int totalAdded = addedFunctionMembers + addedVariableMembers + addedConstantMembers;
-        LOG.warn("🔍 [addNamespaceMethodCompletions] Total added: " + totalAdded + " members for namespace: " + namespace);
-        
-        // Add a dummy item with low priority just to verify items can be added to the result set
-        LookupElementBuilder dummyElement = LookupElementBuilder.create("__debug_" + namespace + "_item")
-                .withIcon(AllIcons.Nodes.Method)
-                .withTypeText("Debug Item")
-                .withInsertHandler((ctx, item) -> {
-                    // Just log that this was selected
-                    LOG.warn("🔍 Debug item was selected!");
-                });
-        exactResult.addElement(PrioritizedLookupElement.withPriority(dummyElement, 1));
-        LOG.warn("🔍 [addNamespaceMethodCompletions] Added debug item to result set");
-        
-        // If we didn't find any members, this may be a custom namespace without proper registration
-        if (allAddedMembers.isEmpty()) {
+        // If no suggestions were added, try to provide some guidance
+        if (totalAddedCount == 0) {
+            List<String> definitions = CACHED_DEFINITIONS.getOrDefault(version, new ArrayList<>());
             LOG.warn("🔍 [addNamespaceMethodCompletions] No members found for namespace: " + namespace + ". This may be a custom namespace.");
             
-            // Dump all definitions to check for potential matches
-            List<String> definitions = CACHED_DEFINITIONS.getOrDefault(version, new ArrayList<>());
-            LOG.warn("🔍 [addNamespaceMethodCompletions] Checking " + definitions.size() + " total definitions for any that might contain '" + namespace + "'");
-            
-            int found = 0;
-            for (String def : definitions) {
-                if (def.contains(namespace)) {
-                    LOG.warn("🔍 [addNamespaceMethodCompletions] Related definition: " + def);
-                    found++;
-                    if (found >= 20) break; // Limit output
+            // Look for any definitions that might contain this namespace to provide hints
+            if (definitions.size() > 0) {
+                LOG.warn("🔍 [addNamespaceMethodCompletions] Checking " + definitions.size() + " total definitions for any that might contain '" + namespace + "'");
+                for (String def : definitions) {
+                    if (def.startsWith(namespace) || def.contains("." + namespace + ".")) {
+                        LOG.warn("🔍 [addNamespaceMethodCompletions] Related definition: " + def);
+                    }
                 }
             }
         }
