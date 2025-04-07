@@ -16,6 +16,8 @@ import com.intellij.openapi.editor.actionSystem.TypedActionHandler;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.actionSystem.DataContext;
+import com.intellij.openapi.actionSystem.IdeActions;
+import com.intellij.openapi.application.ModalityState;
 import com.intellij.patterns.PlatformPatterns;
 import com.intellij.psi.PsiElement;
 import com.intellij.util.ProcessingContext;
@@ -33,8 +35,13 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Timer;
+import java.util.TimerTask;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import com.intellij.codeInsight.completion.CompletionService;
+import com.intellij.psi.PsiDocumentManager;
+import com.intellij.psi.PsiFile;
 
 public class PineScriptCompletionContributor extends CompletionContributor {
     private static final Logger LOG = Logger.getInstance(PineScriptCompletionContributor.class);
@@ -132,9 +139,13 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     private int currentParamIndex = 0;
 
     public PineScriptCompletionContributor() {
+        super();
         LOG.info("PineScriptCompletionContributor initialized");
         
-        // Add specific completion for namespace methods (after dot)
+        // Don't use TypedHandler - it's not reliable for autocompletion
+        // Instead we'll rely on CompletionContributor.fillCompletionVariants
+        
+        // Standard extension for completions
         extend(CompletionType.BASIC,
                PlatformPatterns.psiElement().withLanguage(PineScriptLanguage.INSTANCE),
                new CompletionProvider<>() {
@@ -145,6 +156,9 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                        Document document = parameters.getEditor().getDocument();
                        int offset = parameters.getOffset();
                        String documentText = document.getText();
+                       
+                       // Explicitly write to IDE logs for diagnostics
+                       LOG.warn("PineScriptCompletionContributor running at offset " + offset);
                        
                        // Skip autocompletion if inside a string
                        if (isInsideString(documentText, offset)) {
@@ -167,13 +181,50 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                            // Special handling for namespace methods (after dot)
                            if (textBeforeCursor.endsWith(".")) {
                                String namespace = findNamespaceBeforeDot(textBeforeCursor);
-                               LOG.info("Detected namespace before dot: " + namespace);
+                               LOG.warn(">>>>>>> Detected namespace before dot: " + namespace);
                                
-                               if (namespace != null && Arrays.asList(NAMESPACES).contains(namespace)) {
-                                   LOG.info("Adding methods for namespace: " + namespace);
-                                   addNamespaceMethodCompletions(result, namespace, version);
+                               if (namespace != null) {
+                                   // Check if this is a known built-in namespace or a custom namespace
+                                   boolean isBuiltInNamespace = Arrays.asList(NAMESPACES).contains(namespace);
+                                   
+                                   // Get the sets for this version
+                                   Set<String> functions = FUNCTIONS_MAP.getOrDefault(version, new HashSet<>());
+                                   Set<String> variables = VARIABLES_MAP.getOrDefault(version, new HashSet<>());
+                                   Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
+                                   
+                                   // Detailed logging of available definitions for debugging
+                                   LOG.info("Checking if namespace '" + namespace + "' is valid:");
+                                   LOG.info("Built-in namespaces: " + Arrays.toString(NAMESPACES));
+                                   LOG.info("Total functions: " + functions.size() + ", variables: " + variables.size() + ", constants: " + constants.size());
+                                   
+                                   // Check if this is a custom namespace
+                                   boolean isCustomNamespace = false;
+                                   
+                                   // Check if any definitions start with namespace + "."
+                                   List<String> matchingDefs = new ArrayList<>();
+                                   for (String definition : CACHED_DEFINITIONS.getOrDefault(version, new ArrayList<>())) {
+                                       if (definition.startsWith(namespace + ".")) {
+                                           isCustomNamespace = true;
+                                           matchingDefs.add(definition);
+                                       }
+                                   }
+                                   
+                                   LOG.info("Namespace status - built-in: " + isBuiltInNamespace + ", custom: " + isCustomNamespace);
+                                   LOG.info("Found " + matchingDefs.size() + " matching definitions for namespace: " + namespace);
+                                   if (matchingDefs.size() < 10) {
+                                       LOG.info("Matching definitions: " + matchingDefs);
+                                   }
+                                   
+                                   if (isBuiltInNamespace || isCustomNamespace) {
+                                       LOG.info("Adding methods for namespace: " + namespace);
+                                       addNamespaceMethodCompletions(result, namespace, version);
+                                       return; // Stop processing after handling namespace methods
+                                   } else {
+                                       LOG.info("Namespace '" + namespace + "' is not recognized as built-in or custom");
+                                   }
+                               } else {
+                                   LOG.info("No namespace detected before dot");
                                }
-                               return; // Stop processing after handling namespace methods
                            }
                            
                            // Special handling for function parameters - detect if inside parentheses
@@ -248,11 +299,19 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                        processStandardCompletions(parameters, result, version);
                    }
                });
-                
-        // Register completion auto-popup trigger for parentheses and commas
-        ApplicationManager.getApplication().invokeLater(() -> {
-            CompletionAutoPopupHandler.install(null);
-        });
+    }
+    
+    /**
+     * Override fillCompletionVariants to ensure completions are called
+     */
+    @Override
+    public void fillCompletionVariants(@NotNull CompletionParameters parameters, @NotNull CompletionResultSet result) {
+        // Log when completion is triggered
+        LOG.warn("fillCompletionVariants called - type: " + parameters.getCompletionType() + 
+                 ", invocation count: " + parameters.getInvocationCount());
+        
+        // Call the parent implementation to handle the standard completion
+        super.fillCompletionVariants(parameters, result);
     }
     
     /**
@@ -440,7 +499,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     /**
      * Finds the namespace before a dot in the text.
      */
-    private String findNamespaceBeforeDot(String text) {
+    private static String findNamespaceBeforeDot(String text) {
         if (!text.endsWith(".")) {
             return null;
         }
@@ -450,8 +509,12 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         for (int i = text.length() - 2; i >= 0; i--) {
             char c = text.charAt(i);
             if (!Character.isJavaIdentifierPart(c)) {
-                lastNonWordChar = i;
-                break;
+                // Allow finding qualified identifiers by only breaking on non-identifier chars
+                // that aren't dots (to handle multi-level namespaces)
+                if (c != '.') {
+                    lastNonWordChar = i;
+                    break;
+                }
             }
         }
         
@@ -590,56 +653,161 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         Set<String> variables = VARIABLES_MAP.getOrDefault(version, new HashSet<>());
         Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
         
-        // Add built-in variables from the cached definitions
         List<String> definitions = CACHED_DEFINITIONS.getOrDefault(version, new ArrayList<>());
+        Set<String> addedFunctionNamespaces = new HashSet<>();
+        Set<String> addedVariableNamespaces = new HashSet<>();
+        Set<String> addedConstantNamespaces = new HashSet<>();
+        
         for (String definition : definitions) {
-            LookupElementBuilder element;
+            if (definition.contains(".")) {
+                String ns = definition.substring(0, definition.indexOf('.'));
+                if (functions.contains(definition) && !addedFunctionNamespaces.contains(ns)) {
+                    addedFunctionNamespaces.add(ns);
+                    LookupElementBuilder nsElement = LookupElementBuilder.create(ns)
+                        .withIcon(AllIcons.Nodes.Function)
+                        .withTypeText("function namespace")
+                        .withInsertHandler((ctx, item) -> {
+                            Editor editor = ctx.getEditor();
+                            
+                            // Add the dot without triggering typed action
+                            EditorModificationUtil.insertStringAtCaret(editor, ".");
+                            
+                            // Force an immediate popup
+                            Project project = ctx.getProject();
+                            if (project != null) {
+                                try {
+                                    AutoPopupController controller = AutoPopupController.getInstance(project);
+                                    controller.autoPopupMemberLookup(editor, null);
+                                } catch (Exception e) {
+                                    LOG.warn("Error showing member lookup: " + e.getMessage());
+                                }
+                            }
+                        });
+                    result.addElement(PrioritizedLookupElement.withPriority(nsElement, 850));
+                }
+                if (variables.contains(definition) && !addedVariableNamespaces.contains(ns)) {
+                    addedVariableNamespaces.add(ns);
+                    LookupElementBuilder nsElement = LookupElementBuilder.create(ns)
+                        .withIcon(AllIcons.Nodes.Variable)
+                        .withTypeText("variable namespace")
+                        .withInsertHandler((ctx, item) -> {
+                            Editor editor = ctx.getEditor();
+                            
+                            // Add the dot without triggering typed action
+                            EditorModificationUtil.insertStringAtCaret(editor, ".");
+                            
+                            // Force an immediate popup
+                            Project project = ctx.getProject();
+                            if (project != null) {
+                                try {
+                                    AutoPopupController controller = AutoPopupController.getInstance(project);
+                                    controller.autoPopupMemberLookup(editor, null);
+                                } catch (Exception e) {
+                                    LOG.warn("Error showing member lookup: " + e.getMessage());
+                                }
+                            }
+                        });
+                    result.addElement(PrioritizedLookupElement.withPriority(nsElement, 750));
+                }
+                if (constants.contains(definition) && !addedConstantNamespaces.contains(ns)) {
+                    addedConstantNamespaces.add(ns);
+                    LookupElementBuilder nsElement = LookupElementBuilder.create(ns)
+                        .withIcon(AllIcons.Nodes.Constant)
+                        .withTypeText("constant namespace")
+                        .withInsertHandler((ctx, item) -> {
+                            Editor editor = ctx.getEditor();
+                            
+                            // Add the dot without triggering typed action
+                            EditorModificationUtil.insertStringAtCaret(editor, ".");
+                            
+                            // Force an immediate popup
+                            Project project = ctx.getProject();
+                            if (project != null) {
+                                try {
+                                    AutoPopupController controller = AutoPopupController.getInstance(project);
+                                    controller.autoPopupMemberLookup(editor, null);
+                                } catch (Exception e) {
+                                    LOG.warn("Error showing member lookup: " + e.getMessage());
+                                }
+                            }
+                        });
+                    result.addElement(PrioritizedLookupElement.withPriority(nsElement, 800));
+                }
+                continue;
+            }
             if (Arrays.asList(NAMESPACES).contains(definition)) {
-                // For namespaces, add a dot automatically
-                element = LookupElementBuilder.create(definition)
+                LookupElementBuilder element = LookupElementBuilder.create(definition)
                         .withIcon(AllIcons.Nodes.Package)
                         .withTypeText("namespace")
                         .withInsertHandler((ctx, item) -> {
                             Editor editor = ctx.getEditor();
+                            
+                            // Add the dot without triggering typed action
                             EditorModificationUtil.insertStringAtCaret(editor, ".");
                             
-                            // Trigger autocompletion for namespace methods
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                AutoPopupController.getInstance(ctx.getProject()).autoPopupMemberLookup(editor, null);
-                            });
+                            // Force an immediate popup
+                            Project project = ctx.getProject();
+                            if (project != null) {
+                                try {
+                                    AutoPopupController controller = AutoPopupController.getInstance(project);
+                                    controller.autoPopupMemberLookup(editor, null);
+                                } catch (Exception e) {
+                                    LOG.warn("Error showing member lookup: " + e.getMessage());
+                                }
+                            }
                         });
-                result.addElement(PrioritizedLookupElement.withPriority(element, 500));
+                result.addElement(PrioritizedLookupElement.withPriority(element, 900));
             } else if (functions.contains(definition)) {
-                // Function with appropriate icon (right after local variables)
-                element = LookupElementBuilder.create(definition)
+                LookupElementBuilder element = LookupElementBuilder.create(definition)
                         .withIcon(AllIcons.Nodes.Function)
                         .withTypeText("function")
                         .withTailText("()", true)
                         .withInsertHandler((ctx, item) -> {
-                            // Add parentheses for functions and position cursor inside
                             Editor editor = ctx.getEditor();
-                            EditorModificationUtil.insertStringAtCaret(editor, "()");
-                            editor.getCaretModel().moveToOffset(ctx.getTailOffset() - 1);
                             
-                            // Trigger parameter info popup
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                AutoPopupController.getInstance(ctx.getProject()).autoPopupParameterInfo(editor, null);
-                            });
+                            // Add the dot without triggering typed action
+                            EditorModificationUtil.insertStringAtCaret(editor, "()");
+                            
+                            // Force an immediate popup
+                            Project project = ctx.getProject();
+                            if (project != null) {
+                                try {
+                                    AutoPopupController controller = AutoPopupController.getInstance(project);
+                                    controller.autoPopupParameterInfo(editor, null);
+                                } catch (Exception e) {
+                                    LOG.warn("Error showing parameter info: " + e.getMessage());
+                                }
+                            }
                         });
                 result.addElement(PrioritizedLookupElement.withPriority(element, 850));
             } else if (constants.contains(definition)) {
-                // Constant with appropriate icon (higher priority after equals)
-                element = LookupElementBuilder.create(definition)
+                LookupElementBuilder element = LookupElementBuilder.create(definition)
                         .withIcon(AllIcons.Nodes.Constant)
                         .withTypeText("constant")
                         .withBoldness(true);
-                result.addElement(PrioritizedLookupElement.withPriority(element, 700));
+                result.addElement(PrioritizedLookupElement.withPriority(element, 800));
             } else if (variables.contains(definition)) {
-                // Variable with appropriate icon (higher priority after equals)
-                element = LookupElementBuilder.create(definition)
+                LookupElementBuilder element = LookupElementBuilder.create(definition)
                         .withIcon(AllIcons.Nodes.Variable)
-                        .withTypeText("variable");
-                result.addElement(PrioritizedLookupElement.withPriority(element, 600));
+                        .withTypeText("variable")
+                        .withInsertHandler((ctx, item) -> {
+                            Editor editor = ctx.getEditor();
+                            
+                            // Add the dot without triggering typed action
+                            EditorModificationUtil.insertStringAtCaret(editor, ".");
+                            
+                            // Force an immediate popup
+                            Project project = ctx.getProject();
+                            if (project != null) {
+                                try {
+                                    AutoPopupController controller = AutoPopupController.getInstance(project);
+                                    controller.autoPopupMemberLookup(editor, null);
+                                } catch (Exception e) {
+                                    LOG.warn("Error showing member lookup: " + e.getMessage());
+                                }
+                            }
+                        });
+                result.addElement(PrioritizedLookupElement.withPriority(element, 750));
             }
         }
         
@@ -647,8 +815,25 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         for (String type : TYPES) {
             LookupElementBuilder element = LookupElementBuilder.create(type)
                     .withIcon(AllIcons.Nodes.Type)
-                    .withTypeText("type");
-            result.addElement(PrioritizedLookupElement.withPriority(element, 450));
+                    .withTypeText("type")
+                    .withInsertHandler((ctx, item) -> {
+                        Editor editor = ctx.getEditor();
+                        
+                        // Add the dot without triggering typed action
+                        EditorModificationUtil.insertStringAtCaret(editor, ".");
+                        
+                        // Force an immediate popup
+                        Project project = ctx.getProject();
+                        if (project != null) {
+                            try {
+                                AutoPopupController controller = AutoPopupController.getInstance(project);
+                                controller.autoPopupMemberLookup(editor, null);
+                            } catch (Exception e) {
+                                LOG.warn("Error showing member lookup: " + e.getMessage());
+                            }
+                        }
+                    });
+            result.addElement(PrioritizedLookupElement.withPriority(element, 700));
         }
         
         // Note: We intentionally don't add keywords in this context
@@ -658,18 +843,85 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      * Adds namespace method completions to the result.
      */
     private void addNamespaceMethodCompletions(CompletionResultSet result, String namespace, String version) {
-        Map<String, String[]> namespaceMethods = NAMESPACE_METHODS_CACHE.getOrDefault(version, 
-                                                 initNamespaceMethodsForVersion(version, CACHED_DEFINITIONS.getOrDefault(version, new ArrayList<>())));
+        LOG.warn(">>>>>> Adding namespace method completions for namespace: " + namespace + ", version: " + version);
         
-        if (namespaceMethods.containsKey(namespace)) {
-            String[] methods = namespaceMethods.get(namespace);
-            for (String method : methods) {
-                LookupElementBuilder element = LookupElementBuilder.create(method)
-                        .withIcon(AllIcons.Nodes.Method)
-                        .withTypeText(namespace + " method")
-                        .withInsertHandler((ctx, item) -> {
-                            // Add parentheses for methods and position caret inside them
-                            Editor editor = ctx.getEditor();
+        // Get the sets for this version
+        Set<String> functions = FUNCTIONS_MAP.getOrDefault(version, new HashSet<>());
+        Set<String> variables = VARIABLES_MAP.getOrDefault(version, new HashSet<>());
+        Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
+        
+        // First check if it's a built-in namespace
+        if (Arrays.asList(NAMESPACES).contains(namespace)) {
+            Map<String, String[]> namespaceMethods = NAMESPACE_METHODS_CACHE.getOrDefault(version, 
+                                                 initNamespaceMethodsForVersion(version, CACHED_DEFINITIONS.getOrDefault(version, new ArrayList<>())));
+            
+            if (namespaceMethods.containsKey(namespace)) {
+                String[] methods = namespaceMethods.get(namespace);
+                LOG.warn(">>>>>> Found " + methods.length + " methods for built-in namespace: " + namespace);
+                
+                for (String method : methods) {
+                    LookupElementBuilder element = LookupElementBuilder.create(method)
+                            .withIcon(AllIcons.Nodes.Method)
+                            .withTypeText(namespace + " method")
+                            .withInsertHandler((ctx, item) -> {
+                                // Add parentheses for methods and position caret inside them
+                                Editor editor = ctx.getEditor();
+                                EditorModificationUtil.insertStringAtCaret(editor, "()");
+                                editor.getCaretModel().moveToOffset(ctx.getTailOffset() - 1);
+                                
+                                // Trigger parameter info popup
+                                ApplicationManager.getApplication().invokeLater(() -> {
+                                    AutoPopupController.getInstance(ctx.getProject()).autoPopupParameterInfo(editor, null);
+                                });
+                            });
+                    result.addElement(PrioritizedLookupElement.withPriority(element, 900));
+                }
+            } else {
+                LOG.warn(">>>>>> No methods found for built-in namespace: " + namespace);
+            }
+        } else {
+            LOG.warn(">>>>>> Not a built-in namespace: " + namespace);
+        }
+        
+        // Add function namespace members
+        Set<String> functionMembers = new HashSet<>();
+        for (String func : functions) {
+            if (func.contains(".") && func.startsWith(namespace + ".")) {
+                String member = func.substring(namespace.length() + 1);
+                // Handle possible multi-level namespaces
+                if (member.contains(".")) {
+                    // Extract only the next level
+                    member = member.substring(0, member.indexOf('.'));
+                    functionMembers.add(member);
+                } else {
+                    functionMembers.add(member);
+                }
+            }
+        }
+        
+        LOG.warn(">>>>>> Found " + functionMembers.size() + " function members for namespace: " + namespace);
+        if (functionMembers.size() < 10) {
+            LOG.warn(">>>>>> Function members: " + functionMembers);
+        }
+        
+        // Add function members with appropriate icons and insert handlers
+        for (String member : functionMembers) {
+            LookupElementBuilder element = LookupElementBuilder.create(member)
+                    .withIcon(AllIcons.Nodes.Function)
+                    .withTypeText(namespace + " function")
+                    .withInsertHandler((ctx, item) -> {
+                        // Check if this is a function or a sub-namespace
+                        boolean isFunction = false;
+                        for (String func : functions) {
+                            if (func.equals(namespace + "." + member)) {
+                                isFunction = true;
+                                break;
+                            }
+                        }
+                        
+                        Editor editor = ctx.getEditor();
+                        if (isFunction) {
+                            // Add parentheses for functions and position caret inside them
                             EditorModificationUtil.insertStringAtCaret(editor, "()");
                             editor.getCaretModel().moveToOffset(ctx.getTailOffset() - 1);
                             
@@ -677,8 +929,148 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                             ApplicationManager.getApplication().invokeLater(() -> {
                                 AutoPopupController.getInstance(ctx.getProject()).autoPopupParameterInfo(editor, null);
                             });
-                        });
-                result.addElement(element);
+                        } else {
+                            // It's a sub-namespace, add a dot and trigger member lookup
+                            EditorModificationUtil.insertStringAtCaret(editor, ".");
+                            ApplicationManager.getApplication().invokeLater(() -> {
+                                AutoPopupController.getInstance(ctx.getProject()).scheduleAutoPopup(editor);
+                            });
+                        }
+                    });
+            result.addElement(PrioritizedLookupElement.withPriority(element, 850));
+        }
+        
+        // Add namespace members for variables
+        Set<String> variableMembers = new HashSet<>();
+        for (String var : variables) {
+            if (var.contains(".") && var.startsWith(namespace + ".")) {
+                String member = var.substring(namespace.length() + 1);
+                // Handle possible multi-level namespaces
+                if (member.contains(".")) {
+                    // Extract only the next level
+                    member = member.substring(0, member.indexOf('.'));
+                    variableMembers.add(member);
+                } else {
+                    variableMembers.add(member);
+                }
+            }
+        }
+        
+        LOG.warn(">>>>>> Found " + variableMembers.size() + " variable members for namespace: " + namespace);
+        if (variableMembers.size() < 10) {
+            LOG.warn(">>>>>> Variable members: " + variableMembers);
+        }
+        
+        // Add variable members with appropriate icons and insert handlers
+        for (String member : variableMembers) {
+            // Skip if we already added this member as a function
+            if (functionMembers.contains(member)) {
+                LOG.warn(">>>>>> Skipping variable member '" + member + "' as it was already added as a function member");
+                continue;
+            }
+            
+            LookupElementBuilder element = LookupElementBuilder.create(member)
+                    .withIcon(AllIcons.Nodes.Variable)
+                    .withTypeText(namespace + " variable")
+                    .withInsertHandler((ctx, item) -> {
+                        // Check if this is a variable or a sub-namespace
+                        boolean isVariable = false;
+                        for (String var : variables) {
+                            if (var.equals(namespace + "." + member)) {
+                                isVariable = true;
+                                break;
+                            }
+                        }
+                        
+                        Editor editor = ctx.getEditor();
+                        if (!isVariable) {
+                            // It's a sub-namespace, add a dot and trigger member lookup
+                            EditorModificationUtil.insertStringAtCaret(editor, ".");
+                            ApplicationManager.getApplication().invokeLater(() -> {
+                                AutoPopupController.getInstance(ctx.getProject()).scheduleAutoPopup(editor);
+                            });
+                        }
+                    });
+            result.addElement(PrioritizedLookupElement.withPriority(element, 750));
+        }
+        
+        // Add namespace members for constants
+        Set<String> constantMembers = new HashSet<>();
+        for (String cons : constants) {
+            if (cons.contains(".") && cons.startsWith(namespace + ".")) {
+                String member = cons.substring(namespace.length() + 1);
+                // Handle possible multi-level namespaces
+                if (member.contains(".")) {
+                    // Extract only the next level
+                    member = member.substring(0, member.indexOf('.'));
+                    constantMembers.add(member);
+                } else {
+                    constantMembers.add(member);
+                }
+            }
+        }
+        
+        LOG.warn(">>>>>> Found " + constantMembers.size() + " constant members for namespace: " + namespace);
+        if (constantMembers.size() < 10) {
+            LOG.warn(">>>>>> Constant members: " + constantMembers);
+        }
+        
+        // Add constant members with appropriate icons and insert handlers
+        for (String member : constantMembers) {
+            // Skip if we already added this member as a function or variable
+            if (functionMembers.contains(member) || variableMembers.contains(member)) {
+                LOG.warn(">>>>>> Skipping constant member '" + member + "' as it was already added as a function or variable member");
+                continue;
+            }
+            
+            LookupElementBuilder element = LookupElementBuilder.create(member)
+                    .withIcon(AllIcons.Nodes.Constant)
+                    .withTypeText(namespace + " constant")
+                    .withInsertHandler((ctx, item) -> {
+                        // Check if this is a constant or a sub-namespace
+                        boolean isConstant = false;
+                        for (String cons : constants) {
+                            if (cons.equals(namespace + "." + member)) {
+                                isConstant = true;
+                                break;
+                            }
+                        }
+                        
+                        Editor editor = ctx.getEditor();
+                        if (!isConstant) {
+                            // It's a sub-namespace, add a dot and trigger member lookup
+                            EditorModificationUtil.insertStringAtCaret(editor, ".");
+                            ApplicationManager.getApplication().invokeLater(() -> {
+                                AutoPopupController.getInstance(ctx.getProject()).scheduleAutoPopup(editor);
+                            });
+                        }
+                    });
+            result.addElement(PrioritizedLookupElement.withPriority(element, 800));
+        }
+        
+        // Make sure we deduplicate members
+        Set<String> allAddedMembers = new HashSet<>();
+        allAddedMembers.addAll(functionMembers);
+        allAddedMembers.addAll(variableMembers);
+        allAddedMembers.addAll(constantMembers);
+        
+        LOG.warn(">>>>>> Added " + allAddedMembers.size() + " total members for namespace: " + namespace);
+        
+        // If we didn't find any members, this may be a custom namespace without proper registration
+        if (allAddedMembers.isEmpty()) {
+            LOG.warn(">>>>>> No members found for namespace: " + namespace + ". This may be a custom namespace.");
+            
+            // Dump all definitions to check for potential matches
+            List<String> definitions = CACHED_DEFINITIONS.getOrDefault(version, new ArrayList<>());
+            LOG.warn(">>>>>> Checking " + definitions.size() + " total definitions for any that might contain '" + namespace + "'");
+            
+            int found = 0;
+            for (String def : definitions) {
+                if (def.contains(namespace)) {
+                    LOG.warn(">>>>>> Related definition: " + def);
+                    found++;
+                    if (found >= 20) break; // Limit output
+                }
             }
         }
     }
@@ -990,55 +1382,165 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         Set<String> variables = VARIABLES_MAP.getOrDefault(version, new HashSet<>());
         Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
         
-        // Add built-in variables from the cached definitions
+        // Add built-in definitions from the cached definitions with namespace handling
         List<String> definitions = CACHED_DEFINITIONS.getOrDefault(version, new ArrayList<>());
+        // Use sets to avoid duplicate namespace suggestions
+        Set<String> addedFunctionNamespaces = new HashSet<>();
+        Set<String> addedVariableNamespaces = new HashSet<>();
+        Set<String> addedConstantNamespaces = new HashSet<>();
+        
         for (String definition : definitions) {
-            LookupElementBuilder element;
+            // If the definition contains a dot, add a namespace suggestion and skip full name
+            if (definition.contains(".")) {
+                String ns = definition.substring(0, definition.indexOf('.'));
+                if (functions.contains(definition) && !addedFunctionNamespaces.contains(ns)) {
+                    addedFunctionNamespaces.add(ns);
+                    LookupElementBuilder nsElement = LookupElementBuilder.create(ns)
+                        .withIcon(AllIcons.Nodes.Function)
+                        .withTypeText("function namespace")
+                        .withInsertHandler((ctx, item) -> {
+                            Editor editor = ctx.getEditor();
+                            
+                            // Add the dot without triggering typed action
+                            EditorModificationUtil.insertStringAtCaret(editor, ".");
+                            
+                            // Force an immediate popup
+                            Project project = ctx.getProject();
+                            if (project != null) {
+                                try {
+                                    AutoPopupController controller = AutoPopupController.getInstance(project);
+                                    controller.autoPopupMemberLookup(editor, null);
+                                } catch (Exception e) {
+                                    LOG.warn("Error showing member lookup: " + e.getMessage());
+                                }
+                            }
+                        });
+                    result.addElement(PrioritizedLookupElement.withPriority(nsElement, 850));
+                }
+                if (variables.contains(definition) && !addedVariableNamespaces.contains(ns)) {
+                    addedVariableNamespaces.add(ns);
+                    LookupElementBuilder nsElement = LookupElementBuilder.create(ns)
+                        .withIcon(AllIcons.Nodes.Variable)
+                        .withTypeText("variable namespace")
+                        .withInsertHandler((ctx, item) -> {
+                            Editor editor = ctx.getEditor();
+                            
+                            // Add the dot without triggering typed action
+                            EditorModificationUtil.insertStringAtCaret(editor, ".");
+                            
+                            // Force an immediate popup
+                            Project project = ctx.getProject();
+                            if (project != null) {
+                                try {
+                                    AutoPopupController controller = AutoPopupController.getInstance(project);
+                                    controller.autoPopupMemberLookup(editor, null);
+                                } catch (Exception e) {
+                                    LOG.warn("Error showing member lookup: " + e.getMessage());
+                                }
+                            }
+                        });
+                    result.addElement(PrioritizedLookupElement.withPriority(nsElement, 750));
+                }
+                if (constants.contains(definition) && !addedConstantNamespaces.contains(ns)) {
+                    addedConstantNamespaces.add(ns);
+                    LookupElementBuilder nsElement = LookupElementBuilder.create(ns)
+                        .withIcon(AllIcons.Nodes.Constant)
+                        .withTypeText("constant namespace")
+                        .withInsertHandler((ctx, item) -> {
+                            Editor editor = ctx.getEditor();
+                            
+                            // Add the dot without triggering typed action
+                            EditorModificationUtil.insertStringAtCaret(editor, ".");
+                            
+                            // Force an immediate popup
+                            Project project = ctx.getProject();
+                            if (project != null) {
+                                try {
+                                    AutoPopupController controller = AutoPopupController.getInstance(project);
+                                    controller.autoPopupMemberLookup(editor, null);
+                                } catch (Exception e) {
+                                    LOG.warn("Error showing member lookup: " + e.getMessage());
+                                }
+                            }
+                        });
+                    result.addElement(PrioritizedLookupElement.withPriority(nsElement, 800));
+                }
+                continue; // do not add the full namespaced definition
+            }
+            
+            // For non-namespaced definitions, use the existing logic
             if (Arrays.asList(NAMESPACES).contains(definition)) {
-                // For namespaces, add a dot automatically
-                element = LookupElementBuilder.create(definition)
+                LookupElementBuilder element = LookupElementBuilder.create(definition)
                         .withIcon(AllIcons.Nodes.Package)
                         .withTypeText("namespace")
                         .withInsertHandler((ctx, item) -> {
                             Editor editor = ctx.getEditor();
+                            
+                            // Add the dot without triggering typed action
                             EditorModificationUtil.insertStringAtCaret(editor, ".");
                             
-                            // Trigger autocompletion for namespace methods
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                AutoPopupController.getInstance(ctx.getProject()).autoPopupMemberLookup(editor, null);
-                            });
+                            // Force an immediate popup
+                            Project project = ctx.getProject();
+                            if (project != null) {
+                                try {
+                                    AutoPopupController controller = AutoPopupController.getInstance(project);
+                                    controller.autoPopupMemberLookup(editor, null);
+                                } catch (Exception e) {
+                                    LOG.warn("Error showing member lookup: " + e.getMessage());
+                                }
+                            }
                         });
                 result.addElement(PrioritizedLookupElement.withPriority(element, 900));
             } else if (functions.contains(definition)) {
-                // Function with appropriate icon - right after local variables 
-                element = LookupElementBuilder.create(definition)
+                LookupElementBuilder element = LookupElementBuilder.create(definition)
                         .withIcon(AllIcons.Nodes.Function)
                         .withTypeText("function")
                         .withTailText("()", true)
                         .withInsertHandler((ctx, item) -> {
-                            // Add parentheses for functions and position cursor inside
                             Editor editor = ctx.getEditor();
-                            EditorModificationUtil.insertStringAtCaret(editor, "()");
-                            editor.getCaretModel().moveToOffset(ctx.getTailOffset() - 1);
                             
-                            // Trigger parameter info popup
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                AutoPopupController.getInstance(ctx.getProject()).autoPopupParameterInfo(editor, null);
-                            });
+                            // Add the dot without triggering typed action
+                            EditorModificationUtil.insertStringAtCaret(editor, "()");
+                            
+                            // Force an immediate popup
+                            Project project = ctx.getProject();
+                            if (project != null) {
+                                try {
+                                    AutoPopupController controller = AutoPopupController.getInstance(project);
+                                    controller.autoPopupParameterInfo(editor, null);
+                                } catch (Exception e) {
+                                    LOG.warn("Error showing parameter info: " + e.getMessage());
+                                }
+                            }
                         });
                 result.addElement(PrioritizedLookupElement.withPriority(element, 850));
             } else if (constants.contains(definition)) {
-                // Constant with appropriate icon
-                element = LookupElementBuilder.create(definition)
+                LookupElementBuilder element = LookupElementBuilder.create(definition)
                         .withIcon(AllIcons.Nodes.Constant)
                         .withTypeText("constant")
                         .withBoldness(true);
                 result.addElement(PrioritizedLookupElement.withPriority(element, 800));
-            } else {
-                // Variable with appropriate icon
-                element = LookupElementBuilder.create(definition)
+            } else if (variables.contains(definition)) {
+                LookupElementBuilder element = LookupElementBuilder.create(definition)
                         .withIcon(AllIcons.Nodes.Variable)
-                        .withTypeText("variable");
+                        .withTypeText("variable")
+                        .withInsertHandler((ctx, item) -> {
+                            Editor editor = ctx.getEditor();
+                            
+                            // Add the dot without triggering typed action
+                            EditorModificationUtil.insertStringAtCaret(editor, ".");
+                            
+                            // Force an immediate popup
+                            Project project = ctx.getProject();
+                            if (project != null) {
+                                try {
+                                    AutoPopupController controller = AutoPopupController.getInstance(project);
+                                    controller.autoPopupMemberLookup(editor, null);
+                                } catch (Exception e) {
+                                    LOG.warn("Error showing member lookup: " + e.getMessage());
+                                }
+                            }
+                        });
                 result.addElement(PrioritizedLookupElement.withPriority(element, 750));
             }
         }
@@ -1047,7 +1549,24 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         for (String type : TYPES) {
             LookupElementBuilder element = LookupElementBuilder.create(type)
                     .withIcon(AllIcons.Nodes.Type)
-                    .withTypeText("type");
+                    .withTypeText("type")
+                    .withInsertHandler((ctx, item) -> {
+                        Editor editor = ctx.getEditor();
+                        
+                        // Add the dot without triggering typed action
+                        EditorModificationUtil.insertStringAtCaret(editor, ".");
+                        
+                        // Force an immediate popup
+                        Project project = ctx.getProject();
+                        if (project != null) {
+                            try {
+                                AutoPopupController controller = AutoPopupController.getInstance(project);
+                                controller.autoPopupMemberLookup(editor, null);
+                            } catch (Exception e) {
+                                LOG.warn("Error showing member lookup: " + e.getMessage());
+                            }
+                        }
+                    });
             result.addElement(PrioritizedLookupElement.withPriority(element, 700));
         }
     }
@@ -1263,12 +1782,18 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             TypedAction typedAction = actionManager.getTypedAction();
             TypedActionHandler oldHandler = typedAction.getRawHandler();
             
+            LOG.warn(">>>>>> Installing PineScript CompletionAutoPopupHandler");
+            
             typedAction.setupRawHandler(new TypedActionHandler() {
                 @Override
                 public void execute(@NotNull Editor editor, char c, @NotNull DataContext dataContext) {
                     if (oldHandler != null) {
                         oldHandler.execute(editor, c, dataContext);
                     }
+                    
+                    // Bail early if not in a Pine Script file
+                    Project project = editor.getProject();
+                    if (project == null) return;
                     
                     // Get document and current offset
                     Document document = editor.getDocument();
@@ -1282,64 +1807,80 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         return;
                     }
                     
-                    boolean isInsideFunction = false;
-                    
-                    // Check if we're inside function parentheses
-                    int openCount = 0;
-                    int closeCount = 0;
-                    for (int i = 0; i < offset; i++) {
-                        char ch = documentText.charAt(i);
-                        if (ch == '(') openCount++;
-                        else if (ch == ')') closeCount++;
-                    }
-                    isInsideFunction = openCount > closeCount;
-                    
-                    // Check for ":=" operator
-                    boolean isAfterColonEquals = false;
-                    if (c == '=' && offset >= 2) {
-                        char prevChar = documentText.charAt(offset - 2);
-                        if (prevChar == ':') {
-                            isAfterColonEquals = true;
-                        }
-                    }
-                    
-                    // Check for spaces after '=' or ':='
-                    boolean isSpaceAfterEquals = false;
-                    if (c == ' ' && offset >= 2) {
-                        // Look back for an equals sign before this space
-                        int pos = offset - 2;
-                        while (pos >= 0 && Character.isWhitespace(documentText.charAt(pos))) {
-                            pos--;
+                    // Trigger auto popup when a dot is typed - this is critical for namespace members
+                    if (c == '.') {
+                        LOG.warn(">>>>>> DOT TYPED at offset " + offset + ", triggering member lookup");
+                        
+                        // Find what's before the dot to log debugging info
+                        if (offset > 1) {
+                            String textBeforeCursor = documentText.substring(0, offset);
+                            String namespace = findNamespaceBeforeDot(textBeforeCursor);
+                            LOG.warn(">>>>>> Namespace before dot (from handler): " + namespace);
                         }
                         
-                        // If found equals sign
-                        if (pos >= 0 && documentText.charAt(pos) == '=') {
-                            isSpaceAfterEquals = true;
-                            LOG.info("Detected space after equals sign, triggering autocomplete");
-                        }
-                    }
-                    
-                    // Trigger after equals sign always, with high priority
-                    if (c == '=' || isAfterColonEquals || isSpaceAfterEquals) {
-                        Project project = editor.getProject();
-                        if (project != null) {
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                // Use a small delay to ensure text is updated before popup
-                                AutoPopupController.getInstance(project).scheduleAutoPopup(editor);
-                            });
-                        }
+                        // Force immediate popup - must happen on the UI thread
+                        ApplicationManager.getApplication().invokeLater(() -> {
+                            PsiDocumentManager.getInstance(project).commitDocument(editor.getDocument());
+                            LOG.warn(">>>>>> Invoking member lookup for editor");
+                            
+                            // Try multiple auto-popup methods for redundancy
+                            try {
+                                // First try direct member lookup (most reliable)
+                                AutoPopupController controller = AutoPopupController.getInstance(project);
+                                controller.autoPopupMemberLookup(editor, null);
+                                
+                                // Schedule a backup approach with a slight delay
+                                ApplicationManager.getApplication().invokeLater(() -> {
+                                    try {
+                                        LOG.warn(">>>>>> Backup: Scheduling general completion popup");
+                                        controller.scheduleAutoPopup(editor);
+                                        
+                                        // Manually attempt to insert a dummy character and delete it to force a refresh
+                                        ApplicationManager.getApplication().invokeLater(() -> {
+                                            try {
+                                                LOG.warn(">>>>>> Last resort: Forcing code completion refresh");
+                                                controller.scheduleAutoPopup(editor);
+                                            } catch (Exception e) {
+                                                LOG.warn("Error in last resort code completion: " + e.getMessage());
+                                            }
+                                        }, ModalityState.current(), project.getDisposed());
+                                    } catch (Exception e) {
+                                        LOG.warn("Error in backup code completion: " + e.getMessage());
+                                    }
+                                }, ModalityState.current(), project.getDisposed());
+                            } catch (Exception e) {
+                                LOG.error("Error showing code completion: " + e.getMessage(), e);
+                            }
+                        }, ModalityState.current());
                         return;
                     }
                     
                     // Trigger completion popup for parentheses, comma, or space inside function
-                    if (c == '(' || c == ',' || (c == ' ' && isInsideFunction)) {
-                        Project project = editor.getProject();
+                    if (c == '(' || c == ',' || (c == ' ' && isInsideFunctionCall(documentText, offset))) {
+                        // Use the project we already have
                         if (project != null) {
                             ApplicationManager.getApplication().invokeLater(() -> {
                                 AutoPopupController.getInstance(project).scheduleAutoPopup(editor);
                             });
                         }
                     }
+                }
+                
+                /**
+                 * Helper method to determine if the cursor is inside a function call
+                 */
+                private boolean isInsideFunctionCall(String text, int offset) {
+                    // Simple check: look for an open parenthesis that's not closed
+                    int openCount = 0;
+                    int closeCount = 0;
+                    
+                    for (int i = 0; i < text.length() && i < offset; i++) {
+                        char c = text.charAt(i);
+                        if (c == '(') openCount++;
+                        else if (c == ')') closeCount++;
+                    }
+                    
+                    return openCount > closeCount;
                 }
             });
         }

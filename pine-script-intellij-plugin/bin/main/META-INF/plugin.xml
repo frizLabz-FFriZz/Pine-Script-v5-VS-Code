@@ -50,6 +50,14 @@
                                 implementationClass="com.pinescript.plugin.completion.PineScriptCompletionContributor" 
                                 order="first"/>
         
+        <!-- Auto-popup completion configuration -->
+        <completion.autoPopup language="Pine Script"
+                             implementationClass="com.intellij.codeInsight.completion.AutoPopupCompletion"/>
+        
+        <!-- Custom handler for auto-popup completion -->
+        <typedHandler implementation="com.pinescript.plugin.completion.PineScriptAutoPopupCompletion" 
+                     order="first"/>
+        
         <!-- Color scheme -->
         <bundledColorScheme path="/schemes/PineScriptScheme.xml"/>
         
