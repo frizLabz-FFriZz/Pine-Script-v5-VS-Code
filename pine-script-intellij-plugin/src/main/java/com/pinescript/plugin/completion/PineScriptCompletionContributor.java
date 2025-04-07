@@ -201,12 +201,38 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                    
                                    if (isInsideFunctionCall && currentFunctionName != null) {
                                        LOG.info("Suggesting parameters and full completions for: " + currentFunctionName + ", param index: " + currentParamIndex);
-                                       // First add parameter completions with high priority
-                                       addParameterCompletions(result, currentFunctionName, currentParamIndex, version);
-                                       // Then add standard completions with lower priority
-                                       addStandardCompletions(parameters, result, documentText, offset, version);
-                                       // Also add local variables
-                                       addScannedCompletions(parameters, result);
+                                       
+                                       // Check if we're after an equals sign in a parameter
+                                       boolean isAfterEquals = false;
+                                       int lastOpenParenPos = textBeforeCursor.lastIndexOf('(');
+                                       if (lastOpenParenPos != -1) {
+                                           String parametersList = textBeforeCursor.substring(lastOpenParenPos + 1);
+                                           String[] params = parametersList.split(",");
+                                           String currentParameterSegment = params[params.length - 1].trim();
+                                           if (currentParameterSegment.contains("=")) {
+                                               isAfterEquals = true;
+                                           }
+                                       }
+                                       
+                                       if (isAfterEquals) {
+                                           // After equals in parameter, prioritize standard completions
+                                           LOG.info("After equals in parameter, showing standard completions first");
+                                           // First add standard completions with higher priority
+                                           addStandardCompletions(parameters, result, documentText, offset, version);
+                                           // Also add local variables with highest priority
+                                           addScannedCompletions(parameters, result);
+                                           // Then add parameter completions with lower priority
+                                           addParameterCompletions(result, currentFunctionName, currentParamIndex, version);
+                                       } else {
+                                           // In function header, parameters first
+                                           LOG.info("In function header, prioritizing parameters");
+                                           // First add parameter completions with highest priority
+                                           addParameterCompletions(result, currentFunctionName, currentParamIndex, version);
+                                           // Then add standard completions with lower priority
+                                           addStandardCompletions(parameters, result, documentText, offset, version);
+                                           // Also add local variables
+                                           addScannedCompletions(parameters, result);
+                                       }
                                    } else {
                                        // Fallback to function parameters and standard completions if context check failed
                                        addFunctionParameterCompletions(result, functionName, version);
@@ -771,7 +797,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                 Editor editor = ctx.getEditor();
                                 editor.getCaretModel().moveToOffset(ctx.getTailOffset());
                             });
-                    result.addElement(PrioritizedLookupElement.withPriority(namedElement, 1000)); // Higher priority for parameter names
+                    result.addElement(PrioritizedLookupElement.withPriority(namedElement, 2000)); // Highest priority for current parameter
                     
                     // Also suggest possible values based on parameter type
                     Map<String, String> valueSuggestions = getValueSuggestionsForType(paramType, paramName, functionName, paramIndex);
@@ -779,7 +805,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         LookupElementBuilder element = LookupElementBuilder.create(entry.getKey())
                                 .withTypeText(entry.getValue())
                                 .withIcon(AllIcons.Nodes.Parameter);
-                        result.addElement(PrioritizedLookupElement.withPriority(element, 950)); // Higher priority for parameter values
+                        result.addElement(PrioritizedLookupElement.withPriority(element, 1950)); // Very high priority for parameter values
                     }
                 }
             }
@@ -801,7 +827,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                     Editor editor = ctx.getEditor();
                                     editor.getCaretModel().moveToOffset(ctx.getTailOffset());
                                 });
-                        result.addElement(PrioritizedLookupElement.withPriority(element, 900)); // High priority but lower than current parameter
+                        result.addElement(PrioritizedLookupElement.withPriority(element, 1900)); // High priority for other parameters
                     }
                 }
             }
@@ -814,7 +840,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 LookupElementBuilder element = LookupElementBuilder.create(entry.getKey())
                         .withTypeText(entry.getValue())
                         .withIcon(AllIcons.Nodes.Parameter);
-                result.addElement(PrioritizedLookupElement.withPriority(element, 920)); // High priority for special suggestions
+                result.addElement(PrioritizedLookupElement.withPriority(element, 1920)); // High priority for special parameter suggestions
             }
         }
     }
