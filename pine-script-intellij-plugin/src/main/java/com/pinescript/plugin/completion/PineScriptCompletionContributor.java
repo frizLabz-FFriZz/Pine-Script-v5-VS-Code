@@ -491,8 +491,12 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         
         // Check if we're after a parameter equals sign - need full completions there
         boolean isAfterParamEquals = false;
+        boolean isAfterEqualsSign = false;
+        
         if (offset > 1) {
             String textBeforeCursor = documentText.substring(0, offset);
+            
+            // Check for parameter equals in function
             int lastOpenParen = textBeforeCursor.lastIndexOf('(');
             if (lastOpenParen != -1) {
                 int equalsIndex = textBeforeCursor.lastIndexOf('=');
@@ -505,14 +509,114 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                     }
                 }
             }
+            
+            // Check if we're after '=' or ':=' (possibly with trailing spaces)
+            String trimmedEnd = textBeforeCursor.trim();
+            if (trimmedEnd.endsWith("=")) {
+                isAfterEqualsSign = true;
+                LOG.info("Detected cursor after '=' sign, adjusting suggestions");
+            } else if (trimmedEnd.endsWith(":=")) {
+                isAfterEqualsSign = true;
+                LOG.info("Detected cursor after ':=' sign, adjusting suggestions");
+            }
         }
         
-        // Add standard completions - we no longer need separate handling for function params
-        // since that's handled in the main addCompletions method now
-        LOG.info("Adding standard completions for version: " + version);
-        addStandardCompletions(parameters, result, documentText, offset, version);
-        // Add variables and functions from the current document
-        addScannedCompletions(parameters, result);
+        // Add standard completions with appropriate priorities based on context
+        if (isAfterEqualsSign) {
+            // After = or :=, we want local variables first, then variables, then functions (no keywords)
+            LOG.info("Adding context-specific completions after equals sign");
+            
+            // First add local variables from the current document (highest priority)
+            addScannedCompletions(parameters, result);
+            
+            // Then add standard variables and functions with adjusted priorities
+            // We'll modify addStandardCompletions to respect this special case
+            addStandardCompletionsAfterEquals(parameters, result, documentText, offset, version);
+        } else {
+            // Standard behavior for other contexts
+            LOG.info("Adding standard completions for version: " + version);
+            addStandardCompletions(parameters, result, documentText, offset, version);
+            // Add variables and functions from the current document
+            addScannedCompletions(parameters, result);
+        }
+    }
+    
+    /**
+     * Specialized version of addStandardCompletions for after equals signs
+     * Orders suggestions with local variables first, then variables, then functions
+     * and omits keywords
+     */
+    private void addStandardCompletionsAfterEquals(@NotNull CompletionParameters parameters, 
+                                       @NotNull CompletionResultSet result,
+                                       String documentText, int offset,
+                                       String version) {
+        // Get sets for this version
+        Set<String> functions = FUNCTIONS_MAP.getOrDefault(version, new HashSet<>());
+        Set<String> variables = VARIABLES_MAP.getOrDefault(version, new HashSet<>());
+        Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
+        
+        // Add built-in variables from the cached definitions
+        List<String> definitions = CACHED_DEFINITIONS.getOrDefault(version, new ArrayList<>());
+        for (String definition : definitions) {
+            LookupElementBuilder element;
+            if (Arrays.asList(NAMESPACES).contains(definition)) {
+                // For namespaces, add a dot automatically
+                element = LookupElementBuilder.create(definition)
+                        .withIcon(AllIcons.Nodes.Package)
+                        .withTypeText("namespace")
+                        .withInsertHandler((ctx, item) -> {
+                            Editor editor = ctx.getEditor();
+                            EditorModificationUtil.insertStringAtCaret(editor, ".");
+                            
+                            // Trigger autocompletion for namespace methods
+                            ApplicationManager.getApplication().invokeLater(() -> {
+                                AutoPopupController.getInstance(ctx.getProject()).autoPopupMemberLookup(editor, null);
+                            });
+                        });
+                result.addElement(PrioritizedLookupElement.withPriority(element, 500));
+            } else if (functions.contains(definition)) {
+                // Function with appropriate icon (lower priority after equals)
+                element = LookupElementBuilder.create(definition)
+                        .withIcon(AllIcons.Nodes.Function)
+                        .withTypeText("function")
+                        .withTailText("()", true)
+                        .withInsertHandler((ctx, item) -> {
+                            // Add parentheses for functions and position cursor inside
+                            Editor editor = ctx.getEditor();
+                            EditorModificationUtil.insertStringAtCaret(editor, "()");
+                            editor.getCaretModel().moveToOffset(ctx.getTailOffset() - 1);
+                            
+                            // Trigger parameter info popup
+                            ApplicationManager.getApplication().invokeLater(() -> {
+                                AutoPopupController.getInstance(ctx.getProject()).autoPopupParameterInfo(editor, null);
+                            });
+                        });
+                result.addElement(PrioritizedLookupElement.withPriority(element, 400));
+            } else if (constants.contains(definition)) {
+                // Constant with appropriate icon (higher priority after equals)
+                element = LookupElementBuilder.create(definition)
+                        .withIcon(AllIcons.Nodes.Constant)
+                        .withTypeText("constant")
+                        .withBoldness(true);
+                result.addElement(PrioritizedLookupElement.withPriority(element, 700));
+            } else if (variables.contains(definition)) {
+                // Variable with appropriate icon (higher priority after equals)
+                element = LookupElementBuilder.create(definition)
+                        .withIcon(AllIcons.Nodes.Variable)
+                        .withTypeText("variable");
+                result.addElement(PrioritizedLookupElement.withPriority(element, 600));
+            }
+        }
+        
+        // Add type names with medium priority
+        for (String type : TYPES) {
+            LookupElementBuilder element = LookupElementBuilder.create(type)
+                    .withIcon(AllIcons.Nodes.Type)
+                    .withTypeText("type");
+            result.addElement(PrioritizedLookupElement.withPriority(element, 450));
+        }
+        
+        // Note: We intentionally don't add keywords in this context
     }
     
     /**
@@ -936,7 +1040,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             LookupElementBuilder element = LookupElementBuilder.create(varName)
                     .withIcon(AllIcons.Nodes.Variable)
                     .withTypeText("local var");
-            result.addElement(PrioritizedLookupElement.withPriority(element, 600));
+            // Significantly increase priority for local variables so they appear at the top
+            result.addElement(PrioritizedLookupElement.withPriority(element, 1000));
         }
         
         // Also scan for direct assignments like "identifier = value"
@@ -961,7 +1066,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             LookupElementBuilder element = LookupElementBuilder.create(varName)
                     .withIcon(AllIcons.Nodes.Variable)
                     .withTypeText("local var");
-            result.addElement(PrioritizedLookupElement.withPriority(element, 600));
+            // High priority for local variables from assignments
+            result.addElement(PrioritizedLookupElement.withPriority(element, 950));
         }
         
         // Very simplified scan for function declarations
@@ -979,7 +1085,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         EditorModificationUtil.insertStringAtCaret(editor, "()");
                         editor.getCaretModel().moveToOffset(ctx.getTailOffset() - 1);
                     });
-            result.addElement(PrioritizedLookupElement.withPriority(element, 600));
+            // Local functions get high priority but less than local variables
+            result.addElement(PrioritizedLookupElement.withPriority(element, 900));
         }
     }
     
@@ -1152,8 +1259,17 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                     }
                     isInsideFunction = openCount > closeCount;
                     
+                    // Check for ":=" operator
+                    boolean isAfterColonEquals = false;
+                    if (c == '=' && offset >= 2) {
+                        char prevChar = documentText.charAt(offset - 2);
+                        if (prevChar == ':') {
+                            isAfterColonEquals = true;
+                        }
+                    }
+                    
                     // Trigger after equals sign always, with high priority
-                    if (c == '=') {
+                    if (c == '=' || isAfterColonEquals) {
                         Project project = editor.getProject();
                         if (project != null) {
                             ApplicationManager.getApplication().invokeLater(() -> {
