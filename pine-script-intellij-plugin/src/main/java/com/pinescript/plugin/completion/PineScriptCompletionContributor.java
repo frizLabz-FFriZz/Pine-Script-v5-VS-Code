@@ -56,6 +56,48 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     // Pattern to match version in Pine Script files
     private static final Pattern VERSION_PATTERN = Pattern.compile("//@version=(\\d+)");
 
+    /**
+     * Checks if the cursor is inside a string literal.
+     * @param text The document text
+     * @param offset The cursor offset
+     * @return true if the cursor is inside a string literal, false otherwise
+     */
+    private static boolean isInsideString(String text, int offset) {
+        LOG.info("Checking if cursor at offset " + offset + " is inside string");
+        
+        if (offset <= 0 || offset > text.length()) {
+            return false;
+        }
+        
+        // Look at a reasonable number of characters before the cursor
+        int startPos = Math.max(0, offset - 200);
+        String textToCheck = text.substring(startPos, offset);
+        
+        boolean inSingleQuoteString = false;
+        boolean inDoubleQuoteString = false;
+        
+        for (int i = 0; i < textToCheck.length(); i++) {
+            char c = textToCheck.charAt(i);
+            
+            // Handle escape sequences - skip the next character
+            if ((c == '\\') && (i + 1 < textToCheck.length())) {
+                i++;
+                continue;
+            }
+            
+            // Toggle string state based on quotes
+            if (c == '"' && !inSingleQuoteString) {
+                inDoubleQuoteString = !inDoubleQuoteString;
+            } else if (c == '\'' && !inDoubleQuoteString) {
+                inSingleQuoteString = !inSingleQuoteString;
+            }
+        }
+        
+        boolean result = inSingleQuoteString || inDoubleQuoteString;
+        LOG.info("isInsideString result: " + result);
+        return result;
+    }
+
     // Static initialization to load definitions for default version on startup
     static {
         loadDefinitionsForVersion(DEFAULT_VERSION);
@@ -103,6 +145,12 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                        Document document = parameters.getEditor().getDocument();
                        int offset = parameters.getOffset();
                        String documentText = document.getText();
+                       
+                       // Skip autocompletion if inside a string
+                       if (isInsideString(documentText, offset)) {
+                           LOG.info("Cursor is inside a string, skipping autocompletion");
+                           return;
+                       }
                        
                        // Detect Pine Script version from the document
                        String version = detectPineScriptVersion(documentText);
@@ -1086,6 +1134,12 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                     if (offset <= 0) return;
                     
                     String documentText = document.getText();
+                    
+                    // Skip auto-popup if inside a string
+                    if (isInsideString(documentText, offset)) {
+                        return;
+                    }
+                    
                     boolean isInsideFunction = false;
                     
                     // Check if we're inside function parentheses
