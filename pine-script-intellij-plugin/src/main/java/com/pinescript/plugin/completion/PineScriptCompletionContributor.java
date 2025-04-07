@@ -833,10 +833,13 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         .withInsertHandler((ctx, item) -> {
                             Editor editor = ctx.getEditor();
                             
-                            // Add the dot without triggering typed action
+                            // Add parentheses
                             EditorModificationUtil.insertStringAtCaret(editor, "()");
                             
-                            // Force an immediate popup
+                            // Position caret inside the parentheses
+                            editor.getCaretModel().moveToOffset(ctx.getTailOffset() - 1);
+                            
+                            // Force an immediate popup for parameters
                             Project project = ctx.getProject();
                             if (project != null) {
                                 try {
@@ -1503,10 +1506,13 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         .withInsertHandler((ctx, item) -> {
                             Editor editor = ctx.getEditor();
                             
-                            // Add the dot without triggering typed action
+                            // Add parentheses
                             EditorModificationUtil.insertStringAtCaret(editor, "()");
                             
-                            // Force an immediate popup
+                            // Position caret inside the parentheses
+                            editor.getCaretModel().moveToOffset(ctx.getTailOffset() - 1);
+                            
+                            // Force an immediate popup for parameters
                             Project project = ctx.getProject();
                             if (project != null) {
                                 try {
