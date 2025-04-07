@@ -510,14 +510,23 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 }
             }
             
-            // Check if we're after '=' or ':=' (possibly with trailing spaces)
-            String trimmedEnd = textBeforeCursor.trim();
-            if (trimmedEnd.endsWith("=")) {
-                isAfterEqualsSign = true;
-                LOG.info("Detected cursor after '=' sign, adjusting suggestions");
-            } else if (trimmedEnd.endsWith(":=")) {
-                isAfterEqualsSign = true;
-                LOG.info("Detected cursor after ':=' sign, adjusting suggestions");
+            // Improved check for after '=' or ':=' with trailing spaces
+            // First find last non-whitespace character
+            int pos = offset - 1;
+            while (pos >= 0 && Character.isWhitespace(textBeforeCursor.charAt(pos))) {
+                pos--;
+            }
+            
+            // If last non-whitespace char is '='
+            if (pos >= 0 && textBeforeCursor.charAt(pos) == '=') {
+                // Check if it's standalone '=' or ':='
+                if (pos > 0 && textBeforeCursor.charAt(pos - 1) == ':') {
+                    isAfterEqualsSign = true;
+                    LOG.info("Detected cursor after ':=' operator with trailing spaces, adjusting suggestions");
+                } else {
+                    isAfterEqualsSign = true;
+                    LOG.info("Detected cursor after '=' operator with trailing spaces, adjusting suggestions");
+                }
             }
         }
         
@@ -1268,8 +1277,24 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         }
                     }
                     
+                    // Check for spaces after '=' or ':='
+                    boolean isSpaceAfterEquals = false;
+                    if (c == ' ' && offset >= 2) {
+                        // Look back for an equals sign before this space
+                        int pos = offset - 2;
+                        while (pos >= 0 && Character.isWhitespace(documentText.charAt(pos))) {
+                            pos--;
+                        }
+                        
+                        // If found equals sign
+                        if (pos >= 0 && documentText.charAt(pos) == '=') {
+                            isSpaceAfterEquals = true;
+                            LOG.info("Detected space after equals sign, triggering autocomplete");
+                        }
+                    }
+                    
                     // Trigger after equals sign always, with high priority
-                    if (c == '=' || isAfterColonEquals) {
+                    if (c == '=' || isAfterColonEquals || isSpaceAfterEquals) {
                         Project project = editor.getProject();
                         if (project != null) {
                             ApplicationManager.getApplication().invokeLater(() -> {
