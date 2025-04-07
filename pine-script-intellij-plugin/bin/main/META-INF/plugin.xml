@@ -50,13 +50,18 @@
                                 implementationClass="com.pinescript.plugin.completion.PineScriptCompletionContributor" 
                                 order="first"/>
         
-        <!-- Auto-popup completion configuration -->
-        <completion.autoPopup language="Pine Script"
-                             implementationClass="com.intellij.codeInsight.completion.AutoPopupCompletion"/>
+        <!-- Auto-popup completion configuration using CompletionConfidence for better reliability -->
+        <completion.confidence language="Pine Script"
+                             implementationClass="com.pinescript.plugin.completion.PineScriptCompletionTrigger"
+                             order="first" />
+                             
+        <!-- Enable auto-popup for dot, parenthesis, and comma characters -->
+        <completion.autocomplete.charFilter implementation="com.intellij.codeInsight.completion.DefaultCharFilter" 
+                                           order="first" />
         
-        <!-- Custom handler for auto-popup completion -->
+        <!-- Custom typed handler specifically for auto completion (highest priority) -->
         <typedHandler implementation="com.pinescript.plugin.completion.PineScriptAutoPopupCompletion" 
-                     order="first"/>
+                     order="first" id="pineScriptAutoPopup"/>
         
         <!-- Color scheme -->
         <bundledColorScheme path="/schemes/PineScriptScheme.xml"/>

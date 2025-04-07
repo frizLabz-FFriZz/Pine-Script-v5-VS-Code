@@ -180,8 +180,9 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                            
                            // Special handling for namespace methods (after dot)
                            if (textBeforeCursor.endsWith(".")) {
+                               LOG.warn("🔍 [addCompletions] DOT DETECTED at end of text before cursor");
                                String namespace = findNamespaceBeforeDot(textBeforeCursor);
-                               LOG.warn(">>>>>>> Detected namespace before dot: " + namespace);
+                               LOG.warn("🔍 [addCompletions] Namespace detected before dot: '" + namespace + "'");
                                
                                if (namespace != null) {
                                    // Check if this is a known built-in namespace or a custom namespace
@@ -193,9 +194,11 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                    Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
                                    
                                    // Detailed logging of available definitions for debugging
-                                   LOG.info("Checking if namespace '" + namespace + "' is valid:");
-                                   LOG.info("Built-in namespaces: " + Arrays.toString(NAMESPACES));
-                                   LOG.info("Total functions: " + functions.size() + ", variables: " + variables.size() + ", constants: " + constants.size());
+                                   LOG.warn("🔍 [addCompletions] Checking namespace '" + namespace + "': " +
+                                            "is built-in=" + isBuiltInNamespace + 
+                                            ", functions=" + functions.size() + 
+                                            ", variables=" + variables.size() + 
+                                            ", constants=" + constants.size());
                                    
                                    // Check if this is a custom namespace
                                    boolean isCustomNamespace = false;
@@ -209,21 +212,57 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                        }
                                    }
                                    
-                                   LOG.info("Namespace status - built-in: " + isBuiltInNamespace + ", custom: " + isCustomNamespace);
-                                   LOG.info("Found " + matchingDefs.size() + " matching definitions for namespace: " + namespace);
-                                   if (matchingDefs.size() < 10) {
-                                       LOG.info("Matching definitions: " + matchingDefs);
+                                   LOG.warn("🔍 [addCompletions] Namespace '" + namespace + "' status: " + 
+                                            "built-in=" + isBuiltInNamespace + 
+                                            ", custom=" + isCustomNamespace + 
+                                            ", matching definitions=" + matchingDefs.size());
+                                   
+                                   if (matchingDefs.size() < 20 && matchingDefs.size() > 0) {
+                                       LOG.warn("🔍 [addCompletions] Matching definitions: " + matchingDefs);
                                    }
                                    
                                    if (isBuiltInNamespace || isCustomNamespace) {
-                                       LOG.info("Adding methods for namespace: " + namespace);
+                                       LOG.warn("🔍 [addCompletions] VALID NAMESPACE! Calling addNamespaceMethodCompletions for: " + namespace);
                                        addNamespaceMethodCompletions(result, namespace, version);
+                                       
+                                       // Count how many items were added
+                                       try {
+                                           java.lang.reflect.Field field = result.getClass().getDeclaredField("myItems");
+                                           field.setAccessible(true);
+                                           Object itemsObj = field.get(result);
+                                           if (itemsObj instanceof Collection) {
+                                               int itemCount = ((Collection<?>) itemsObj).size();
+                                               LOG.warn("🔍 [addCompletions] Result now contains " + itemCount + " items after adding namespace methods");
+                                               
+                                               // If no items, try to add some debugging suggestions
+                                               if (itemCount == 0) {
+                                                   LOG.warn("🔍 [addCompletions] NO ITEMS FOUND! Adding debugging suggestions");
+                                                   LookupElementBuilder element = LookupElementBuilder.create("debug_item")
+                                                           .withIcon(AllIcons.Nodes.Method)
+                                                           .withTypeText("debug item");
+                                                   result.addElement(PrioritizedLookupElement.withPriority(element, 1000));
+                                                   
+                                                   // Check if we still have zero items - if so, the result might be broken
+                                                   field = result.getClass().getDeclaredField("myItems");
+                                                   field.setAccessible(true);
+                                                   itemsObj = field.get(result);
+                                                   if (itemsObj instanceof Collection) {
+                                                       itemCount = ((Collection<?>) itemsObj).size();
+                                                       LOG.warn("🔍 [addCompletions] After adding debug item, result now contains " + itemCount + " items");
+                                                   }
+                                               }
+                                           }
+                                       } catch (Exception e) {
+                                           LOG.warn("🔍 [addCompletions] Error checking result size: " + e.getMessage());
+                                       }
+                                       
+                                       LOG.warn("🔍 [addCompletions] RETURNING after handling namespace methods");
                                        return; // Stop processing after handling namespace methods
                                    } else {
-                                       LOG.info("Namespace '" + namespace + "' is not recognized as built-in or custom");
+                                       LOG.warn("🔍 [addCompletions] Namespace '" + namespace + "' is not recognized as built-in or custom");
                                    }
                                } else {
-                                   LOG.info("No namespace detected before dot");
+                                   LOG.warn("🔍 [addCompletions] No namespace detected before dot");
                                }
                            }
                            
@@ -307,11 +346,70 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     @Override
     public void fillCompletionVariants(@NotNull CompletionParameters parameters, @NotNull CompletionResultSet result) {
         // Log when completion is triggered
-        LOG.warn("fillCompletionVariants called - type: " + parameters.getCompletionType() + 
+        LOG.warn("🔍 [fillCompletionVariants] CALLED - type: " + parameters.getCompletionType() + 
                  ", invocation count: " + parameters.getInvocationCount());
         
+        Document document = parameters.getEditor().getDocument();
+        int offset = parameters.getOffset();
+        
+        // Log specifically for dot completion
+        if (offset > 0) {
+            String text = document.getText();
+            char prevChar = text.charAt(offset - 1);
+            if (prevChar == '.') {
+                String textBeforeCursor = text.substring(0, offset);
+                String namespace = findNamespaceBeforeDot(textBeforeCursor);
+                LOG.warn("🔍 [fillCompletionVariants] DOT DETECTED! Namespace before dot: '" + namespace + "'");
+                
+                // Check if this is a valid namespace
+                if (namespace != null) {
+                    boolean isBuiltInNamespace = Arrays.asList(NAMESPACES).contains(namespace);
+                    LOG.warn("🔍 [fillCompletionVariants] Is built-in namespace: " + isBuiltInNamespace);
+                    
+                    // Check for custom namespace
+                    String version = detectPineScriptVersion(text);
+                    Set<String> functions = FUNCTIONS_MAP.getOrDefault(version, new HashSet<>());
+                    Set<String> variables = VARIABLES_MAP.getOrDefault(version, new HashSet<>());
+                    Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
+                    
+                    boolean hasMatchingDefinition = false;
+                    for (String def : functions) {
+                        if (def.startsWith(namespace + ".")) {
+                            hasMatchingDefinition = true;
+                            LOG.warn("🔍 [fillCompletionVariants] Found matching function definition: " + def);
+                            break;
+                        }
+                    }
+                    
+                    if (!hasMatchingDefinition) {
+                        for (String def : variables) {
+                            if (def.startsWith(namespace + ".")) {
+                                hasMatchingDefinition = true;
+                                LOG.warn("🔍 [fillCompletionVariants] Found matching variable definition: " + def);
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (!hasMatchingDefinition) {
+                        for (String def : constants) {
+                            if (def.startsWith(namespace + ".")) {
+                                hasMatchingDefinition = true;
+                                LOG.warn("🔍 [fillCompletionVariants] Found matching constant definition: " + def);
+                                break;
+                            }
+                        }
+                    }
+                    
+                    LOG.warn("🔍 [fillCompletionVariants] Has matching definitions for namespace: " + hasMatchingDefinition);
+                }
+            }
+        }
+        
         // Call the parent implementation to handle the standard completion
+        LOG.warn("🔍 [fillCompletionVariants] Calling super.fillCompletionVariants");
         super.fillCompletionVariants(parameters, result);
+        LOG.warn("🔍 [fillCompletionVariants] Returned from super.fillCompletionVariants");
     }
     
     /**
@@ -500,7 +598,11 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      * Finds the namespace before a dot in the text.
      */
     private static String findNamespaceBeforeDot(String text) {
+        LOG.warn("🔍 [findNamespaceBeforeDot] Finding namespace in: \"" + 
+                 (text.length() > 30 ? "..." + text.substring(text.length() - 30) : text) + "\"");
+        
         if (!text.endsWith(".")) {
+            LOG.warn("🔍 [findNamespaceBeforeDot] Text does not end with a dot");
             return null;
         }
         
@@ -519,7 +621,13 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         }
         
         String word = text.substring(lastNonWordChar + 1, text.length() - 1);
-        LOG.info("Found word before dot: " + word);
+        LOG.warn("🔍 [findNamespaceBeforeDot] Found namespace before dot: \"" + word + "\"");
+        
+        // Validate that this is a proper identifier
+        if (word.isEmpty() || !Character.isJavaIdentifierStart(word.charAt(0))) {
+            LOG.warn("🔍 [findNamespaceBeforeDot] Invalid namespace: \"" + word + "\"");
+            return null;
+        }
         
         return word;
     }
@@ -843,12 +951,32 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      * Adds namespace method completions to the result.
      */
     private void addNamespaceMethodCompletions(CompletionResultSet result, String namespace, String version) {
-        LOG.warn(">>>>>> Adding namespace method completions for namespace: " + namespace + ", version: " + version);
+        LOG.warn("🔍 [addNamespaceMethodCompletions] CALLED for namespace: '" + namespace + "', version: " + version);
+        
+        try {
+            // Try to get field access to count elements added
+            java.lang.reflect.Field field = result.getClass().getDeclaredField("myItems");
+            field.setAccessible(true);
+            Object itemsObj = field.get(result);
+            if (itemsObj instanceof Collection) {
+                int initialResultSize = ((Collection<?>) itemsObj).size();
+                LOG.warn("🔍 [addNamespaceMethodCompletions] Initial result size: " + initialResultSize);
+            }
+        } catch (Exception e) {
+            LOG.warn("🔍 [addNamespaceMethodCompletions] Unable to get result size: " + e.getMessage());
+        }
         
         // Get the sets for this version
         Set<String> functions = FUNCTIONS_MAP.getOrDefault(version, new HashSet<>());
         Set<String> variables = VARIABLES_MAP.getOrDefault(version, new HashSet<>());
         Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
+        
+        LOG.warn("🔍 [addNamespaceMethodCompletions] Available sets - functions: " + functions.size() + 
+                 ", variables: " + variables.size() + ", constants: " + constants.size());
+        
+        // Create a dedicated result set with an empty prefix matcher to ensure everything is shown
+        CompletionResultSet exactResult = result.withPrefixMatcher("");
+        LOG.warn("🔍 [addNamespaceMethodCompletions] Created new result set with empty prefix matcher");
         
         // First check if it's a built-in namespace
         if (Arrays.asList(NAMESPACES).contains(namespace)) {
@@ -857,8 +985,14 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             
             if (namespaceMethods.containsKey(namespace)) {
                 String[] methods = namespaceMethods.get(namespace);
-                LOG.warn(">>>>>> Found " + methods.length + " methods for built-in namespace: " + namespace);
+                LOG.warn("🔍 [addNamespaceMethodCompletions] Found " + methods.length + " methods for built-in namespace: " + namespace);
                 
+                if (methods.length > 0) {
+                    LOG.warn("🔍 [addNamespaceMethodCompletions] First 10 methods: " + 
+                             String.join(", ", Arrays.copyOfRange(methods, 0, Math.min(10, methods.length))));
+                }
+                
+                int addedCount = 0;
                 for (String method : methods) {
                     LookupElementBuilder element = LookupElementBuilder.create(method)
                             .withIcon(AllIcons.Nodes.Method)
@@ -874,13 +1008,17 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                     AutoPopupController.getInstance(ctx.getProject()).autoPopupParameterInfo(editor, null);
                                 });
                             });
-                    result.addElement(PrioritizedLookupElement.withPriority(element, 900));
+                    
+                    // Add with higher priority to the exact result set
+                    exactResult.addElement(PrioritizedLookupElement.withPriority(element, 900));
+                    addedCount++;
                 }
+                LOG.warn("🔍 [addNamespaceMethodCompletions] Added " + addedCount + " built-in namespace method completions");
             } else {
-                LOG.warn(">>>>>> No methods found for built-in namespace: " + namespace);
+                LOG.warn("🔍 [addNamespaceMethodCompletions] No methods found for built-in namespace: " + namespace);
             }
         } else {
-            LOG.warn(">>>>>> Not a built-in namespace: " + namespace);
+            LOG.warn("🔍 [addNamespaceMethodCompletions] Not a built-in namespace: " + namespace);
         }
         
         // Add function namespace members
@@ -899,12 +1037,13 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             }
         }
         
-        LOG.warn(">>>>>> Found " + functionMembers.size() + " function members for namespace: " + namespace);
-        if (functionMembers.size() < 10) {
-            LOG.warn(">>>>>> Function members: " + functionMembers);
+        LOG.warn("🔍 [addNamespaceMethodCompletions] Found " + functionMembers.size() + " function members for namespace: " + namespace);
+        if (functionMembers.size() > 0) {
+            LOG.warn("🔍 [addNamespaceMethodCompletions] Function members: " + functionMembers);
         }
         
         // Add function members with appropriate icons and insert handlers
+        int addedFunctionMembers = 0;
         for (String member : functionMembers) {
             LookupElementBuilder element = LookupElementBuilder.create(member)
                     .withIcon(AllIcons.Nodes.Function)
@@ -937,8 +1076,10 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                             });
                         }
                     });
-            result.addElement(PrioritizedLookupElement.withPriority(element, 850));
+            exactResult.addElement(PrioritizedLookupElement.withPriority(element, 850));
+            addedFunctionMembers++;
         }
+        LOG.warn("🔍 [addNamespaceMethodCompletions] Added " + addedFunctionMembers + " function member completions");
         
         // Add namespace members for variables
         Set<String> variableMembers = new HashSet<>();
@@ -956,16 +1097,17 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             }
         }
         
-        LOG.warn(">>>>>> Found " + variableMembers.size() + " variable members for namespace: " + namespace);
-        if (variableMembers.size() < 10) {
-            LOG.warn(">>>>>> Variable members: " + variableMembers);
+        LOG.warn("🔍 [addNamespaceMethodCompletions] Found " + variableMembers.size() + " variable members for namespace: " + namespace);
+        if (variableMembers.size() > 0) {
+            LOG.warn("🔍 [addNamespaceMethodCompletions] Variable members: " + variableMembers);
         }
         
         // Add variable members with appropriate icons and insert handlers
+        int addedVariableMembers = 0;
         for (String member : variableMembers) {
             // Skip if we already added this member as a function
             if (functionMembers.contains(member)) {
-                LOG.warn(">>>>>> Skipping variable member '" + member + "' as it was already added as a function member");
+                LOG.warn("🔍 [addNamespaceMethodCompletions] Skipping variable member '" + member + "' as it was already added as a function member");
                 continue;
             }
             
@@ -991,8 +1133,10 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                             });
                         }
                     });
-            result.addElement(PrioritizedLookupElement.withPriority(element, 750));
+            exactResult.addElement(PrioritizedLookupElement.withPriority(element, 750));
+            addedVariableMembers++;
         }
+        LOG.warn("🔍 [addNamespaceMethodCompletions] Added " + addedVariableMembers + " variable member completions");
         
         // Add namespace members for constants
         Set<String> constantMembers = new HashSet<>();
@@ -1010,16 +1154,17 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             }
         }
         
-        LOG.warn(">>>>>> Found " + constantMembers.size() + " constant members for namespace: " + namespace);
-        if (constantMembers.size() < 10) {
-            LOG.warn(">>>>>> Constant members: " + constantMembers);
+        LOG.warn("🔍 [addNamespaceMethodCompletions] Found " + constantMembers.size() + " constant members for namespace: " + namespace);
+        if (constantMembers.size() > 0) {
+            LOG.warn("🔍 [addNamespaceMethodCompletions] Constant members: " + constantMembers);
         }
         
         // Add constant members with appropriate icons and insert handlers
+        int addedConstantMembers = 0;
         for (String member : constantMembers) {
             // Skip if we already added this member as a function or variable
             if (functionMembers.contains(member) || variableMembers.contains(member)) {
-                LOG.warn(">>>>>> Skipping constant member '" + member + "' as it was already added as a function or variable member");
+                LOG.warn("🔍 [addNamespaceMethodCompletions] Skipping constant member '" + member + "' as it was already added as a function or variable member");
                 continue;
             }
             
@@ -1045,8 +1190,10 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                             });
                         }
                     });
-            result.addElement(PrioritizedLookupElement.withPriority(element, 800));
+            exactResult.addElement(PrioritizedLookupElement.withPriority(element, 800));
+            addedConstantMembers++;
         }
+        LOG.warn("🔍 [addNamespaceMethodCompletions] Added " + addedConstantMembers + " constant member completions");
         
         // Make sure we deduplicate members
         Set<String> allAddedMembers = new HashSet<>();
@@ -1054,25 +1201,39 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         allAddedMembers.addAll(variableMembers);
         allAddedMembers.addAll(constantMembers);
         
-        LOG.warn(">>>>>> Added " + allAddedMembers.size() + " total members for namespace: " + namespace);
+        int totalAdded = addedFunctionMembers + addedVariableMembers + addedConstantMembers;
+        LOG.warn("🔍 [addNamespaceMethodCompletions] Total added: " + totalAdded + " members for namespace: " + namespace);
+        
+        // Add a dummy item with low priority just to verify items can be added to the result set
+        LookupElementBuilder dummyElement = LookupElementBuilder.create("__debug_" + namespace + "_item")
+                .withIcon(AllIcons.Nodes.Method)
+                .withTypeText("Debug Item")
+                .withInsertHandler((ctx, item) -> {
+                    // Just log that this was selected
+                    LOG.warn("🔍 Debug item was selected!");
+                });
+        exactResult.addElement(PrioritizedLookupElement.withPriority(dummyElement, 1));
+        LOG.warn("🔍 [addNamespaceMethodCompletions] Added debug item to result set");
         
         // If we didn't find any members, this may be a custom namespace without proper registration
         if (allAddedMembers.isEmpty()) {
-            LOG.warn(">>>>>> No members found for namespace: " + namespace + ". This may be a custom namespace.");
+            LOG.warn("🔍 [addNamespaceMethodCompletions] No members found for namespace: " + namespace + ". This may be a custom namespace.");
             
             // Dump all definitions to check for potential matches
             List<String> definitions = CACHED_DEFINITIONS.getOrDefault(version, new ArrayList<>());
-            LOG.warn(">>>>>> Checking " + definitions.size() + " total definitions for any that might contain '" + namespace + "'");
+            LOG.warn("🔍 [addNamespaceMethodCompletions] Checking " + definitions.size() + " total definitions for any that might contain '" + namespace + "'");
             
             int found = 0;
             for (String def : definitions) {
                 if (def.contains(namespace)) {
-                    LOG.warn(">>>>>> Related definition: " + def);
+                    LOG.warn("🔍 [addNamespaceMethodCompletions] Related definition: " + def);
                     found++;
                     if (found >= 20) break; // Limit output
                 }
             }
         }
+        
+        LOG.warn("🔍 [addNamespaceMethodCompletions] Completion done for namespace: " + namespace);
     }
     
     /**
