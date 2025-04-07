@@ -584,7 +584,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         });
                 result.addElement(PrioritizedLookupElement.withPriority(element, 500));
             } else if (functions.contains(definition)) {
-                // Function with appropriate icon (lower priority after equals)
+                // Function with appropriate icon (right after local variables)
                 element = LookupElementBuilder.create(definition)
                         .withIcon(AllIcons.Nodes.Function)
                         .withTypeText("function")
@@ -600,7 +600,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                 AutoPopupController.getInstance(ctx.getProject()).autoPopupParameterInfo(editor, null);
                             });
                         });
-                result.addElement(PrioritizedLookupElement.withPriority(element, 400));
+                result.addElement(PrioritizedLookupElement.withPriority(element, 850));
             } else if (constants.contains(definition)) {
                 // Constant with appropriate icon (higher priority after equals)
                 element = LookupElementBuilder.create(definition)
@@ -984,7 +984,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         });
                 result.addElement(PrioritizedLookupElement.withPriority(element, 900));
             } else if (functions.contains(definition)) {
-                // Function with appropriate icon
+                // Function with appropriate icon - right after local variables 
                 element = LookupElementBuilder.create(definition)
                         .withIcon(AllIcons.Nodes.Function)
                         .withTypeText("function")
@@ -1000,20 +1000,20 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                 AutoPopupController.getInstance(ctx.getProject()).autoPopupParameterInfo(editor, null);
                             });
                         });
-                result.addElement(PrioritizedLookupElement.withPriority(element, 800));
+                result.addElement(PrioritizedLookupElement.withPriority(element, 850));
             } else if (constants.contains(definition)) {
                 // Constant with appropriate icon
                 element = LookupElementBuilder.create(definition)
                         .withIcon(AllIcons.Nodes.Constant)
                         .withTypeText("constant")
                         .withBoldness(true);
-                result.addElement(PrioritizedLookupElement.withPriority(element, 850));
+                result.addElement(PrioritizedLookupElement.withPriority(element, 800));
             } else {
                 // Variable with appropriate icon
                 element = LookupElementBuilder.create(definition)
                         .withIcon(AllIcons.Nodes.Variable)
                         .withTypeText("variable");
-                result.addElement(PrioritizedLookupElement.withPriority(element, 800));
+                result.addElement(PrioritizedLookupElement.withPriority(element, 750));
             }
         }
         
