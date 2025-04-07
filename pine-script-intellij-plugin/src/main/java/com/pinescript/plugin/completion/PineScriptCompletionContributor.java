@@ -134,15 +134,36 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                LOG.info("Detected inside function call: " + functionName);
                                
                                if (functionName != null) {
+                                   // First check if we're after an equals sign - need full completions there
+                                   int lastOpenParen = textBeforeCursor.lastIndexOf('(');
+                                   if (lastOpenParen != -1) {
+                                       String parametersList = textBeforeCursor.substring(lastOpenParen + 1);
+                                       String[] params = parametersList.split(",");
+                                       String currentParameterSegment = params[params.length - 1].trim();
+                                       if (currentParameterSegment.contains("=")) {
+                                            LOG.info("Detected parameter assignment in current parameter, providing full completions");
+                                            processStandardCompletions(parameters, result, version);
+                                            return;
+                                       }
+                                   }
+                                   
+                                   // Always provide both parameter suggestions and full completions inside function calls
                                    // Check function call context to determine current parameter
                                    checkFunctionCallContext(documentText, offset);
                                    
                                    if (isInsideFunctionCall && currentFunctionName != null) {
-                                       LOG.info("Suggesting parameters for: " + currentFunctionName + ", param index: " + currentParamIndex);
+                                       LOG.info("Suggesting parameters and full completions for: " + currentFunctionName + ", param index: " + currentParamIndex);
+                                       // First add parameter completions with high priority
                                        addParameterCompletions(result, currentFunctionName, currentParamIndex, version);
+                                       // Then add standard completions with lower priority
+                                       addStandardCompletions(parameters, result, documentText, offset, version);
+                                       // Also add local variables
+                                       addScannedCompletions(parameters, result);
                                    } else {
-                                       // Fallback to function parameters if context check failed
+                                       // Fallback to function parameters and standard completions if context check failed
                                        addFunctionParameterCompletions(result, functionName, version);
+                                       addStandardCompletions(parameters, result, documentText, offset, version);
+                                       addScannedCompletions(parameters, result);
                                    }
                                    return; // Stop processing after handling function parameters
                                }
@@ -420,30 +441,28 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         String documentText = document.getText();
         int offset = parameters.getOffset();
         
-        // Check if we're inside a function call for parameter completion
-        checkFunctionCallContext(documentText, offset);
-        
         // Check if we're after a parameter equals sign - need full completions there
         boolean isAfterParamEquals = false;
         if (offset > 1) {
-            // Look for an equals sign followed by optional whitespace before the cursor
             String textBeforeCursor = documentText.substring(0, offset);
-            if (textBeforeCursor.matches(".*\\w+\\s*=\\s*$")) {
-                isAfterParamEquals = true;
-                LOG.info("Detected position after parameter equals sign, providing full completions");
+            int lastOpenParen = textBeforeCursor.lastIndexOf('(');
+            if (lastOpenParen != -1) {
+                int equalsIndex = textBeforeCursor.lastIndexOf('=');
+                if (equalsIndex != -1 && equalsIndex > lastOpenParen) {
+                    int lastComma = textBeforeCursor.lastIndexOf(',', offset - 1);
+                    // If there is no comma or the "=" is after the last comma, it's in the current parameter
+                    if (lastComma == -1 || equalsIndex > lastComma) {
+                        LOG.info("Detected '=' in current parameter, providing full completions");
+                        isAfterParamEquals = true;
+                    }
+                }
             }
         }
         
-        if (isInsideFunctionCall && currentFunctionName != null && !isAfterParamEquals) {
-            // Add parameter-specific completions
-            LOG.info("Inside function call: " + currentFunctionName + ", param index: " + currentParamIndex);
-            addParameterCompletions(result, currentFunctionName, currentParamIndex, version);
-        }
-        
-        // Add standard completions
+        // Add standard completions - we no longer need separate handling for function params
+        // since that's handled in the main addCompletions method now
         LOG.info("Adding standard completions for version: " + version);
         addStandardCompletions(parameters, result, documentText, offset, version);
-        
         // Add variables and functions from the current document
         addScannedCompletions(parameters, result);
     }
@@ -591,7 +610,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                 Editor editor = ctx.getEditor();
                                 editor.getCaretModel().moveToOffset(ctx.getTailOffset());
                             });
-                    result.addElement(PrioritizedLookupElement.withPriority(namedElement, 300));
+                    result.addElement(PrioritizedLookupElement.withPriority(namedElement, 1000)); // Higher priority for parameter names
                     
                     // Also suggest possible values based on parameter type
                     Map<String, String> valueSuggestions = getValueSuggestionsForType(paramType, paramName, functionName, paramIndex);
@@ -599,7 +618,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         LookupElementBuilder element = LookupElementBuilder.create(entry.getKey())
                                 .withTypeText(entry.getValue())
                                 .withIcon(AllIcons.Nodes.Parameter);
-                        result.addElement(PrioritizedLookupElement.withPriority(element, 250));
+                        result.addElement(PrioritizedLookupElement.withPriority(element, 950)); // Higher priority for parameter values
                     }
                 }
             }
@@ -621,7 +640,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                     Editor editor = ctx.getEditor();
                                     editor.getCaretModel().moveToOffset(ctx.getTailOffset());
                                 });
-                        result.addElement(PrioritizedLookupElement.withPriority(element, 200));
+                        result.addElement(PrioritizedLookupElement.withPriority(element, 900)); // High priority but lower than current parameter
                     }
                 }
             }
@@ -634,7 +653,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 LookupElementBuilder element = LookupElementBuilder.create(entry.getKey())
                         .withTypeText(entry.getValue())
                         .withIcon(AllIcons.Nodes.Parameter);
-                result.addElement(PrioritizedLookupElement.withPriority(element, 220));
+                result.addElement(PrioritizedLookupElement.withPriority(element, 920)); // High priority for special suggestions
             }
         }
     }
@@ -767,12 +786,16 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                        @NotNull CompletionResultSet result,
                                        String documentText, int offset,
                                        String version) {
-        // Add keywords with high priority
+        // Check if we're inside a function call to adjust keyword priorities
+        boolean insideFunctionCall = isInFunctionCall(documentText.substring(0, offset));
+        int keywordPriority = insideFunctionCall ? 400 : 1000;
+        
+        // Add keywords with appropriate priority (lower when inside function calls)
         for (String keyword : KEYWORDS) {
             LookupElementBuilder element = LookupElementBuilder.create(keyword)
                     .withIcon(AllIcons.Nodes.Favorite)
                     .withTypeText("keyword");
-            result.addElement(PrioritizedLookupElement.withPriority(element, 1000));
+            result.addElement(PrioritizedLookupElement.withPriority(element, keywordPriority));
         }
         
         // Get sets for this version
@@ -1075,10 +1098,20 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                     }
                     isInsideFunction = openCount > closeCount;
                     
+                    // Trigger after equals sign always, with high priority
+                    if (c == '=') {
+                        Project project = editor.getProject();
+                        if (project != null) {
+                            ApplicationManager.getApplication().invokeLater(() -> {
+                                // Use a small delay to ensure text is updated before popup
+                                AutoPopupController.getInstance(project).scheduleAutoPopup(editor);
+                            });
+                        }
+                        return;
+                    }
+                    
                     // Trigger completion popup for parentheses, comma, or space inside function
-                    if (c == '(' || c == ',' || 
-                        (c == ' ' && isInsideFunction) || 
-                        c == '=') {
+                    if (c == '(' || c == ',' || (c == ' ' && isInsideFunction)) {
                         Project project = editor.getProject();
                         if (project != null) {
                             ApplicationManager.getApplication().invokeLater(() -> {
