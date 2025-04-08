@@ -45,6 +45,8 @@ import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiFile;
 import com.intellij.codeInsight.completion.PrefixMatcher;
 import com.intellij.codeInsight.completion.impl.CamelHumpMatcher;
+import com.intellij.icons.AllIcons;
+import com.intellij.openapi.util.TextRange;
 
 public class PineScriptCompletionContributor extends CompletionContributor {
     private static final Logger LOG = Logger.getInstance(PineScriptCompletionContributor.class);
@@ -83,14 +85,122 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         int startPos = Math.max(0, offset - 200);
         String textToCheck = text.substring(startPos, offset);
         
+        // Log the text we're checking
+        LOG.info("Text to check for string: '" + (textToCheck.length() > 50 ? 
+                 textToCheck.substring(textToCheck.length() - 50) : textToCheck) + "'");
+        
+        // ========== FAST REJECTION OF STRING DETECTION ==========
+        
+        // 1. Check for known code contexts that can't be inside strings
+        
+        // If we're at the beginning of a function call like "alert("
+        if (textToCheck.matches(".*\\b(?:alert|strategy|label|line|box|table|array|matrix)\\s*\\(?\\s*$")) {
+            LOG.info("isInsideString detected function call context, not a string");
+            return false;
+        }
+        
+        // If we're typing a variable/function name or namespace (including after newline)
+        if (textToCheck.matches(".*(?:\\b|^|\\n)(?:[a-zA-Z_][a-zA-Z0-9_]*)?$")) {
+            LOG.info("isInsideString detected identifier context, not a string");
+            return false;
+        }
+        
+        // If we're typing a known namespace identifier
+        if (textToCheck.matches(".*(?:\\b|^|\\n)(?:ta|math|array|matrix|map|str|color|chart|strategy|syminfo|request|ticker)(?:\\.)?$")) {
+            LOG.info("isInsideString detected namespace identifier, not a string");
+            return false;
+        }
+        
+        // If we're in a variable declaration context
+        if (textToCheck.matches(".*(?:var|varip)\\s+(?:[a-zA-Z_]\\w*)(?:\\s+[a-zA-Z_]\\w*)?\\s*=?\\s*$")) {
+            LOG.info("isInsideString detected variable declaration context, not a string");
+            return false;
+        }
+        
+        // If we're after a namespace access (any namespace, not just request)
+        if (textToCheck.matches(".*\\b(?:ta|math|array|matrix|map|str|color|chart|strategy|syminfo|request|ticker)\\.$")) {
+            LOG.info("isInsideString detected namespace access context, not a string");
+            return false;
+        }
+        
+        // If we're in a parameter name or parameter value context
+        if (textToCheck.matches(".*\\([^()]*(?:[a-zA-Z_]\\w*\\s*=\\s*)?$")) {
+            LOG.info("isInsideString detected parameter context, not a string");
+            return false;
+        }
+        
+        // If we're in an assignment context (right after equals sign)
+        if (textToCheck.matches(".*=\\s*$")) {
+            LOG.info("isInsideString detected assignment context, not a string");
+            return false;
+        }
+        
+        // If we're in a comparison or logical operator context
+        if (textToCheck.matches(".*(?:==|!=|<=|>=|<|>|\\+|-|\\*|/|%|and|or|not)\\s*$")) {
+            LOG.info("isInsideString detected operator context, not a string");
+            return false;
+        }
+        
+        // Special case for completion after a line of code or at the beginning of a new line
+        if (textToCheck.endsWith("\n") || textToCheck.matches(".*\\n\\s*$")) {
+            LOG.info("isInsideString detected new line context, not a string");
+            return false;
+        }
+        
+        // Special case for detecting the start of a new line of code after whitespace
+        int lastNewlinePos = textToCheck.lastIndexOf('\n');
+        if (lastNewlinePos != -1) {
+            String afterNewline = textToCheck.substring(lastNewlinePos + 1).trim();
+            // If there's only alphanumeric/underscore characters after the last newline, it's likely a variable/function name
+            if (afterNewline.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+                LOG.info("isInsideString detected identifier at start of new line, not a string");
+                return false;
+            }
+        }
+        
+        // ========== COMPREHENSIVE STRING DETECTION ==========
+        
+        // If none of the fast rejection contexts matched, do a thorough check
+        int lineStartPos = textToCheck.lastIndexOf('\n');
+        if (lineStartPos == -1) {
+            lineStartPos = 0;
+        } else {
+            lineStartPos++; // Move past the newline
+        }
+        
+        // Check just the current line for string context
+        String currentLine = textToCheck.substring(lineStartPos);
+        
+        // If the current line starts with a comment, we're not in a string
+        if (currentLine.trim().startsWith("//")) {
+            LOG.info("isInsideString detected comment line, not a string");
+            return false;
+        }
+        
         boolean inSingleQuoteString = false;
         boolean inDoubleQuoteString = false;
+        boolean inComment = false;
         
         for (int i = 0; i < textToCheck.length(); i++) {
             char c = textToCheck.charAt(i);
             
-            // Handle escape sequences - skip the next character
-            if ((c == '\\') && (i + 1 < textToCheck.length())) {
+            // Skip processing if inside a comment
+            if (inComment) {
+                if (c == '\n') {
+                    inComment = false;
+                }
+                continue;
+            }
+            
+            // Check for comment start
+            if (c == '/' && i + 1 < textToCheck.length() && textToCheck.charAt(i + 1) == '/') {
+                inComment = true;
+                i++; // Skip the second '/'
+                continue;
+            }
+            
+            // Handle escape sequences - skip the next character if inside a string
+            if ((c == '\\') && (i + 1 < textToCheck.length()) && (inSingleQuoteString || inDoubleQuoteString)) {
                 i++;
                 continue;
             }
@@ -104,6 +214,20 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         }
         
         boolean result = inSingleQuoteString || inDoubleQuoteString;
+        
+        // Add one more check - if the line has a string opener but we're at the end of the line with a trailing space, we're not in a string
+        if (result && textToCheck.endsWith(" ")) {
+            int lastNonSpace = textToCheck.length() - 1;
+            while (lastNonSpace >= 0 && Character.isWhitespace(textToCheck.charAt(lastNonSpace))) {
+                lastNonSpace--;
+            }
+            
+            if (lastNonSpace >= 0 && (textToCheck.charAt(lastNonSpace) == '"' || textToCheck.charAt(lastNonSpace) == '\'')) {
+                LOG.info("isInsideString detected space after string delimiter, not a string");
+                return false;
+            }
+        }
+        
         LOG.info("isInsideString result: " + result);
         return result;
     }
@@ -344,14 +468,64 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         Document document = parameters.getEditor().getDocument();
         int offset = parameters.getOffset();
         
+        // Get document text
+        String text = document.getText();
+        
+        // Define textBeforeCursor once for use throughout the method
+        String textBeforeCursor = text.substring(0, offset);
+        
+        // Check if we're typing at the beginning of a line
+        int lastNewlinePos = textBeforeCursor.lastIndexOf('\n');
+        if (lastNewlinePos != -1) {
+            String afterNewline = textBeforeCursor.substring(lastNewlinePos + 1).trim();
+            // If there's only alphanumeric/underscore characters after the last newline, it's likely a variable/function name
+            if (afterNewline.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+                LOG.warn("🔍 [fillCompletionVariants] Detected typing at beginning of line: '" + afterNewline + "'");
+                
+                // For identifiers at the beginning of a line, prioritize namespaces
+                String version = detectPineScriptVersion(text);
+                
+                // Create a prefixed completion result
+                CompletionResultSet prefixResult = result.withPrefixMatcher(afterNewline);
+                
+                // First add namespaces for better prioritization - they should appear at the top
+                for (String namespace : NAMESPACES) {
+                    LookupElementBuilder element = LookupElementBuilder.create(namespace)
+                            .withTypeText("namespace")
+                            .withIcon(AllIcons.Nodes.Package)
+                            .withInsertHandler((ctx, item) -> {
+                                Editor editor = ctx.getEditor();
+                                editor.getDocument().insertString(ctx.getTailOffset(), ".");
+                                editor.getCaretModel().moveToOffset(ctx.getTailOffset());
+                                
+                                // Schedule popup for namespace members
+                                ApplicationManager.getApplication().invokeLater(() -> {
+                                    if (editor.isDisposed()) return;
+                                    AutoPopupController.getInstance(ctx.getProject()).autoPopupMemberLookup(editor, null);
+                                });
+                            });
+                    
+                    // Add with high priority
+                    prefixResult.addElement(PrioritizedLookupElement.withPriority(element, 1000));
+                }
+                
+                // Add scanned completions (local variables)
+                addScannedCompletions(parameters, prefixResult);
+                
+                // Add all standard completions
+                addAllCompletionItems(prefixResult, version);
+                
+                return;
+            }
+        }
+        
         // Log specifically for dot completion
         if (offset > 0) {
-            String text = document.getText();
             char prevChar = text.charAt(offset - 1);
             
             // Case 1: Text ends with a dot - standard dot completion
             if (prevChar == '.') {
-                String textBeforeCursor = text.substring(0, offset);
+                // Reuse the already defined textBeforeCursor variable
                 String namespace = findNamespaceBeforeDot(textBeforeCursor);
                 LOG.warn("🔍 [fillCompletionVariants] DOT DETECTED! Namespace before dot: '" + namespace + "'");
                 
@@ -407,7 +581,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             }
             // Case 2: We're after a dot with some text already (e.g., "request.sec")
             else {
-                String textBeforeCursor = text.substring(0, offset);
+                // Reuse existing textBeforeCursor variable
                 int lastDotPos = textBeforeCursor.lastIndexOf('.');
                 
                 // Check if we have a dot in the text and there's text after it
@@ -496,6 +670,218 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         }
                     } else {
                         LOG.warn("🔍 [fillCompletionVariants] Cursor is no longer in a namespace member completion context");
+                    }
+                }
+                
+                // Case 3: Check for variable reassignment with := operator
+                int colonEqualsPos = textBeforeCursor.lastIndexOf(":=");
+                if (colonEqualsPos >= 0 && colonEqualsPos < textBeforeCursor.length() - 2) {
+                    try {
+                        // Extract text between start of line/statement and the := operator
+                        String lineText = textBeforeCursor;
+                        int lineStart = Math.max(lineText.lastIndexOf('\n'), lineText.lastIndexOf(';'));
+                        
+                        // Ensure lineStart is valid (it might be -1 if not found)
+                        lineStart = Math.max(lineStart, -1); // If both \n and ; are not found, use -1
+                        
+                        // Check that lineStart is less than colonEqualsPos to avoid invalid range
+                        if (lineStart < colonEqualsPos) {
+                            if (lineStart >= 0) {
+                                lineText = lineText.substring(lineStart + 1, colonEqualsPos).trim();
+                            } else {
+                                lineText = lineText.substring(0, colonEqualsPos).trim();
+                            }
+                            
+                            // Extract the variable being assigned to
+                            String variableName = lineText.trim();
+                            LOG.warn("🔍 [fillCompletionVariants] Found variable reassignment: '" + variableName + " :='");
+                            
+                            // Try to find the type of this variable
+                            String version = detectPineScriptVersion(text);
+                            String expectedType = findTypeFromPreviousDeclarations(text, variableName);
+                            
+                            if (expectedType != null) {
+                                LOG.warn("🔍 [fillCompletionVariants] Variable type for '" + variableName + "' is '" + expectedType + "'");
+                                
+                                // Get text after := for prefix matching
+                                String textAfterColonEquals = textBeforeCursor.substring(colonEqualsPos + 2).trim();
+                                LOG.warn("🔍 [fillCompletionVariants] Text after := is: '" + textAfterColonEquals + "'");
+                                
+                                // Check if the user is typing a namespace
+                                int lastDotInEquals = textAfterColonEquals.lastIndexOf('.');
+                                if (lastDotInEquals > 0) {
+                                    String potentialNamespace = textAfterColonEquals.substring(0, lastDotInEquals);
+                                    String textAfterDot = textAfterColonEquals.substring(lastDotInEquals + 1);
+                                    
+                                    LOG.warn("🔍 [fillCompletionVariants] Potential namespace in reassignment: '" + potentialNamespace + "', after dot: '" + textAfterDot + "'");
+                                    
+                                    // Check if this is a valid namespace
+                                    boolean isBuiltInNamespace = Arrays.asList(NAMESPACES).contains(potentialNamespace);
+                                    boolean hasMatchingDefinition = false;
+                                    
+                                    Set<String> functions = FUNCTIONS_MAP.getOrDefault(version, new HashSet<>());
+                                    Set<String> variables = VARIABLES_MAP.getOrDefault(version, new HashSet<>());
+                                    Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
+                                    
+                                    for (String def : functions) {
+                                        if (def.startsWith(potentialNamespace + ".")) {
+                                            hasMatchingDefinition = true;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    if (!hasMatchingDefinition) {
+                                        for (String def : variables) {
+                                            if (def.startsWith(potentialNamespace + ".")) {
+                                                hasMatchingDefinition = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (!hasMatchingDefinition) {
+                                        for (String def : constants) {
+                                            if (def.startsWith(potentialNamespace + ".")) {
+                                                hasMatchingDefinition = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (isBuiltInNamespace || hasMatchingDefinition) {
+                                        // Create a filtered result set with the prefix to match
+                                        CompletionResultSet filteredResult = result.withPrefixMatcher(textAfterDot);
+                                        
+                                        // Add namespace method completions
+                                        addNamespaceMethodCompletions(filteredResult, potentialNamespace, version);
+                                        return; // Skip standard completion
+                                    }
+                                }
+                                
+                                // Create a filtered result set with the prefix to match
+                                CompletionResultSet filteredResult = result.withPrefixMatcher(textAfterColonEquals);
+                                
+                                // First add local variables from the current document
+                                addScannedCompletions(parameters, filteredResult);
+                                
+                                // Add type-specific completions from standard libraries
+                                addCompletionsForExpectedType(filteredResult, expectedType, version);
+                                return; // Skip standard completion
+                            }
+                        }
+                    } catch (StringIndexOutOfBoundsException e) {
+                        LOG.warn("🔍 [fillCompletionVariants] StringIndexOutOfBoundsException in case 3 (reassignment): " + e.getMessage());
+                        // Continue with standard completion
+                    }
+                }
+                
+                // Case 4: Check for variable assignment with = operator and text after it
+                int equalsPos = textBeforeCursor.lastIndexOf("=");
+                if (equalsPos >= 0 && equalsPos < textBeforeCursor.length() - 1 
+                    && (colonEqualsPos == -1 || equalsPos > colonEqualsPos)) {
+                    try {
+                        // Check that this is a standalone equals, not part of ==, >=, etc.
+                        if (equalsPos == 0 || (equalsPos > 0 && 
+                            textBeforeCursor.charAt(equalsPos - 1) != ':' && 
+                            textBeforeCursor.charAt(equalsPos - 1) != '=' && 
+                            textBeforeCursor.charAt(equalsPos - 1) != '<' && 
+                            textBeforeCursor.charAt(equalsPos - 1) != '>' && 
+                            textBeforeCursor.charAt(equalsPos - 1) != '!')) {
+                            
+                            // Extract text between start of line/statement and the = operator
+                            String lineText = textBeforeCursor;
+                            int lineStart = Math.max(lineText.lastIndexOf('\n'), lineText.lastIndexOf(';'));
+                            
+                            // Ensure lineStart is valid (it might be -1 if not found)
+                            lineStart = Math.max(lineStart, -1); // If both \n and ; are not found, use -1
+                            
+                            // Check that lineStart is less than equalsPos to avoid invalid range
+                            if (lineStart < equalsPos) {
+                                if (lineStart >= 0) {
+                                    lineText = lineText.substring(lineStart + 1, equalsPos).trim();
+                                } else {
+                                    lineText = lineText.substring(0, equalsPos).trim();
+                                }
+                                
+                                LOG.warn("🔍 [fillCompletionVariants] Found variable assignment: '" + lineText + " ='");
+                                
+                                // Try to infer the expected type
+                                String expectedType = inferExpectedType(textBeforeCursor);
+                                String version = detectPineScriptVersion(text);
+                                
+                                if (expectedType != null) {
+                                    LOG.warn("🔍 [fillCompletionVariants] Expected type for '" + lineText + "' is '" + expectedType + "'");
+                                    
+                                    // Get text after = for prefix matching
+                                    String textAfterEquals = textBeforeCursor.substring(equalsPos + 1).trim();
+                                    LOG.warn("🔍 [fillCompletionVariants] Text after = is: '" + textAfterEquals + "'");
+                                    
+                                    // Check if the user is typing a namespace
+                                    int lastDotInEquals = textAfterEquals.lastIndexOf('.');
+                                    if (lastDotInEquals > 0) {
+                                        String potentialNamespace = textAfterEquals.substring(0, lastDotInEquals);
+                                        String textAfterDot = textAfterEquals.substring(lastDotInEquals + 1);
+                                        
+                                        LOG.warn("🔍 [fillCompletionVariants] Potential namespace in equals: '" + potentialNamespace + "', after dot: '" + textAfterDot + "'");
+                                        
+                                        // Check if this is a valid namespace
+                                        boolean isBuiltInNamespace = Arrays.asList(NAMESPACES).contains(potentialNamespace);
+                                        boolean hasMatchingDefinition = false;
+                                        
+                                        Set<String> functions = FUNCTIONS_MAP.getOrDefault(version, new HashSet<>());
+                                        Set<String> variables = VARIABLES_MAP.getOrDefault(version, new HashSet<>());
+                                        Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
+                                        
+                                        for (String def : functions) {
+                                            if (def.startsWith(potentialNamespace + ".")) {
+                                                hasMatchingDefinition = true;
+                                                break;
+                                            }
+                                        }
+                                        
+                                        if (!hasMatchingDefinition) {
+                                            for (String def : variables) {
+                                                if (def.startsWith(potentialNamespace + ".")) {
+                                                    hasMatchingDefinition = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        
+                                        if (!hasMatchingDefinition) {
+                                            for (String def : constants) {
+                                                if (def.startsWith(potentialNamespace + ".")) {
+                                                    hasMatchingDefinition = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        
+                                        if (isBuiltInNamespace || hasMatchingDefinition) {
+                                            // Create a filtered result set with the prefix to match
+                                            CompletionResultSet filteredResult = result.withPrefixMatcher(textAfterDot);
+                                            
+                                            // Add namespace method completions
+                                            addNamespaceMethodCompletions(filteredResult, potentialNamespace, version);
+                                            return; // Skip standard completion
+                                        }
+                                    }
+                                    
+                                    // Create a filtered result set with the prefix to match
+                                    CompletionResultSet filteredResult = result.withPrefixMatcher(textAfterEquals);
+                                    
+                                    // First add local variables from the current document
+                                    addScannedCompletions(parameters, filteredResult);
+                                    
+                                    // Add type-specific completions from standard libraries
+                                    addCompletionsForExpectedType(filteredResult, expectedType, version);
+                                    return; // Skip standard completion
+                                }
+                            }
+                        }
+                    } catch (StringIndexOutOfBoundsException e) {
+                        LOG.warn("🔍 [fillCompletionVariants] StringIndexOutOfBoundsException in case 4 (assignment): " + e.getMessage());
+                        // Continue with standard completion
                     }
                 }
             }
@@ -690,31 +1076,28 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     }
     
     /**
-     * Finds the namespace before a dot in the text.
+     * Attempts to find a potential namespace identifier before a dot
+     * For example, in "request.", this function would return "request"
      */
     private static String findNamespaceBeforeDot(String text) {
-        LOG.warn("🔍 [findNamespaceBeforeDot] Finding namespace in: \"" + 
-                 (text.length() > 30 ? "..." + text.substring(text.length() - 30) : text) + "\"");
-        
-        if (!text.endsWith(".")) {
-            LOG.warn("🔍 [findNamespaceBeforeDot] Text does not end with a dot");
+        if (text == null || text.isEmpty() || !text.endsWith(".")) {
             return null;
         }
         
-        // Find the last word before the dot
+        // Find the last non-identifier character before the final dot
         int lastNonWordChar = -1;
+        
+        // Iterate backwards from just before the dot
         for (int i = text.length() - 2; i >= 0; i--) {
             char c = text.charAt(i);
+            // If we find a character that's not a letter, digit, or underscore
             if (!Character.isJavaIdentifierPart(c)) {
-                // Allow finding qualified identifiers by only breaking on non-identifier chars
-                // that aren't dots (to handle multi-level namespaces)
-                if (c != '.') {
-                    lastNonWordChar = i;
-                    break;
-                }
+                lastNonWordChar = i;
+                break;
             }
         }
         
+        // Extract the word between the last non-word character and the dot
         String word = text.substring(lastNonWordChar + 1, text.length() - 1);
         LOG.warn("🔍 [findNamespaceBeforeDot] Found namespace before dot: \"" + word + "\"");
         
@@ -731,17 +1114,80 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      * Determines if the cursor is within a function call.
      */
     private boolean isInFunctionCall(String text) {
+        // Skip this check if we're in a variable declaration with type
+        String textToCheck = text.substring(0, text.length());
+        
+        // Check if we're just typing a new identifier at the beginning of a line
+        int lastNewlinePos = textToCheck.lastIndexOf('\n');
+        if (lastNewlinePos != -1) {
+            String afterNewline = textToCheck.substring(lastNewlinePos + 1).trim();
+            // If there's only alphanumeric/underscore characters after the last newline, it's likely a variable/function name
+            if (afterNewline.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+                LOG.warn(">>>>>> NOT A FUNCTION CALL: Just typing identifier at beginning of line");
+                return false;
+            }
+        }
+        
+        // Check for variable declaration patterns that should NOT trigger function detection
+        Pattern varDeclarationPattern = Pattern.compile("(?:var|varip)\\s+(?:[a-zA-Z_]\\w*)\\s+(?:[a-zA-Z_]\\w*)\\s*=");
+        Matcher varDeclMatcher = varDeclarationPattern.matcher(textToCheck);
+        boolean isVarDeclaration = false;
+        while (varDeclMatcher.find()) {
+            // If the last match is close to the cursor, we're likely in a variable declaration
+            if (varDeclMatcher.end() > text.length() - 20) {
+                isVarDeclaration = true;
+                LOG.warn(">>>>>> NOT A FUNCTION CALL: Detected variable declaration with type");
+            }
+        }
+        
+        if (isVarDeclaration) {
+            return false;
+        }
+        
         // Simple check: look for an open parenthesis that's not closed
         int openCount = 0;
         int closeCount = 0;
         
-        for (int i = 0; i < text.length(); i++) {
+        // Track the position of the most recent relevant opening parenthesis
+        int lastOpenParenPos = -1;
+        
+        for (int i = 0; i < text.length() && i < text.length(); i++) {
             char c = text.charAt(i);
-            if (c == '(') openCount++;
-            else if (c == ')') closeCount++;
+            if (c == '(') {
+                openCount++;
+                lastOpenParenPos = i;
+            }
+            else if (c == ')') {
+                closeCount++;
+            }
         }
         
-        return openCount > closeCount;
+        // We're in a function call if there are unclosed parentheses
+        boolean inFunction = openCount > closeCount;
+        
+        // If it looks like we're in a function, do additional verification
+        if (inFunction && lastOpenParenPos > 0) {
+            // Check if there's an identifier before the parenthesis
+            for (int i = lastOpenParenPos - 1; i >= 0; i--) {
+                char c = text.charAt(i);
+                
+                // Skip whitespace
+                if (Character.isWhitespace(c)) {
+                    continue;
+                }
+                
+                // If we found an identifier character (or dot for method calls)
+                if (Character.isJavaIdentifierPart(c) || c == '.') {
+                    LOG.warn(">>>>>> DETECTED FUNCTION CALL: Cursor is inside a function call");
+                    return true;
+                } else {
+                    // Not a valid function call character - might be a conditional or something else
+                    break;
+                }
+            }
+        }
+        
+        return inFunction;
     }
     
     /**
@@ -851,130 +1297,389 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                        @NotNull CompletionResultSet result,
                                        String documentText, int offset,
                                        String version) {
-        // Get sets for this version
-        Set<String> functions = FUNCTIONS_MAP.getOrDefault(version, new HashSet<>());
-        Set<String> variables = VARIABLES_MAP.getOrDefault(version, new HashSet<>());
-        Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
+        LOG.info("🔄 [addStandardCompletionsAfterEquals] Checking completions after =");
         
-        List<String> definitions = CACHED_DEFINITIONS.getOrDefault(version, new ArrayList<>());
+        // Get the text before the cursor
+        String textBeforeCursor = documentText.substring(0, offset);
         
-        // Use a single set to track all added namespaces for deduplication
-        Set<String> addedNamespaces = new HashSet<>();
+        // Check if we're right after an equals sign or assignment operator, possibly followed by whitespace
+        boolean afterEquals = textBeforeCursor.trim().endsWith("=");
+        boolean afterColonEquals = textBeforeCursor.trim().endsWith(":=");
         
-        for (String definition : definitions) {
-            if (definition.contains(".")) {
-                String ns = definition.substring(0, definition.indexOf('.'));
-                
-                // Only add namespace once regardless of type
-                if (!addedNamespaces.contains(ns)) {
-                    addedNamespaces.add(ns);
-                    
-                    // Create namespace element with consistent icon and type text
-                    LookupElementBuilder nsElement = LookupElementBuilder.create(ns)
-                        .withIcon(PineScriptIcons.NAMESPACE) // Use dedicated namespace icon
-                        .withTypeText("namespace") // Just call it "namespace"
-                        .withInsertHandler((ctx, item) -> {
-                            Editor editor = ctx.getEditor();
-                            
-                            // Add the dot without triggering typed action
-                            EditorModificationUtil.insertStringAtCaret(editor, ".");
-                            
-                            // Force an immediate popup
-                            Project project = ctx.getProject();
-                            if (project != null) {
-                                try {
-                                    AutoPopupController controller = AutoPopupController.getInstance(project);
-                                    controller.autoPopupMemberLookup(editor, null);
-                                } catch (Exception e) {
-                                    LOG.warn("Error showing member lookup: " + e.getMessage());
-                                }
-                            }
-                        });
-                    
-                    // Use a consistent high priority for namespaces
-                    result.addElement(PrioritizedLookupElement.withPriority(nsElement, 850));
-                }
-                continue;
-            }
+        if (!afterEquals && !afterColonEquals) {
+            // Check if we're after an equals sign followed by space(s)
+            int equalsPos = textBeforeCursor.lastIndexOf("=");
+            int colonEqualsPos = textBeforeCursor.lastIndexOf(":=");
             
-            if (Arrays.asList(NAMESPACES).contains(definition)) {
-                LookupElementBuilder element = LookupElementBuilder.create(definition)
-                        .withIcon(PineScriptIcons.NAMESPACE) // Use same icon for consistency
-                        .withTypeText("namespace")
-                        .withInsertHandler((ctx, item) -> {
-                            Editor editor = ctx.getEditor();
-                            
-                            // Add the dot without triggering typed action
-                            EditorModificationUtil.insertStringAtCaret(editor, ".");
-                            
-                            // Force an immediate popup
-                            Project project = ctx.getProject();
-                            if (project != null) {
-                                try {
-                                    AutoPopupController controller = AutoPopupController.getInstance(project);
-                                    controller.autoPopupMemberLookup(editor, null);
-                                } catch (Exception e) {
-                                    LOG.warn("Error showing member lookup: " + e.getMessage());
-                                }
-                            }
-                        });
-                result.addElement(PrioritizedLookupElement.withPriority(element, 900));
-            } else if (functions.contains(definition)) {
-                LookupElementBuilder element = LookupElementBuilder.create(definition)
-                        .withIcon(AllIcons.Nodes.Function)
-                        .withTypeText("function")
-                        .withTailText("()", true)
-                        .withInsertHandler((ctx, item) -> {
-                            Editor editor = ctx.getEditor();
-                            
-                            // Add parentheses
-                            EditorModificationUtil.insertStringAtCaret(editor, "()");
-                            
-                            // Position caret inside the parentheses
-                            editor.getCaretModel().moveToOffset(ctx.getTailOffset() - 1);
-                            
-                            // Force an immediate popup for parameters
-                            Project project = ctx.getProject();
-                            if (project != null) {
-                                try {
-                                    AutoPopupController controller = AutoPopupController.getInstance(project);
-                                    controller.autoPopupParameterInfo(editor, null);
-                                } catch (Exception e) {
-                                    LOG.warn("Error showing parameter info: " + e.getMessage());
-                                }
-                            }
-                        });
-                result.addElement(PrioritizedLookupElement.withPriority(element, 850));
-            } else if (constants.contains(definition)) {
-                LookupElementBuilder element = LookupElementBuilder.create(definition)
-                        .withIcon(AllIcons.Nodes.Constant)
-                        .withTypeText("constant")
-                        .withBoldness(true);
-                result.addElement(PrioritizedLookupElement.withPriority(element, 800));
-            } else if (variables.contains(definition)) {
-                LookupElementBuilder element = LookupElementBuilder.create(definition)
-                        .withIcon(AllIcons.Nodes.Variable)
-                        .withTypeText("variable")
-                        .withInsertHandler((ctx, item) -> {
-                            Editor editor = ctx.getEditor();
-                            
-                            // Add the dot without triggering typed action
-                            EditorModificationUtil.insertStringAtCaret(editor, ".");
-                            
-                            // Force an immediate popup
-                            Project project = ctx.getProject();
-                            if (project != null) {
-                                try {
-                                    AutoPopupController controller = AutoPopupController.getInstance(project);
-                                    controller.autoPopupMemberLookup(editor, null);
-                                } catch (Exception e) {
-                                    LOG.warn("Error showing member lookup: " + e.getMessage());
-                                }
-                            }
-                        });
-                result.addElement(PrioritizedLookupElement.withPriority(element, 750));
+            // Determine the position of the most recent assignment operator
+            int assignmentPos = Math.max(equalsPos, colonEqualsPos);
+            
+            if (assignmentPos > 0) {
+                // Check if there's only whitespace between the assignment and cursor
+                String textAfterAssignment = textBeforeCursor.substring(assignmentPos + (colonEqualsPos == assignmentPos ? 2 : 1));
+                if (textAfterAssignment.trim().isEmpty()) {
+                    // We are after an equals or := followed by whitespace
+                    afterEquals = true;
+                }
             }
         }
+        
+        // Check if there are characters after the equals sign
+        String textAfterEquals = "";
+        int equalsPos = textBeforeCursor.lastIndexOf("=");
+        if (equalsPos >= 0 && offset > equalsPos + 1) {
+            textAfterEquals = textBeforeCursor.substring(equalsPos + 1).trim();
+            LOG.warn("🔍 [addStandardCompletionsAfterEquals] Text after = is: '" + textAfterEquals + "'");
+        }
+        
+        if (afterEquals || afterColonEquals || !textAfterEquals.isEmpty()) {
+            LOG.info("💡 [addStandardCompletionsAfterEquals] Detected after " + 
+                    (afterColonEquals ? ":=" : "=") + ", providing type-aware suggestions");
+            
+            // Try to infer the type of the left-hand side variable
+            String expectedType = inferExpectedType(textBeforeCursor);
+            LOG.warn("🔍 [addStandardCompletionsAfterEquals] Expected type for '" + 
+                   textBeforeCursor.trim() + "' is '" + expectedType + "'");
+            
+            // Log text after = for debugging
+            if (!textAfterEquals.isEmpty()) {
+                LOG.warn("🔍 [addStandardCompletionsAfterEquals] Text after = is: '" + textAfterEquals + "'");
+            }
+            
+            // Add all known type-appropriate values and functions
+            addCompletionsForExpectedType(result, expectedType, version);
+        }
+    }
+
+    /**
+     * Infers the expected type from the left-hand side of an assignment
+     * @param textBeforeCursor The text before the cursor position
+     * @return The expected type, or null if it cannot be determined
+     */
+    private String inferExpectedType(String textBeforeCursor) {
+        // First, check for variable declaration with explicit type: var TYPE varName = 
+        Pattern typedVarPattern = Pattern.compile("(?:var|varip)\\s+([a-zA-Z_]\\w*)\\s+([a-zA-Z_]\\w*)\\s*=");
+        Matcher typedVarMatcher = typedVarPattern.matcher(textBeforeCursor);
+        
+        String lastTypeDeclaration = null;
+        String lastVarName = null;
+        
+        while (typedVarMatcher.find()) {
+            lastTypeDeclaration = typedVarMatcher.group(1);
+            lastVarName = typedVarMatcher.group(2);
+        }
+        
+        if (lastTypeDeclaration != null && isKnownType(lastTypeDeclaration)) {
+            LOG.warn("🎯 [inferExpectedType] Found variable declaration with explicit type: " + lastTypeDeclaration + " for variable: " + lastVarName);
+            return lastTypeDeclaration;
+        }
+        
+        // If no explicit type declaration is found, proceed with the old method
+        // Trim to get the text right before the equals sign
+        String trimmedText = textBeforeCursor.trim();
+        if (trimmedText.endsWith("=")) {
+            trimmedText = trimmedText.substring(0, trimmedText.length() - 1).trim();
+        } else if (trimmedText.endsWith(":=")) {
+            trimmedText = trimmedText.substring(0, trimmedText.length() - 2).trim();
+        } else {
+            // This handles cases where there's text after the equals sign
+            int equalsIndex = trimmedText.lastIndexOf("=");
+            if (equalsIndex > 0) {
+                trimmedText = trimmedText.substring(0, equalsIndex).trim();
+            }
+        }
+        
+        // Log the text we're analyzing
+        LOG.warn("🔍 [inferExpectedType] Analyzing for type inference: '" + trimmedText + "'");
+        
+        // Extract the variable name from the left-hand side
+        String[] parts = trimmedText.split("\\s+");
+        if (parts.length == 0) {
+            LOG.warn("🔍 [inferExpectedType] No parts found in text: '" + trimmedText + "'");
+            return null;
+        }
+        
+        String variableName = parts[parts.length - 1].trim();
+        LOG.warn("🔍 [inferExpectedType] Extracted variable name: '" + variableName + "'");
+        
+        // Check if the variable declaration includes a type
+        for (int i = 0; i < parts.length - 1; i++) {
+            if (isKnownType(parts[i])) {
+                LOG.warn("🎯 [inferExpectedType] Found type declaration: " + parts[i]);
+                return parts[i];
+            }
+        }
+        
+        // Try to find previous declarations of this variable
+        String type = findTypeFromPreviousDeclarations(textBeforeCursor, variableName);
+        if (type != null) {
+            LOG.warn("🎯 [inferExpectedType] Found type from previous declarations: " + type + " for variable: " + variableName);
+            return type;
+        }
+        
+        // If we couldn't determine the type, return null (will include all completions)
+        LOG.warn("🔍 [inferExpectedType] Could not determine expected type for: '" + trimmedText + "'");
+        return null;
+    }
+
+    /**
+     * Searches for previous declarations of a variable to determine its type
+     * @param text The document text to search
+     * @param variableName The variable name to look for
+     * @return The detected type, or null if not found
+     */
+    private String findTypeFromPreviousDeclarations(String text, String variableName) {
+        // Regular expression to find variable declarations
+        // This handles cases like "var bool varName = " or "varName = "
+        Pattern pattern = Pattern.compile("(?:var\\s+|export\\s+|)(\\w+)\\s+(" + Pattern.quote(variableName) + ")\\s*(?:=|:=)");
+        Matcher matcher = pattern.matcher(text);
+        
+        // Find all occurrences (we want the last/most recent one)
+        String type = null;
+        while (matcher.find()) {
+            String potentialType = matcher.group(1);
+            if (isKnownType(potentialType)) {
+                type = potentialType;
+                LOG.info("🔍 [findTypeFromPreviousDeclarations] Found type " + type + " for variable " + variableName);
+            }
+        }
+        
+        return type;
+    }
+
+    /**
+     * Checks if a string is a known Pine Script type
+     * @param type The type string to check
+     * @return True if it's a known type, false otherwise
+     */
+    private boolean isKnownType(String type) {
+        return type != null && (
+            type.equals("bool") || type.equals("int") || 
+            type.equals("float") || type.equals("string") || 
+            type.equals("color") || type.equals("label") ||
+            type.equals("line") || type.equals("box") ||
+            type.equals("array") || type.equals("matrix") ||
+            type.equals("map") || type.equals("table")
+        );
+    }
+
+    /**
+     * Adds completion items that match the expected type
+     * @param result The completion result set to add suggestions to
+     * @param expectedType The expected type, or null for all types
+     * @param version The Pine Script version
+     */
+    private void addCompletionsForExpectedType(CompletionResultSet result, String expectedType, String version) {
+        LOG.info("💡 [addCompletionsForExpectedType] Adding completions for type: " + expectedType);
+        
+        loadDefinitionsForVersion(version);
+        Map<String, Set<String>> typedFunctions = new HashMap<>();
+        Map<String, Set<String>> typedVariables = new HashMap<>();
+        Map<String, Set<String>> typedConstants = new HashMap<>();
+        
+        // Initialize type maps if they don't exist
+        initializeTypeMaps(typedFunctions, typedVariables, typedConstants, version);
+        
+        // Add all items if no expected type or include type-specific and untyped items
+        if (expectedType == null) {
+            // Add all functions, variables and constants
+            LOG.info("💡 [addCompletionsForExpectedType] No specific type detected, adding all completions");
+            addAllCompletionItems(result, version);
+        } else {
+            LOG.info("💡 [addCompletionsForExpectedType] Adding completions for type: " + expectedType);
+            
+            // Add type-specific items
+            addTypeSpecificCompletions(result, expectedType, typedFunctions, typedVariables, typedConstants);
+            
+            // Add items with undefined or ambiguous types
+            addUntypedCompletions(result, typedFunctions, typedVariables, typedConstants);
+        }
+    }
+
+    /**
+     * Initialize the type maps for functions, variables, and constants
+     */
+    private void initializeTypeMaps(Map<String, Set<String>> typedFunctions, 
+                                   Map<String, Set<String>> typedVariables,
+                                   Map<String, Set<String>> typedConstants,
+                                   String version) {
+        // This would ideally use type information from the Pine Script definitions
+        // For now, we'll use simplified mapping based on naming conventions and known return types
+        
+        // Example initialization for boolean type
+        Set<String> boolFunctions = new HashSet<>(Arrays.asList(
+            "and", "or", "not", "crosses", "crossover", "crossunder", "change", "rising", "falling",
+            "na", "nz", "barstate.isfirst", "barstate.islast", "barstate.ishistory", "barstate.isrealtime",
+            "barstate.isnew", "barstate.isconfirmed", "timeframe.isdaily", "timeframe.isweekly", "timeframe.ismonthly", 
+            "syminfo.session.ismarket", "syminfo.session.ispremarket", "syminfo.session.ispostmarket", 
+            "line.is_expired", "box.is_expired", "label.is_expired"
+        ));
+        typedFunctions.put("bool", boolFunctions);
+        
+        Set<String> boolConstants = new HashSet<>(Arrays.asList("true", "false"));
+        typedConstants.put("bool", boolConstants);
+        
+        // Example initialization for numeric types (int, float)
+        Set<String> numericFunctions = new HashSet<>(Arrays.asList(
+            "abs", "avg", "ceil", "floor", "log", "log10", "max", "min", "pow", "round", "sign", "sqrt",
+            "sum", "acos", "asin", "atan", "cos", "sin", "tan", "exp", "random", "round", "close", "open",
+            "high", "low", "volume", "time", "timenow", "timestamp", "year", "month", "weekofyear", "dayofmonth",
+            "dayofweek", "hour", "minute", "second"
+        ));
+        typedFunctions.put("int", numericFunctions);
+        typedFunctions.put("float", numericFunctions);
+        
+        // String functions
+        Set<String> stringFunctions = new HashSet<>(Arrays.asList(
+            "str.tostring", "str.format", "str.length", "str.contains", "str.startswith", "str.endswith",
+            "str.split", "str.replace", "str.replace_all", "str.lower", "str.upper", "syminfo.ticker",
+            "syminfo.description", "syminfo.prefix", "syminfo.root", "syminfo.currency", "timeframe.period"
+        ));
+        typedFunctions.put("string", stringFunctions);
+        
+        // Add more types as needed...
+    }
+
+    /**
+     * Add completions for a specific expected type
+     */
+    private void addTypeSpecificCompletions(CompletionResultSet result, String expectedType,
+                                           Map<String, Set<String>> typedFunctions,
+                                           Map<String, Set<String>> typedVariables,
+                                           Map<String, Set<String>> typedConstants) {
+        LOG.info("💡 [addTypeSpecificCompletions] Adding completions for type: " + expectedType);
+        
+        // Add functions that return the expected type
+        if (typedFunctions.containsKey(expectedType)) {
+            for (String function : typedFunctions.get(expectedType)) {
+                result.addElement(LookupElementBuilder.create(function)
+                    .withPresentableText(function)
+                    .withTypeText(expectedType)
+                    .withIcon(AllIcons.Nodes.Function)
+                    .withBoldness(true));
+                LOG.info("➕ [addTypeSpecificCompletions] Added typed function: " + function + " (type: " + expectedType + ")");
+            }
+        }
+        
+        // Add variables of the expected type
+        if (typedVariables.containsKey(expectedType)) {
+            for (String variable : typedVariables.get(expectedType)) {
+                result.addElement(LookupElementBuilder.create(variable)
+                    .withPresentableText(variable)
+                    .withTypeText(expectedType)
+                    .withIcon(AllIcons.Nodes.Variable)
+                    .withBoldness(true));
+                LOG.info("➕ [addTypeSpecificCompletions] Added typed variable: " + variable + " (type: " + expectedType + ")");
+            }
+        }
+        
+        // Add constants of the expected type
+        if (typedConstants.containsKey(expectedType)) {
+            for (String constant : typedConstants.get(expectedType)) {
+                result.addElement(LookupElementBuilder.create(constant)
+                    .withPresentableText(constant)
+                    .withTypeText(expectedType)
+                    .withIcon(AllIcons.Nodes.Constant)
+                    .withBoldness(true));
+                LOG.info("➕ [addTypeSpecificCompletions] Added typed constant: " + constant + " (type: " + expectedType + ")");
+            }
+        }
+    }
+
+    /**
+     * Add completions for undefined or ambiguous types
+     */
+    private void addUntypedCompletions(CompletionResultSet result,
+                                      Map<String, Set<String>> typedFunctions,
+                                      Map<String, Set<String>> typedVariables,
+                                      Map<String, Set<String>> typedConstants) {
+        LOG.info("💡 [addUntypedCompletions] Adding completions for undefined or ambiguous types");
+        
+        // Get all typed items to exclude them
+        Set<String> allTypedFunctions = new HashSet<>();
+        Set<String> allTypedVariables = new HashSet<>();
+        Set<String> allTypedConstants = new HashSet<>();
+        
+        for (Set<String> functions : typedFunctions.values()) {
+            allTypedFunctions.addAll(functions);
+        }
+        
+        for (Set<String> variables : typedVariables.values()) {
+            allTypedVariables.addAll(variables);
+        }
+        
+        for (Set<String> constants : typedConstants.values()) {
+            allTypedConstants.addAll(constants);
+        }
+        
+        // Add untyped or ambiguous functions
+        for (String function : FUNCTIONS_MAP.getOrDefault(DEFAULT_VERSION, new HashSet<>())) {
+            if (!allTypedFunctions.contains(function)) {
+                result.addElement(LookupElementBuilder.create(function)
+                    .withPresentableText(function)
+                    .withTypeText("any")
+                    .withIcon(AllIcons.Nodes.Function));
+            }
+        }
+        
+        // Add untyped or ambiguous variables
+        for (String variable : VARIABLES_MAP.getOrDefault(DEFAULT_VERSION, new HashSet<>())) {
+            if (!allTypedVariables.contains(variable)) {
+                result.addElement(LookupElementBuilder.create(variable)
+                    .withPresentableText(variable)
+                    .withTypeText("any")
+                    .withIcon(AllIcons.Nodes.Variable));
+            }
+        }
+        
+        // Add untyped or ambiguous constants
+        for (String constant : CONSTANTS_MAP.getOrDefault(DEFAULT_VERSION, new HashSet<>())) {
+            if (!allTypedConstants.contains(constant)) {
+                result.addElement(LookupElementBuilder.create(constant)
+                    .withPresentableText(constant)
+                    .withTypeText("any")
+                    .withIcon(AllIcons.Nodes.Constant));
+            }
+        }
+    }
+
+    /**
+     * Add all completion items regardless of type
+     */
+    private void addAllCompletionItems(CompletionResultSet result, String version) {
+        // Add functions
+        for (String function : FUNCTIONS_MAP.getOrDefault(version, new HashSet<>())) {
+            result.addElement(LookupElementBuilder.create(function)
+                .withPresentableText(function)
+                .withIcon(AllIcons.Nodes.Function));
+        }
+        
+        // Add variables
+        for (String variable : VARIABLES_MAP.getOrDefault(version, new HashSet<>())) {
+            result.addElement(LookupElementBuilder.create(variable)
+                .withPresentableText(variable)
+                .withIcon(AllIcons.Nodes.Variable));
+        }
+        
+        // Add constants
+        for (String constant : CONSTANTS_MAP.getOrDefault(version, new HashSet<>())) {
+            result.addElement(LookupElementBuilder.create(constant)
+                .withPresentableText(constant)
+                .withIcon(AllIcons.Nodes.Constant));
+        }
+        
+        // Add keywords that can be used after equals
+        for (String keyword : KEYWORDS) {
+            if (keyword.equals("if") || keyword.equals("switch") || keyword.equals("for") ||
+                keyword.equals("while") || keyword.equals("array") || keyword.equals("matrix") ||
+                keyword.equals("map") || keyword.equals("function")) {
+                result.addElement(LookupElementBuilder.create(keyword)
+                    .withPresentableText(keyword)
+                    .withBoldness(true));
+            }
+        }
+        
+        // We can't add local variables here since parameters is not available
     }
     
     /**
@@ -1300,6 +2005,47 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      * Check if we're inside a function call and determine the current parameter index.
      */
     private void checkFunctionCallContext(String documentText, int offset) {
+        // First check if we're inside a variable declaration with type
+        Pattern varDeclPattern = Pattern.compile("(?:var|varip)\\s+([a-zA-Z_]\\w*)\\s+([a-zA-Z_]\\w*)\\s*=");
+        Matcher varDeclMatcher = varDeclPattern.matcher(documentText.substring(0, offset));
+        
+        boolean isVarDeclaration = false;
+        while (varDeclMatcher.find()) {
+            // If the declaration is near the cursor, we're likely in a variable declaration
+            if (varDeclMatcher.end() > offset - 20) {
+                isVarDeclaration = true;
+                LOG.warn("🔍 [checkFunctionCallContext] Detected variable declaration with type - not a function call");
+                
+                // Log the detected type and variable
+                String type = varDeclMatcher.group(1);
+                String varName = varDeclMatcher.group(2);
+                LOG.warn("🔍 [checkFunctionCallContext] Type: " + type + ", Variable: " + varName);
+                
+                // Reset function detection flags
+                isInsideFunctionCall = false;
+                currentFunctionName = null;
+                currentParamIndex = 0;
+                return;
+            }
+        }
+        
+        // Check if we're at the beginning of a new line or only typing an identifier
+        String textBeforeCursor = documentText.substring(0, offset);
+        int lastNewlinePos = textBeforeCursor.lastIndexOf('\n');
+        if (lastNewlinePos != -1) {
+            String afterNewline = textBeforeCursor.substring(lastNewlinePos + 1).trim();
+            // If there's only alphanumeric/underscore characters after the last newline, it's likely a variable/function name
+            if (afterNewline.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+                LOG.warn("🔍 [checkFunctionCallContext] Just typing identifier at beginning of line - not a function call");
+                // Reset function detection flags
+                isInsideFunctionCall = false;
+                currentFunctionName = null;
+                currentParamIndex = 0;
+                return;
+            }
+        }
+        
+        // If not in a variable declaration, proceed with regular function detection
         isInsideFunctionCall = false;
         currentFunctionName = null;
         currentParamIndex = 0;
@@ -1376,6 +2122,17 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         
         // If we're inside a function call and have a valid function start position
         if (openParenCount > 0 && !functionStartPositions.isEmpty()) {
+            // One more check: verify we're not in a variable declaration with an incomplete condition
+            // Reuse the existing textBeforeCursor variable instead of redeclaring it
+            Pattern varWithConditionPattern = Pattern.compile("(?:var|varip)\\s+(?:bool|int|float|string|color)\\s+[a-zA-Z_]\\w*\\s*=\\s*");
+            Matcher conditionMatcher = varWithConditionPattern.matcher(textBeforeCursor);
+            
+            if (conditionMatcher.find() && conditionMatcher.end() > offset - 20) {
+                // We're likely inside a condition for a variable assignment, not a function call
+                LOG.warn("🔍 [checkFunctionCallContext] Inside variable assignment condition - not treating as function call");
+                return;
+            }
+            
             isInsideFunctionCall = true;
             currentParamIndex = commaCount;
             
@@ -1763,72 +2520,337 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      */
     private void addScannedCompletions(@NotNull CompletionParameters parameters, 
                                       @NotNull CompletionResultSet result) {
-        // This is a simplified implementation
-        // A more comprehensive solution would parse the document to find local variables and functions
+        // Get document and offset
+        Document document = parameters.getOriginalFile().getViewProvider().getDocument();
+        if (document == null) return;
         
-        String documentText = parameters.getEditor().getDocument().getText();
+        String documentText = document.getText();
+        int offset = parameters.getOffset();
         
-        // Track variables we've already found to avoid duplicates
-        Set<String> foundVariables = new HashSet<>();
+        // Infer expected type from context (if after an assignment)
+        String textBeforeCursor = documentText.substring(0, offset);
+        String expectedType = null;
         
-        // Scan for variable declarations with var/varip
-        Pattern varPattern = Pattern.compile("(?:var|varip)\\s+([a-zA-Z_]\\w*)\\s*=");
-        Matcher varMatcher = varPattern.matcher(documentText);
-        
-        while (varMatcher.find()) {
-            String varName = varMatcher.group(1);
-            foundVariables.add(varName);
-            LookupElementBuilder element = LookupElementBuilder.create(varName)
-                    .withIcon(AllIcons.Nodes.Variable)
-                    .withTypeText("local var");
-            // Significantly increase priority for local variables so they appear at the top
-            result.addElement(PrioritizedLookupElement.withPriority(element, 1000));
+        // Check if we're after an equals sign
+        if (textBeforeCursor.trim().endsWith("=") || 
+            (textBeforeCursor.contains("=") && textBeforeCursor.substring(textBeforeCursor.lastIndexOf("=") + 1).trim().isEmpty())) {
+            expectedType = inferExpectedType(textBeforeCursor);
+            LOG.info("🔍 [addScannedCompletions] Inferred expected type for completion: " + expectedType);
         }
         
-        // Also scan for direct assignments like "identifier = value"
-        // This regex looks for word at start of line or after whitespace, followed by '='
-        // and avoids matches for '==', '<=', '>=', '!='
-        Pattern assignPattern = Pattern.compile("(?:^|\\s)([a-zA-Z_]\\w*)\\s*=[^=<>!]");
-        Matcher assignMatcher = assignPattern.matcher(documentText);
+        // Track found variables to avoid duplicates
+        Set<String> foundVars = new HashSet<>();
+        Map<String, String> varTypeMap = new HashMap<>();
         
-        while (assignMatcher.find()) {
-            String varName = assignMatcher.group(1);
-            // Skip keywords, built-ins, already found vars, and common non-var names
-            if (Arrays.asList(KEYWORDS).contains(varName) || 
-                Arrays.asList(BUILT_IN_VARIABLES).contains(varName) ||
-                Arrays.asList(NAMESPACES).contains(varName) ||
-                Arrays.asList(TYPES).contains(varName) ||
-                foundVariables.contains(varName) ||
-                varName.equals("if") || varName.equals("for")) {
+        // Log expected type for debugging
+        if (expectedType != null) {
+            LOG.info("🎯 [addScannedCompletions] Looking for variables with type: " + expectedType);
+        }
+        
+        // Check if we're in a request or declaration by examining the context
+        boolean inVariableDeclaration = false;
+        
+        if (textBeforeCursor.trim().matches(".*(?:var|varip)\\s+(?:[a-zA-Z_]\\w*)(?:\\s+[a-zA-Z_]\\w*)?\\s*(?:=)?\\s*$")) {
+            LOG.info("🔍 [addScannedCompletions] In variable declaration context");
+            inVariableDeclaration = true;
+        }
+        
+        // Regex patterns for variable detection
+        
+        // 1. Match variable declarations with explicit type: var TYPE varName = value or TYPE varName = value
+        Pattern typedVarPattern = Pattern.compile("(?:var\\s+|varip\\s+)?([a-zA-Z_]\\w*)\\s+([a-zA-Z_]\\w*)\\s*=");
+        Matcher typedVarMatcher = typedVarPattern.matcher(documentText);
+        
+        while (typedVarMatcher.find()) {
+            String type = typedVarMatcher.group(1);
+            String varName = typedVarMatcher.group(2);
+            
+            // Check if it's a valid type (not just another variable)
+            if (isKnownType(type)) {
+                varTypeMap.put(varName, type);
+                LOG.info("🔍 [addScannedCompletions] Found typed variable: " + varName + " with type: " + type);
+                
+                // Add the variable to completions if:
+                // 1. It matches the expected type, OR
+                // 2. No specific type is expected AND we're not in a variable declaration context
+                if ((expectedType != null && type.equals(expectedType)) || 
+                    (expectedType == null && !inVariableDeclaration)) {
+                    if (!foundVars.contains(varName)) {
+                        result.addElement(LookupElementBuilder.create(varName)
+                            .withPresentableText(varName)
+                            .withTypeText(type)
+                            .withIcon(AllIcons.Nodes.Variable)
+                            .withBoldness(true));
+                        foundVars.add(varName);
+                        LOG.info("➕ [addScannedCompletions] Added typed variable to completions: " + varName + " (type: " + type + ")");
+                    }
+                } else {
+                    LOG.info("⏩ [addScannedCompletions] Skipped variable " + varName + " - type " + type + 
+                             " doesn't match expected " + expectedType + " or in variable declaration context");
+                }
+            }
+        }
+        
+        // 2. Match untyped variable declarations: var/varip varName = value
+        Pattern untypedVarPattern = Pattern.compile("(?:var|varip)\\s+([a-zA-Z_]\\w*)\\s*=");
+        Matcher untypedVarMatcher = untypedVarPattern.matcher(documentText);
+        
+        while (untypedVarMatcher.find()) {
+            String varName = untypedVarMatcher.group(1);
+            
+            // Skip if we already found this variable with a type
+            if (!varTypeMap.containsKey(varName) && !foundVars.contains(varName)) {
+                // Try to infer type from assignment
+                String inferredType = inferTypeFromAssignment(documentText, varName);
+                
+                if (inferredType != null) {
+                    varTypeMap.put(varName, inferredType);
+                    LOG.info("🔍 [addScannedCompletions] Found untyped variable with inferred type: " + varName + " - " + inferredType);
+                    
+                    // Add if it matches expected type or no specific type is expected (and not in variable declaration)
+                    if ((expectedType != null && inferredType.equals(expectedType)) || 
+                        (expectedType == null && !inVariableDeclaration)) {
+                        result.addElement(LookupElementBuilder.create(varName)
+                            .withPresentableText(varName)
+                            .withTypeText(inferredType)
+                            .withIcon(AllIcons.Nodes.Variable)
+                            .withBoldness(true));
+                        foundVars.add(varName);
+                        LOG.info("➕ [addScannedCompletions] Added untyped variable with inferred type: " + varName);
+                    } else {
+                        LOG.info("⏩ [addScannedCompletions] Skipped untyped variable " + varName + " - inferred type " + 
+                                 inferredType + " doesn't match expected " + expectedType + " or in variable declaration context");
+                    }
+                } else if (expectedType == null && !inVariableDeclaration) {
+                    // For variables where we can't infer the type, include them only if no specific type is expected
+                    // and we're not in a variable declaration context
+                    result.addElement(LookupElementBuilder.create(varName)
+                        .withPresentableText(varName)
+                        .withTypeText("unknown")
+                        .withIcon(AllIcons.Nodes.Variable)
+                        .withBoldness(true));
+                    foundVars.add(varName);
+                    LOG.info("➕ [addScannedCompletions] Added untyped variable without known type: " + varName);
+                } else {
+                    LOG.info("⏩ [addScannedCompletions] Skipped untyped variable " + varName + " - unknown type doesn't match expected " + 
+                             expectedType + " or in variable declaration context");
+                }
+            }
+        }
+        
+        // 3. Match direct assignments to find previously declared variables: varName = value
+        Pattern assignmentPattern = Pattern.compile("(?:^|\\s)([a-zA-Z_]\\w*)\\s*=[^=<>!]");
+        Matcher assignmentMatcher = assignmentPattern.matcher(documentText);
+        
+        while (assignmentMatcher.find()) {
+            String varName = assignmentMatcher.group(1);
+            
+            // Skip reserved words and variables we've already found
+            if (varName.equals("var") || varName.equals("varip") || foundVars.contains(varName)) {
                 continue;
             }
             
-            foundVariables.add(varName);
-            LookupElementBuilder element = LookupElementBuilder.create(varName)
+            // Try to infer type from the assignment
+            String inferredType = inferTypeFromAssignment(documentText, varName);
+            
+            if (inferredType != null) {
+                // If we already have a type for this variable but it differs, we may have a reassignment
+                // In this case we keep the first type unless the new one is more specific
+                if (!varTypeMap.containsKey(varName)) {
+                    varTypeMap.put(varName, inferredType);
+                }
+                
+                LOG.info("🔍 [addScannedCompletions] Found variable from assignment: " + varName + " with type: " + inferredType);
+                
+                // Add if it matches expected type or no type is expected (and not in variable declaration)
+                if ((expectedType != null && inferredType.equals(expectedType)) || 
+                    (expectedType == null && !inVariableDeclaration)) {
+                    result.addElement(LookupElementBuilder.create(varName)
+                        .withPresentableText(varName)
+                        .withTypeText(inferredType)
+                        .withIcon(AllIcons.Nodes.Variable)
+                        .withBoldness(true));
+                    foundVars.add(varName);
+                    LOG.info("➕ [addScannedCompletions] Added variable from assignment: " + varName);
+                } else {
+                    LOG.info("⏩ [addScannedCompletions] Skipped variable from assignment " + varName + 
+                             " - type " + inferredType + " doesn't match expected " + expectedType + " or in variable declaration context");
+                }
+            } else if (expectedType == null && !inVariableDeclaration) {
+                // For variables where we can't infer the type, include them only if no specific type is expected
+                // and we're not in a variable declaration context
+                result.addElement(LookupElementBuilder.create(varName)
+                    .withPresentableText(varName)
+                    .withTypeText("unknown")
                     .withIcon(AllIcons.Nodes.Variable)
-                    .withTypeText("local var");
-            // High priority for local variables from assignments
-            result.addElement(PrioritizedLookupElement.withPriority(element, 950));
+                    .withBoldness(true));
+                foundVars.add(varName);
+                LOG.info("➕ [addScannedCompletions] Added variable from assignment without known type: " + varName);
+            } else {
+                LOG.info("⏩ [addScannedCompletions] Skipped variable " + varName + " - unknown type doesn't match expected " + 
+                         expectedType + " or in variable declaration context");
+            }
         }
         
-        // Very simplified scan for function declarations
-        Pattern funcPattern = Pattern.compile("(?:method|function)\\s+([a-zA-Z_]\\w*)\\s*\\(");
-        Matcher funcMatcher = funcPattern.matcher(documentText);
+        // 4. Match function declarations: function/method name(params)
+        Pattern functionPattern = Pattern.compile("(?:method|function)\\s+([a-zA-Z_]\\w*)\\s*\\(");
+        Matcher functionMatcher = functionPattern.matcher(documentText);
         
-        while (funcMatcher.find()) {
-            String funcName = funcMatcher.group(1);
-            LookupElementBuilder element = LookupElementBuilder.create(funcName)
+        while (functionMatcher.find()) {
+            String funcName = functionMatcher.group(1);
+            
+            // Functions can be used in any context unless we specifically expect a function type
+            // But not in variable declarations with explicit type
+            if ((expectedType == null || expectedType.equals("function")) && !inVariableDeclaration) {
+                result.addElement(LookupElementBuilder.create(funcName)
+                    .withPresentableText(funcName)
+                    .withTypeText("function")
                     .withIcon(AllIcons.Nodes.Function)
-                    .withTypeText("local function")
-                    .withInsertHandler((ctx, item) -> {
-                        // Add parentheses and move cursor inside
-                        Editor editor = ctx.getEditor();
-                        EditorModificationUtil.insertStringAtCaret(editor, "()");
-                        editor.getCaretModel().moveToOffset(ctx.getTailOffset() - 1);
-                    });
-            // Local functions get high priority but less than local variables
-            result.addElement(PrioritizedLookupElement.withPriority(element, 900));
+                    .withBoldness(true));
+                LOG.info("➕ [addScannedCompletions] Added function: " + funcName);
+            }
         }
+        
+        // Summary of variables found by type for debugging
+        for (Map.Entry<String, String> entry : varTypeMap.entrySet()) {
+            LOG.info("📊 [addScannedCompletions] Variable type map: " + entry.getKey() + " => " + entry.getValue());
+        }
+    }
+    
+    /**
+     * Helper method to check if text contains a pattern
+     */
+    private boolean textContains(String text, String pattern) {
+        return Pattern.compile(pattern).matcher(text).find();
+    }
+    
+    /**
+     * Helper method to infer variable type from assignment
+     */
+    private String inferTypeFromAssignment(String documentText, String varName) {
+        // Find the most recent assignment to this variable
+        Pattern assignmentPattern = Pattern.compile(Pattern.quote(varName) + "\\s*=\\s*([^\\n;]+)");
+        Matcher assignmentMatcher = assignmentPattern.matcher(documentText);
+        
+        String lastValue = null;
+        while (assignmentMatcher.find()) {
+            lastValue = assignmentMatcher.group(1).trim();
+        }
+        
+        if (lastValue == null) {
+            return null;
+        }
+        
+        LOG.info("🔍 [inferTypeFromAssignment] Analyzing value: '" + lastValue + "' for variable: " + varName);
+        
+        // Check for namespace-based assignments (color.red, array.new, etc.)
+        Pattern namespacePattern = Pattern.compile("^(\\w+)\\.");
+        Matcher namespaceMatcher = namespacePattern.matcher(lastValue);
+        if (namespaceMatcher.find()) {
+            String namespace = namespaceMatcher.group(1);
+            if (namespace.equals("color")) return "color";
+            else if (namespace.equals("array")) return "array";
+            else if (namespace.equals("matrix")) return "matrix";
+            else if (namespace.equals("map")) return "map";
+            else if (namespace.equals("table")) return "table";
+            else if (namespace.equals("line")) return "line";
+            else if (namespace.equals("label")) return "label";
+            else if (namespace.equals("box")) return "box";
+            else if (namespace.equals("str")) return "string";
+            else if (namespace.equals("math")) return "float";
+            else if (namespace.equals("int")) return "int";
+        }
+        
+        // Check for boolean literals (true/false)
+        if (lastValue.equals("true") || lastValue.equals("false")) {
+            LOG.info("🔍 [inferTypeFromAssignment] Boolean literal detected: " + lastValue);
+            return "bool";
+        }
+        
+        // Check for boolean operators and functions
+        if (lastValue.contains(" and ") || lastValue.contains(" or ") || 
+            lastValue.matches("^not\\s+.*") || lastValue.matches(".*\\s+crosses\\s+.*") ||
+            lastValue.matches(".*\\s+crossover\\s+.*") || lastValue.matches(".*\\s+crossunder\\s+.*")) {
+            LOG.info("🔍 [inferTypeFromAssignment] Boolean operation detected: " + lastValue);
+            return "bool";
+        }
+        
+        // Check for string literals (both ' and " quotes)
+        if ((lastValue.startsWith("\"") && lastValue.endsWith("\"")) ||
+            (lastValue.startsWith("'") && lastValue.endsWith("'"))) {
+            LOG.info("🔍 [inferTypeFromAssignment] String literal detected: " + lastValue);
+            return "string";
+        }
+        
+        // Check for numeric literals (distinguish between int and float)
+        if (lastValue.matches("^-?\\d+$")) {
+            LOG.info("🔍 [inferTypeFromAssignment] Integer literal detected: " + lastValue);
+            return "int";
+        } else if (lastValue.matches("^-?\\d+\\.\\d+$")) {
+            LOG.info("🔍 [inferTypeFromAssignment] Float literal detected: " + lastValue);
+            return "float";
+        }
+        
+        // Check for color literals (#RRGGBB format)
+        if (lastValue.matches("^#[0-9A-Fa-f]{6}$")) {
+            LOG.info("🔍 [inferTypeFromAssignment] Color literal detected: " + lastValue);
+            return "color";
+        }
+        
+        // Check for assignment from another variable - look up that variable's type
+        if (lastValue.matches("^[a-zA-Z_]\\w*$")) {
+            LOG.info("🔍 [inferTypeFromAssignment] Variable reference detected: " + lastValue);
+            // Try to find the type of the referenced variable
+            Pattern referencedVarPattern = Pattern.compile("(?:var|varip)\\s+(\\w+)\\s+" + Pattern.quote(lastValue) + "\\s*=");
+            Matcher referencedVarMatcher = referencedVarPattern.matcher(documentText);
+            
+            if (referencedVarMatcher.find()) {
+                String referencedType = referencedVarMatcher.group(1);
+                if (isKnownType(referencedType)) {
+                    LOG.info("🔍 [inferTypeFromAssignment] Found referenced variable type: " + referencedType);
+                    return referencedType;
+                }
+            }
+            
+            // Try infer type recursively for the referenced variable
+            String referencedType = inferTypeFromAssignment(documentText, lastValue);
+            if (referencedType != null) {
+                LOG.info("🔍 [inferTypeFromAssignment] Inferred referenced variable type: " + referencedType);
+                return referencedType;
+            }
+        }
+        
+        // Check direct function calls that might return known types
+        if (lastValue.contains("(") && lastValue.contains(")")) {
+            // Check for common function patterns that indicate return types
+            if (lastValue.matches("^(barstate\\.is|timeframe\\.is|syminfo\\.session\\.is|.*\\.is_)[a-zA-Z_]+.*")) {
+                LOG.info("🔍 [inferTypeFromAssignment] Boolean-returning function detected: " + lastValue);
+                return "bool";
+            }
+            
+            // Check for numeric functions
+            if (lastValue.matches("^(math\\.|ta\\.)[a-zA-Z_]+.*")) {
+                LOG.info("🔍 [inferTypeFromAssignment] Numeric function call detected: " + lastValue);
+                return "float";
+            }
+            
+            // Check for string functions
+            if (lastValue.matches("^str\\.[a-zA-Z_]+.*")) {
+                LOG.info("🔍 [inferTypeFromAssignment] String function call detected: " + lastValue);
+                return "string";
+            }
+            
+            // Check for comparison operators which return boolean
+            if (lastValue.contains(" == ") || lastValue.contains(" != ") || 
+                lastValue.contains(" > ") || lastValue.contains(" < ") || 
+                lastValue.contains(" >= ") || lastValue.contains(" <= ")) {
+                LOG.info("🔍 [inferTypeFromAssignment] Comparison operation detected: " + lastValue);
+                return "bool";
+            }
+        }
+        
+        LOG.info("🔍 [inferTypeFromAssignment] Could not determine type for: " + lastValue);
+        return null;
     }
     
     /**
@@ -2007,6 +3029,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         
                         // Force immediate popup - must happen on the UI thread
                         ApplicationManager.getApplication().invokeLater(() -> {
+                            if (project.isDisposed() || editor.isDisposed()) return;
+                            
                             PsiDocumentManager.getInstance(project).commitDocument(editor.getDocument());
                             LOG.warn(">>>>>> Invoking member lookup for editor");
                             
@@ -2016,15 +3040,22 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                 AutoPopupController controller = AutoPopupController.getInstance(project);
                                 controller.autoPopupMemberLookup(editor, null);
                                 
+                                // Also schedule auto-popup for good measure
+                                controller.scheduleAutoPopup(editor);
+                                
                                 // Schedule a backup approach with a slight delay
                                 ApplicationManager.getApplication().invokeLater(() -> {
                                     try {
+                                        if (project.isDisposed() || editor.isDisposed()) return;
+                                        
                                         LOG.warn(">>>>>> Backup: Scheduling general completion popup");
                                         controller.scheduleAutoPopup(editor);
                                         
                                         // Manually attempt to insert a dummy character and delete it to force a refresh
                                         ApplicationManager.getApplication().invokeLater(() -> {
                                             try {
+                                                if (project.isDisposed() || editor.isDisposed()) return;
+                                                
                                                 LOG.warn(">>>>>> Last resort: Forcing code completion refresh");
                                                 controller.scheduleAutoPopup(editor);
                                             } catch (Exception e) {
@@ -2146,6 +3177,36 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                  * Improved to be more accurate at detecting being inside a function call
                  */
                 private boolean isInsideFunctionCall(String text, int offset) {
+                    // Skip this check if we're in a variable declaration with type
+                    String textToCheck = text.substring(0, offset);
+                    
+                    // Check if we're just typing a new identifier at the beginning of a line
+                    int lastNewlinePos = textToCheck.lastIndexOf('\n');
+                    if (lastNewlinePos != -1) {
+                        String afterNewline = textToCheck.substring(lastNewlinePos + 1).trim();
+                        // If there's only alphanumeric/underscore characters after the last newline, it's likely a variable/function name
+                        if (afterNewline.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+                            LOG.warn(">>>>>> NOT A FUNCTION CALL: Just typing identifier at beginning of line");
+                            return false;
+                        }
+                    }
+                    
+                    // Check for variable declaration patterns that should NOT trigger function detection
+                    Pattern varDeclarationPattern = Pattern.compile("(?:var|varip)\\s+(?:[a-zA-Z_]\\w*)\\s+(?:[a-zA-Z_]\\w*)\\s*=");
+                    Matcher varDeclMatcher = varDeclarationPattern.matcher(textToCheck);
+                    boolean isVarDeclaration = false;
+                    while (varDeclMatcher.find()) {
+                        // If the last match is close to the cursor, we're likely in a variable declaration
+                        if (varDeclMatcher.end() > offset - 20) {
+                            isVarDeclaration = true;
+                            LOG.warn(">>>>>> NOT A FUNCTION CALL: Detected variable declaration with type");
+                        }
+                    }
+                    
+                    if (isVarDeclaration) {
+                        return false;
+                    }
+                    
                     // Simple check: look for an open parenthesis that's not closed
                     int openCount = 0;
                     int closeCount = 0;
@@ -2288,5 +3349,255 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         }
         
         return false;
+    }
+
+    /**
+     * Returns a map of suggested values for a specified type
+     */
+    private Map<String, String> getValueSuggestionsForTypeWithPrefix(String type, String variableName, String prefix, int offset) {
+        Map<String, String> suggestions = new HashMap<>();
+        String normalizedType = normalizeType(type.toLowerCase());
+        
+        // Boolean suggestions
+        if (normalizedType.contains("bool")) {
+            suggestions.put("true", "boolean");
+            suggestions.put("false", "boolean");
+        }
+        
+        // String suggestions
+        else if (normalizedType.contains("string")) {
+            suggestions.put("\"\"", "string");
+            // Add common string values based on variable name
+            if (variableName.toLowerCase().contains("title")) {
+                suggestions.put("\"" + variableName + "\"", "string");
+            } else if (variableName.toLowerCase().contains("color")) {
+                suggestions.put("\"blue\"", "string");
+                suggestions.put("\"red\"", "string");
+                suggestions.put("\"green\"", "string");
+                suggestions.put("\"yellow\"", "string");
+                suggestions.put("\"purple\"", "string");
+                suggestions.put("\"orange\"", "string");
+                suggestions.put("\"black\"", "string");
+                suggestions.put("\"white\"", "string");
+            } else if (variableName.toLowerCase().contains("time") || variableName.toLowerCase().contains("date")) {
+                suggestions.put("\"YYYY-MM-DD\"", "string");
+                suggestions.put("\"HH:mm:ss\"", "string");
+            }
+        }
+        
+        // Color suggestions
+        else if (normalizedType.contains("color")) {
+            suggestions.put("color.new(255, 255, 255, 0)", "color");
+            suggestions.put("color.rgb(255, 255, 255)", "color");
+            suggestions.put("color.red", "color");
+            suggestions.put("color.green", "color");
+            suggestions.put("color.blue", "color");
+            suggestions.put("color.yellow", "color");
+            suggestions.put("color.purple", "color");
+            suggestions.put("color.orange", "color");
+            suggestions.put("color.white", "color");
+            suggestions.put("color.black", "color");
+        }
+        
+        // Integer/float suggestions
+        else if (normalizedType.contains("int")) {
+            suggestions.put("0", "integer");
+            suggestions.put("1", "integer");
+            suggestions.put("-1", "integer");
+            // Add specific integer suggestions based on variable name
+            if (variableName.toLowerCase().contains("length") || 
+                variableName.toLowerCase().contains("period") || 
+                variableName.toLowerCase().contains("size")) {
+                suggestions.put("14", "integer");
+                suggestions.put("20", "integer");
+                suggestions.put("50", "integer");
+                suggestions.put("200", "integer");
+            } else if (variableName.toLowerCase().contains("offset")) {
+                suggestions.put("0", "integer");
+                suggestions.put("1", "integer");
+                suggestions.put("2", "integer");
+            }
+        }
+        else if (normalizedType.contains("float")) {
+            suggestions.put("0.0", "float");
+            suggestions.put("1.0", "float");
+            suggestions.put("-1.0", "float");
+            // Add specific float suggestions based on variable name
+            if (variableName.toLowerCase().contains("percent") || 
+                variableName.toLowerCase().contains("ratio")) {
+                suggestions.put("0.5", "float");
+                suggestions.put("0.1", "float");
+                suggestions.put("0.01", "float");
+            } else if (variableName.toLowerCase().contains("price")) {
+                suggestions.put("close", "float");
+                suggestions.put("open", "float");
+                suggestions.put("high", "float");
+                suggestions.put("low", "float");
+                suggestions.put("hl2", "float");
+                suggestions.put("hlc3", "float");
+                suggestions.put("ohlc4", "float");
+            }
+        }
+        
+        // Array suggestions
+        else if (normalizedType.contains("array")) {
+            String elementType = extractArrayElementType(type);
+            if (!elementType.isEmpty()) {
+                suggestions.put("array.new_" + normalizeType(elementType) + "(0)", "array");
+                if (normalizedType.contains("float")) {
+                    suggestions.put("array.new_float(0)", "array<float>");
+                } else if (normalizedType.contains("int")) {
+                    suggestions.put("array.new_int(0)", "array<int>");
+                } else if (normalizedType.contains("bool")) {
+                    suggestions.put("array.new_bool(0)", "array<bool>");
+                } else if (normalizedType.contains("string")) {
+                    suggestions.put("array.new_string(0)", "array<string>");
+                } else if (normalizedType.contains("color")) {
+                    suggestions.put("array.new_color(0)", "array<color>");
+                } else {
+                    suggestions.put("array.new_float(0)", "array<float>");
+                    suggestions.put("array.new_int(0)", "array<int>");
+                    suggestions.put("array.new_bool(0)", "array<bool>");
+                    suggestions.put("array.new_string(0)", "array<string>");
+                    suggestions.put("array.new_color(0)", "array<color>");
+                }
+            } else {
+                // If element type is not specified
+                suggestions.put("array.new_float(0)", "array<float>");
+                suggestions.put("array.new_int(0)", "array<int>");
+                suggestions.put("array.new_bool(0)", "array<bool>");
+                suggestions.put("array.new_string(0)", "array<string>");
+                suggestions.put("array.new_color(0)", "array<color>");
+            }
+        }
+        
+        // Matrix suggestions
+        else if (normalizedType.contains("matrix")) {
+            suggestions.put("matrix.new<float>(0, 0)", "matrix");
+            suggestions.put("matrix.new<int>(0, 0)", "matrix");
+            suggestions.put("matrix.new<bool>(0, 0)", "matrix");
+            suggestions.put("matrix.new<string>(0, 0)", "matrix");
+            suggestions.put("matrix.new<color>(0, 0)", "matrix");
+        }
+        
+        // Linestyle suggestions
+        else if (normalizedType.contains("linestyle") || 
+                 (variableName.toLowerCase().contains("style") && variableName.toLowerCase().contains("line"))) {
+            suggestions.put("line.style_solid", "linestyle");
+            suggestions.put("line.style_dotted", "linestyle");
+            suggestions.put("line.style_dashed", "linestyle");
+            suggestions.put("line.style_arrow_left", "linestyle");
+            suggestions.put("line.style_arrow_right", "linestyle");
+            suggestions.put("line.style_arrow_both", "linestyle");
+        }
+        
+        // Label style suggestions
+        else if (normalizedType.contains("labelstyle") || 
+                 (variableName.toLowerCase().contains("style") && variableName.toLowerCase().contains("label"))) {
+            suggestions.put("label.style_none", "labelstyle");
+            suggestions.put("label.style_label_down", "labelstyle");
+            suggestions.put("label.style_label_up", "labelstyle");
+            suggestions.put("label.style_label_left", "labelstyle");
+            suggestions.put("label.style_label_right", "labelstyle");
+            suggestions.put("label.style_label_center", "labelstyle");
+        }
+        
+        // Chart position suggestions
+        else if (normalizedType.contains("position") || 
+                 variableName.toLowerCase().contains("position")) {
+            suggestions.put("position.top_left", "position");
+            suggestions.put("position.top_center", "position");
+            suggestions.put("position.top_right", "position");
+            suggestions.put("position.middle_left", "position");
+            suggestions.put("position.middle_center", "position");
+            suggestions.put("position.middle_right", "position");
+            suggestions.put("position.bottom_left", "position");
+            suggestions.put("position.bottom_center", "position");
+            suggestions.put("position.bottom_right", "position");
+        }
+        
+        // Any other type case, provide some generic suggestions
+        if (suggestions.isEmpty()) {
+            // Add null as a fallback for any type
+            suggestions.put("na", "null");
+        }
+        
+        // Filter suggestions by prefix if provided
+        if (prefix != null && !prefix.isEmpty()) {
+            Map<String, String> filteredSuggestions = new HashMap<>();
+            for (Map.Entry<String, String> entry : suggestions.entrySet()) {
+                if (entry.getKey().startsWith(prefix)) {
+                    filteredSuggestions.put(entry.getKey(), entry.getValue());
+                }
+            }
+            return filteredSuggestions;
+        }
+        
+        return suggestions;
+    }
+    
+    /**
+     * Normalizes a type string to simplify type checking
+     */
+    private String normalizeType(String type) {
+        if (type == null) return "";
+        // Basic normalization - strip whitespace and simplify
+        String normalized = type.trim().toLowerCase();
+        // Remove array/series specifiers but retain the base type
+        if (normalized.startsWith("array<") && normalized.endsWith(">")) {
+            return "array_" + normalized.substring(6, normalized.length() - 1);
+        }
+        if (normalized.startsWith("series(") && normalized.endsWith(")")) {
+            return normalized.substring(7, normalized.length() - 1) + "_series";
+        }
+        return normalized;
+    }
+    
+    /**
+     * Extracts the element type from an array type specification
+     */
+    private String extractArrayElementType(String type) {
+        if (type == null) return "";
+        // Handle explicit array<type> syntax
+        if (type.contains("<") && type.contains(">")) {
+            int start = type.indexOf('<') + 1;
+            int end = type.lastIndexOf('>');
+            if (start < end) {
+                return type.substring(start, end).trim();
+            }
+        }
+        // Try to infer from naming conventions
+        if (type.toLowerCase().contains("float")) return "float";
+        if (type.toLowerCase().contains("int")) return "int";
+        if (type.toLowerCase().contains("bool")) return "bool";
+        if (type.toLowerCase().contains("string")) return "string";
+        if (type.toLowerCase().contains("color")) return "color";
+        return "";
+    }
+
+    // Fix compilation error at the end of the file
+    private String getColorNameFromHex(String hex) {
+        if (hex == null || hex.isEmpty() || !hex.startsWith("#")) {
+            return "";
+        }
+        
+        // Convert common colors
+        if (hex.equalsIgnoreCase("#FF0000")) return "color.red";
+        if (hex.equalsIgnoreCase("#00FF00")) return "color.green";
+        if (hex.equalsIgnoreCase("#0000FF")) return "color.blue";
+        if (hex.equalsIgnoreCase("#FFFF00")) return "color.yellow";
+        if (hex.equalsIgnoreCase("#00FFFF")) return "color.cyan";
+        if (hex.equalsIgnoreCase("#FF00FF")) return "color.magenta";
+        if (hex.equalsIgnoreCase("#FFFFFF")) return "color.white";
+        if (hex.equalsIgnoreCase("#000000")) return "color.black";
+        
+        // Special cases
+        if (hex.equalsIgnoreCase("#FFA500")) return "color.orange";
+        if (hex.equalsIgnoreCase("#800080")) return "color.purple";
+        if (hex.equalsIgnoreCase("#A52A2A")) return "color.brown";
+        
+        // Default to just using color.new
+        if (hex.toLowerCase().contains("color")) return "color";
+        return "";
     }
 }
