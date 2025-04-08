@@ -1146,12 +1146,15 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         currentFunctionName = null;
         currentParamIndex = 0;
         
-        // Check if we're inside a function call
+        // For nested function calls, we need to track parenthesis depths and function starts
         int openParenCount = 0;
         int commaCount = 0;
         boolean insideString = false;
         boolean insideParamValue = false;
-        int functionNameStart = -1;
+        
+        // Stores start positions of potential function names at each parenthesis depth
+        // The last entry is the innermost function (closest to cursor)
+        List<Integer> functionStartPositions = new ArrayList<>();
         
         for (int i = 0; i < offset; i++) {
             char c = documentText.charAt(i);
@@ -1169,27 +1172,43 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             
             // Track parentheses and parameter state
             if (c == '(') {
-                if (openParenCount == 0) {
-                    // Look backwards to find function name
-                    functionNameStart = i - 1;
-                    while (functionNameStart >= 0 && 
-                           (Character.isJavaIdentifierPart(documentText.charAt(functionNameStart)) || 
-                            documentText.charAt(functionNameStart) == '.')) {
-                        functionNameStart--;
-                    }
-                    functionNameStart++;
+                // If we're starting a new nesting level, find the function name
+                int functionNameStart = i - 1;
+                while (functionNameStart >= 0 && 
+                       (Character.isJavaIdentifierPart(documentText.charAt(functionNameStart)) || 
+                        documentText.charAt(functionNameStart) == '.')) {
+                    functionNameStart--;
                 }
+                functionNameStart++; // Adjust to the actual start
+                
+                // Only add if we actually found a function name
+                if (functionNameStart < i && functionNameStart >= 0) {
+                    // Store the start position of this function name
+                    functionStartPositions.add(functionNameStart);
+                }
+                
                 openParenCount++;
+                
+                // Reset comma count when entering a new function
+                if (openParenCount == functionStartPositions.size()) {
+                    commaCount = 0;
+                }
+                
                 insideParamValue = false;
             } else if (c == ')') {
                 openParenCount--;
-                if (openParenCount == 0) {
-                    functionNameStart = -1;
-                    commaCount = 0;
-                    insideParamValue = false;
+                
+                // If we're closing a function call, remove its entry
+                if (openParenCount < functionStartPositions.size() && !functionStartPositions.isEmpty()) {
+                    functionStartPositions.remove(functionStartPositions.size() - 1);
                 }
+                
+                insideParamValue = false;
             } else if (c == ',' && openParenCount > 0) {
-                commaCount++;
+                // Only count commas at the current function nesting level
+                if (openParenCount == functionStartPositions.size()) {
+                    commaCount++;
+                }
                 insideParamValue = false;
             } else if (c == '=' && openParenCount > 0) {
                 // We're now inside parameter value after equals sign
@@ -1197,15 +1216,30 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             }
         }
         
-        if (openParenCount > 0 && functionNameStart >= 0 && functionNameStart < offset) {
+        // If we're inside a function call and have a valid function start position
+        if (openParenCount > 0 && !functionStartPositions.isEmpty()) {
             isInsideFunctionCall = true;
             currentParamIndex = commaCount;
             
-            // Extract the function name
-            int functionNameEnd = documentText.indexOf('(', functionNameStart);
+            // Get the innermost function name (last in the list)
+            int functionNameStart = functionStartPositions.get(functionStartPositions.size() - 1);
+            
+            // Find the end of the function name (the open parenthesis)
+            int functionNameEnd = -1;
+            int tempOpenCount = 0;
+            for (int i = functionNameStart; i < documentText.length() && i < offset; i++) {
+                if (documentText.charAt(i) == '(') {
+                    if (tempOpenCount == 0) {
+                        functionNameEnd = i;
+                        break;
+                    }
+                    tempOpenCount++;
+                }
+            }
+            
             if (functionNameEnd > functionNameStart) {
                 currentFunctionName = documentText.substring(functionNameStart, functionNameEnd);
-                LOG.info("Inside function call: " + currentFunctionName + ", parameter index: " + currentParamIndex);
+                LOG.info("Inside innermost function call: " + currentFunctionName + ", parameter index: " + currentParamIndex);
             }
         }
     }
