@@ -43,6 +43,8 @@ import org.json.JSONObject;
 import com.intellij.codeInsight.completion.CompletionService;
 import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiFile;
+import com.intellij.codeInsight.completion.PrefixMatcher;
+import com.intellij.codeInsight.completion.impl.CamelHumpMatcher;
 
 public class PineScriptCompletionContributor extends CompletionContributor {
     private static final Logger LOG = Logger.getInstance(PineScriptCompletionContributor.class);
@@ -143,8 +145,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         super();
         LOG.info("PineScriptCompletionContributor initialized");
         
-        // Don't use TypedHandler - it's not reliable for autocompletion
-        // Instead we'll rely on CompletionContributor.fillCompletionVariants
+        // Install custom completion handler to ensure parameter info and dot completion works correctly
+        CompletionAutoPopupHandler.install(ApplicationManager.getApplication());
         
         // Standard extension for completions
         extend(CompletionType.BASIC,
@@ -346,6 +348,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         if (offset > 0) {
             String text = document.getText();
             char prevChar = text.charAt(offset - 1);
+            
+            // Case 1: Text ends with a dot - standard dot completion
             if (prevChar == '.') {
                 String textBeforeCursor = text.substring(0, offset);
                 String namespace = findNamespaceBeforeDot(textBeforeCursor);
@@ -392,6 +396,107 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                     }
                     
                     LOG.warn("🔍 [fillCompletionVariants] Has matching definitions for namespace: " + hasMatchingDefinition);
+                    
+                    // If we have a valid namespace with members, add them directly
+                    if (isBuiltInNamespace || hasMatchingDefinition) {
+                        LOG.warn("🔍 [fillCompletionVariants] Adding namespace method completions");
+                        addNamespaceMethodCompletions(result, namespace, version);
+                        return; // Skip standard completion
+                    }
+                }
+            }
+            // Case 2: We're after a dot with some text already (e.g., "request.sec")
+            else {
+                String textBeforeCursor = text.substring(0, offset);
+                int lastDotPos = textBeforeCursor.lastIndexOf('.');
+                
+                // Check if we have a dot in the text and there's text after it
+                if (lastDotPos >= 0 && lastDotPos < textBeforeCursor.length() - 1) {
+                    // Rather than using a hacky distance check, validate the context properly:
+                    // 1. Check if we're still in an identifier context after the dot
+                    // 2. If we encounter any delimiter or non-identifier character after the dot,
+                    //    we're no longer in a namespace completion context
+                    
+                    // Get the text after the last dot
+                    String textAfterDot = textBeforeCursor.substring(lastDotPos + 1);
+                    
+                    // Check if we've moved beyond the identifier context by looking for delimiters/operators
+                    boolean isStillInMemberContext = true;
+                    
+                    // Rather than listing characters that break the context, check if all characters
+                    // after the dot match valid identifier characters (letters, digits, underscore)
+                    Pattern validIdentifierPattern = Pattern.compile("^[a-zA-Z0-9_]+$");
+                    if (!validIdentifierPattern.matcher(textAfterDot).matches()) {
+                        isStillInMemberContext = false;
+                        LOG.warn("🔍 [fillCompletionVariants] Not in member context anymore, found non-identifier character in: '" + textAfterDot + "'");
+                    }
+                    
+                    // Only process namespace completion if we're still in a member access context
+                    if (isStillInMemberContext) {
+                        // Check if we're inside a comment
+                        boolean insideComment = isInsideComment(textBeforeCursor, lastDotPos);
+                        if (insideComment) {
+                            LOG.warn("🔍 [fillCompletionVariants] Dot is inside a comment, skipping namespace completion");
+                        } else {
+                            String potentialNamespace = findNamespaceAtPosition(textBeforeCursor, lastDotPos);
+                            String partialText = textBeforeCursor.substring(lastDotPos + 1);
+                            
+                            LOG.warn("🔍 [fillCompletionVariants] Found dot with text after it. " +
+                                   "Potential namespace: '" + potentialNamespace + "', " +
+                                   "Partial text: '" + partialText + "'");
+                            
+                            if (potentialNamespace != null) {
+                                boolean isBuiltInNamespace = Arrays.asList(NAMESPACES).contains(potentialNamespace);
+                                String version = detectPineScriptVersion(text);
+                                
+                                // Check if this is a valid namespace with members
+                                boolean hasMatchingDefinition = false;
+                                Set<String> functions = FUNCTIONS_MAP.getOrDefault(version, new HashSet<>());
+                                Set<String> variables = VARIABLES_MAP.getOrDefault(version, new HashSet<>());
+                                Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
+                                
+                                for (String def : functions) {
+                                    if (def.startsWith(potentialNamespace + ".")) {
+                                        hasMatchingDefinition = true;
+                                        break;
+                                    }
+                                }
+                                
+                                if (!hasMatchingDefinition) {
+                                    for (String def : variables) {
+                                        if (def.startsWith(potentialNamespace + ".")) {
+                                            hasMatchingDefinition = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                if (!hasMatchingDefinition) {
+                                    for (String def : constants) {
+                                        if (def.startsWith(potentialNamespace + ".")) {
+                                            hasMatchingDefinition = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                // For valid namespaces, add members with a custom prefix matcher
+                                if (isBuiltInNamespace || hasMatchingDefinition) {
+                                    LOG.warn("🔍 [fillCompletionVariants] Creating filtered result set with prefix: '" + partialText + "'");
+                                    
+                                    // Create a filtered result set with the prefix to match
+                                    CompletionResultSet filteredResult = result.withPrefixMatcher(partialText);
+                                    LOG.warn("🔍 [fillCompletionVariants] Created filtered result set for: '" + partialText + "'");
+                                    
+                                    // Add namespace method completions with this prefix matcher
+                                    addNamespaceMethodCompletions(filteredResult, potentialNamespace, version);
+                                    return; // Skip standard completion
+                                }
+                            }
+                        }
+                    } else {
+                        LOG.warn("🔍 [fillCompletionVariants] Cursor is no longer in a namespace member completion context");
+                    }
                 }
             }
         }
@@ -877,6 +982,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      */
     private void addNamespaceMethodCompletions(CompletionResultSet result, String namespace, String version) {
         LOG.warn("🔍 [addNamespaceMethodCompletions] CALLED for namespace: '" + namespace + "', version: " + version);
+        LOG.warn("🔍 [addNamespaceMethodCompletions] Using prefix matcher: '" + result.getPrefixMatcher().getPrefix() + "'");
         
         try {
             // Try to get field access to count elements added
@@ -1116,11 +1222,15 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      * Adds function parameter completions to the result.
      */
     private void addFunctionParameterCompletions(CompletionResultSet result, String functionName, String version) {
+        LOG.warn("🔍 Adding parameter completions for function: " + functionName + ", version: " + version);
+        
         Map<String, Map<String, String>> functionParams = FUNCTION_PARAMETERS_CACHE.getOrDefault(version, 
                                                           initFunctionParametersForVersion(version));
         
         if (functionParams.containsKey(functionName)) {
             Map<String, String> params = functionParams.get(functionName);
+            LOG.warn("🔍 Found " + params.size() + " parameters for function " + functionName);
+            
             for (Map.Entry<String, String> entry : params.entrySet()) {
                 String paramName = entry.getKey();
                 String paramType = entry.getValue();
@@ -1128,12 +1238,60 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 LookupElementBuilder element = LookupElementBuilder.create(paramName + "=")
                         .withIcon(AllIcons.Nodes.Parameter)
                         .withTypeText(paramType)
+                        .withBoldness(true)
                         .withInsertHandler((ctx, item) -> {
                             // Move caret after equals sign to let user input the value
                             Editor editor = ctx.getEditor();
                             editor.getCaretModel().moveToOffset(ctx.getTailOffset());
+                            
+                            // Trigger autocompletion for the parameter value
+                            ApplicationManager.getApplication().invokeLater(() -> {
+                                AutoPopupController.getInstance(ctx.getProject()).scheduleAutoPopup(editor);
+                            });
                         });
                 result.addElement(PrioritizedLookupElement.withPriority(element, 3000)); // Highest priority
+            }
+        } else {
+            LOG.warn("🔍 No parameters found for function " + functionName);
+            
+            // Check function arguments cache as a fallback
+            Map<String, List<Map<String, String>>> functionArgs = FUNCTION_ARGUMENTS_CACHE.getOrDefault(version, new HashMap<>());
+            if (functionArgs.containsKey(functionName)) {
+                List<Map<String, String>> args = functionArgs.get(functionName);
+                LOG.warn("🔍 Found " + args.size() + " arguments from arguments cache for function " + functionName);
+                
+                for (Map<String, String> arg : args) {
+                    if (arg.containsKey("name")) {
+                        String paramName = arg.get("name");
+                        String paramType = arg.getOrDefault("type", "any");
+                        
+                        LookupElementBuilder element = LookupElementBuilder.create(paramName + "=")
+                                .withIcon(AllIcons.Nodes.Parameter)
+                                .withTypeText(paramType)
+                                .withBoldness(true)
+                                .withInsertHandler((ctx, item) -> {
+                                    // Move caret after equals sign to let user input the value
+                                    Editor editor = ctx.getEditor();
+                                    editor.getCaretModel().moveToOffset(ctx.getTailOffset());
+                                    
+                                    // Trigger autocompletion for the parameter value
+                                    ApplicationManager.getApplication().invokeLater(() -> {
+                                        AutoPopupController.getInstance(ctx.getProject()).scheduleAutoPopup(editor);
+                                    });
+                                });
+                        result.addElement(PrioritizedLookupElement.withPriority(element, 3000)); // Highest priority
+                    }
+                }
+            }
+        }
+        
+        // Also add these parameters to any other similar functions
+        if (functionName.contains(".")) {
+            // For functions like "strategy.entry", try checking just "entry" parameters too
+            String baseFunctionName = functionName.substring(functionName.lastIndexOf('.') + 1);
+            if (!baseFunctionName.equals(functionName) && functionParams.containsKey(baseFunctionName)) {
+                LOG.warn("🔍 Also checking base function name: " + baseFunctionName);
+                addFunctionParameterCompletions(result, baseFunctionName, version);
             }
         }
     }
@@ -1884,33 +2042,154 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         return;
                     }
                     
+                    // NEW: Check if we're typing after a dot (e.g., "request.s" when typing 's')
+                    // This handles the case when you delete text after a dot and start typing again
+                    if (Character.isJavaIdentifierPart(c) && offset > 1) {
+                        // Check if there's a dot before our current position
+                        String textBeforeCursor = documentText.substring(0, offset - 1); // Exclude the character we just typed
+                        int lastDotPos = textBeforeCursor.lastIndexOf('.');
+                        
+                        // Check if we found a dot and we're typing right after it or 
+                        // after some identifier characters that follow the dot
+                        if (lastDotPos >= 0) {
+                            // Check if there are only valid identifier characters between the dot and our current position
+                            String textAfterDot = textBeforeCursor.substring(lastDotPos + 1);
+                            boolean isValidContext = true;
+                            
+                            for (char ch : textAfterDot.toCharArray()) {
+                                if (!Character.isJavaIdentifierPart(ch)) {
+                                    isValidContext = false;
+                                    break;
+                                }
+                            }
+                            
+                            if (isValidContext) {
+                                // We're typing a valid identifier character after a dot or after text that follows a dot
+                                String potentialNamespace = findNamespaceAtPosition(textBeforeCursor, lastDotPos);
+                                LOG.warn(">>>>>> TYPING AFTER DOT: Character '" + c + "' at offset " + offset + 
+                                         ", potential namespace: " + potentialNamespace);
+                                
+                                // Only trigger completion if we have a valid namespace
+                                if (potentialNamespace != null) {
+                                    // Calculate the complete text after the dot to use for filtering
+                                    String completeFilterText = textAfterDot + c;
+                                    LOG.warn(">>>>>> Complete filter text: '" + completeFilterText + "'");
+                                    
+                                    // Trigger popup with a slight delay to ensure the character is processed
+                                    ApplicationManager.getApplication().invokeLater(() -> {
+                                        try {
+                                            PsiDocumentManager.getInstance(project).commitDocument(document);
+                                            LOG.warn(">>>>>> Triggering completion popup after typing character after dot");
+                                            
+                                            // Create a custom prefix lookup that will force the correct filtering
+                                            AutoPopupController controller = AutoPopupController.getInstance(project);
+                                            
+                                            // Trigger the proper completion popup
+                                            controller.autoPopupMemberLookup(editor, null);
+                                        } catch (Exception e) {
+                                            LOG.warn("Error triggering completion after dot: " + e.getMessage());
+                                        }
+                                    });
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                    
                     // Trigger completion popup for space inside function call or comma in function call (not header)
                     if ((c == ' ' && isInsideFunctionCall(documentText, offset)) || 
                         (c == ',' && isInsideFunctionCall(documentText, offset) && !isInFunctionHeader(documentText, offset))) {
                         // Use the project we already have
                         if (project != null) {
+                            LOG.warn(">>>>>> COMMA/SPACE IN FUNCTION: Triggering parameter info at offset " + offset);
+                            
+                            // More aggressive approach to force parameter info popup
                             ApplicationManager.getApplication().invokeLater(() -> {
-                                AutoPopupController.getInstance(project).scheduleAutoPopup(editor);
+                                try {
+                                    // First commit any changes to ensure PSI is up to date
+                                    PsiDocumentManager.getInstance(project).commitDocument(document);
+                                    
+                                    // Force parameter info - most important for function arguments
+                                    AutoPopupController.getInstance(project).autoPopupParameterInfo(editor, null);
+                                } catch (Exception e) {
+                                    LOG.warn("Error showing parameter info: " + e.getMessage());
+                                }
                             });
                         }
+                        return;
+                    }
+                    
+                    // Improved function argument detection - check for ANY typing inside a function call
+                    if (isInsideFunctionCall(documentText, offset)) {
+                        if (project != null) {
+                            LOG.warn(">>>>>> TYPING IN FUNCTION: Triggering parameter info at offset " + offset);
+                            
+                            // Use short delay to let the character be processed
+                            ApplicationManager.getApplication().invokeLater(() -> {
+                                try {
+                                    // First commit any changes to ensure PSI is up to date
+                                    PsiDocumentManager.getInstance(project).commitDocument(document);
+                                    
+                                    // Directly show parameter info
+                                    AutoPopupController.getInstance(project).autoPopupParameterInfo(editor, null);
+                                } catch (Exception e) {
+                                    LOG.warn("Error showing parameter info: " + e.getMessage());
+                                }
+                            });
+                        }
+                        return;
                     }
                 }
                 
                 /**
                  * Helper method to determine if the cursor is inside a function call
+                 * Improved to be more accurate at detecting being inside a function call
                  */
                 private boolean isInsideFunctionCall(String text, int offset) {
                     // Simple check: look for an open parenthesis that's not closed
                     int openCount = 0;
                     int closeCount = 0;
                     
+                    // Track the position of the most recent relevant opening parenthesis
+                    int lastOpenParenPos = -1;
+                    
                     for (int i = 0; i < text.length() && i < offset; i++) {
                         char c = text.charAt(i);
-                        if (c == '(') openCount++;
-                        else if (c == ')') closeCount++;
+                        if (c == '(') {
+                            openCount++;
+                            lastOpenParenPos = i;
+                        }
+                        else if (c == ')') {
+                            closeCount++;
+                        }
                     }
                     
-                    return openCount > closeCount;
+                    // We're in a function call if there are unclosed parentheses
+                    boolean inFunction = openCount > closeCount;
+                    
+                    // If it looks like we're in a function, do additional verification
+                    if (inFunction && lastOpenParenPos > 0) {
+                        // Check if there's an identifier before the parenthesis
+                        for (int i = lastOpenParenPos - 1; i >= 0; i--) {
+                            char c = text.charAt(i);
+                            
+                            // Skip whitespace
+                            if (Character.isWhitespace(c)) {
+                                continue;
+                            }
+                            
+                            // If we found an identifier character (or dot for method calls)
+                            if (Character.isJavaIdentifierPart(c) || c == '.') {
+                                LOG.warn(">>>>>> DETECTED FUNCTION CALL: Cursor is inside a function call");
+                                return true;
+                            } else {
+                                // Not a valid function call character - might be a conditional or something else
+                                break;
+                            }
+                        }
+                    }
+                    
+                    return inFunction;
                 }
 
                 /**
@@ -1937,5 +2216,77 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 }
             });
         }
+    }
+
+    /**
+     * Finds the namespace at a given dot position in the text.
+     * Works similar to findNamespaceBeforeDot but can be used when the dot is not at the end.
+     */
+    private static String findNamespaceAtPosition(String text, int dotPosition) {
+        if (dotPosition < 0 || dotPosition >= text.length() || text.charAt(dotPosition) != '.') {
+            return null;
+        }
+        
+        // Find the last non-identifier character before the dot
+        int lastNonWordChar = -1;
+        for (int i = dotPosition - 1; i >= 0; i--) {
+            char c = text.charAt(i);
+            if (!Character.isJavaIdentifierPart(c)) {
+                // Allow dots for qualified identifiers
+                if (c != '.') {
+                    lastNonWordChar = i;
+                    break;
+                }
+            }
+        }
+        
+        String word = text.substring(lastNonWordChar + 1, dotPosition);
+        LOG.warn("🔍 [findNamespaceAtPosition] Found namespace at position " + dotPosition + ": \"" + word + "\"");
+        
+        // Validate that this is a proper identifier
+        if (word.isEmpty() || !Character.isJavaIdentifierStart(word.charAt(0))) {
+            LOG.warn("🔍 [findNamespaceAtPosition] Invalid namespace: \"" + word + "\"");
+            return null;
+        }
+        
+        return word;
+    }
+
+    /**
+     * Checks if a position in the text is inside a comment.
+     * @param text The text to check
+     * @param position The position to check
+     * @return true if the position is inside a comment, false otherwise
+     */
+    private static boolean isInsideComment(String text, int position) {
+        // Look for // or /* comment markers before the position
+        int pos = position;
+        while (pos >= 0) {
+            // Check for line comment //
+            if (pos > 0 && text.charAt(pos - 1) == '/' && text.charAt(pos) == '/') {
+                // Found a line comment, now check if there's a newline between this and the position
+                int newlinePos = text.indexOf('\n', pos);
+                if (newlinePos == -1 || newlinePos > position) {
+                    // No newline found or newline is after our position, so we're in a comment
+                    LOG.warn("🔍 [isInsideComment] Position " + position + " is inside a line comment starting at " + pos);
+                    return true;
+                }
+            }
+            
+            // Check for block comment start /*
+            if (pos > 0 && text.charAt(pos - 1) == '/' && text.charAt(pos) == '*') {
+                // Found block comment start, check if there's a block comment end between this and the position
+                int blockEndPos = text.indexOf("*/", pos);
+                if (blockEndPos == -1 || blockEndPos > position) {
+                    // No end marker found or end is after our position, so we're in a comment
+                    LOG.warn("🔍 [isInsideComment] Position " + position + " is inside a block comment starting at " + pos);
+                    return true;
+                }
+            }
+            
+            pos--;
+        }
+        
+        return false;
     }
 }
