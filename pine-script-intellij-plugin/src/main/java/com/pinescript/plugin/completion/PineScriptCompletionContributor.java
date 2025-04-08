@@ -273,20 +273,6 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                LOG.info("Detected inside function call: " + functionName);
                                
                                if (functionName != null) {
-                                   // First check if we're after an equals sign - need full completions there
-                                   int lastOpenParen = textBeforeCursor.lastIndexOf('(');
-                                   if (lastOpenParen != -1) {
-                                       String parametersList = textBeforeCursor.substring(lastOpenParen + 1);
-                                       String[] params = parametersList.split(",");
-                                       String currentParameterSegment = params[params.length - 1].trim();
-                                       if (currentParameterSegment.contains("=")) {
-                                            LOG.info("Detected parameter assignment in current parameter, providing full completions");
-                                            processStandardCompletions(parameters, result, version);
-                                            return;
-                                       }
-                                   }
-                                   
-                                   // Always provide both parameter suggestions and full completions inside function calls
                                    // Check function call context to determine current parameter
                                    checkFunctionCallContext(documentText, offset);
                                    
@@ -296,10 +282,13 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                        // Check if we're after an equals sign in a parameter
                                        boolean isAfterEquals = false;
                                        int lastOpenParenPos = textBeforeCursor.lastIndexOf('(');
-                                       if (lastOpenParenPos != -1) {
-                                           String parametersList = textBeforeCursor.substring(lastOpenParenPos + 1);
-                                           String[] params = parametersList.split(",");
-                                           String currentParameterSegment = params[params.length - 1].trim();
+                                       int lastCommaPos = textBeforeCursor.lastIndexOf(',');
+                                       
+                                       // Start position to check for equals sign should be after the last comma or open paren
+                                       int startPos = Math.max(lastOpenParenPos, lastCommaPos);
+                                       
+                                       if (startPos != -1 && startPos < textBeforeCursor.length()) {
+                                           String currentParameterSegment = textBeforeCursor.substring(startPos + 1);
                                            if (currentParameterSegment.contains("=")) {
                                                isAfterEquals = true;
                                            }
@@ -315,8 +304,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                            // Then add parameter completions with lower priority
                                            addParameterCompletions(result, currentFunctionName, currentParamIndex, version);
                                        } else {
-                                           // In function header, parameters first
-                                           LOG.info("In function header, prioritizing parameters");
+                                           // In function call and not after equals, parameters first
+                                           LOG.info("In function call, prioritizing parameters");
                                            // First add parameter completions with highest priority
                                            addParameterCompletions(result, currentFunctionName, currentParamIndex, version);
                                            // Then add standard completions with lower priority
@@ -1144,7 +1133,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                             Editor editor = ctx.getEditor();
                             editor.getCaretModel().moveToOffset(ctx.getTailOffset());
                         });
-                result.addElement(PrioritizedLookupElement.withPriority(element, 100));
+                result.addElement(PrioritizedLookupElement.withPriority(element, 3000)); // Highest priority
             }
         }
     }
@@ -1161,37 +1150,50 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         int openParenCount = 0;
         int commaCount = 0;
         boolean insideString = false;
+        boolean insideParamValue = false;
         int functionNameStart = -1;
         
         for (int i = 0; i < offset; i++) {
             char c = documentText.charAt(i);
             
+            // Handle string literals
             if (c == '"' && (i == 0 || documentText.charAt(i - 1) != '\\')) {
                 insideString = !insideString;
+                continue;
             }
             
-            if (!insideString) {
-                if (c == '(') {
-                    if (openParenCount == 0) {
-                        // Look backwards to find function name
-                        functionNameStart = i - 1;
-                        while (functionNameStart >= 0 && 
-                               (Character.isJavaIdentifierPart(documentText.charAt(functionNameStart)) || 
-                                documentText.charAt(functionNameStart) == '.')) {
-                            functionNameStart--;
-                        }
-                        functionNameStart++;
+            // Skip processing if inside a string
+            if (insideString) {
+                continue;
+            }
+            
+            // Track parentheses and parameter state
+            if (c == '(') {
+                if (openParenCount == 0) {
+                    // Look backwards to find function name
+                    functionNameStart = i - 1;
+                    while (functionNameStart >= 0 && 
+                           (Character.isJavaIdentifierPart(documentText.charAt(functionNameStart)) || 
+                            documentText.charAt(functionNameStart) == '.')) {
+                        functionNameStart--;
                     }
-                    openParenCount++;
-                } else if (c == ')') {
-                    openParenCount--;
-                    if (openParenCount == 0) {
-                        functionNameStart = -1;
-                        commaCount = 0;
-                    }
-                } else if (c == ',' && openParenCount > 0) {
-                    commaCount++;
+                    functionNameStart++;
                 }
+                openParenCount++;
+                insideParamValue = false;
+            } else if (c == ')') {
+                openParenCount--;
+                if (openParenCount == 0) {
+                    functionNameStart = -1;
+                    commaCount = 0;
+                    insideParamValue = false;
+                }
+            } else if (c == ',' && openParenCount > 0) {
+                commaCount++;
+                insideParamValue = false;
+            } else if (c == '=' && openParenCount > 0) {
+                // We're now inside parameter value after equals sign
+                insideParamValue = true;
             }
         }
         
@@ -1227,7 +1229,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 String paramType = param.getOrDefault("type", "");
                 
                 if (!paramName.isEmpty()) {
-                    // Add named parameter option
+                    // Add named parameter option with super high priority (3000)
                     LookupElementBuilder namedElement = LookupElementBuilder.create(paramName + "=")
                             .withIcon(AllIcons.Nodes.Parameter)
                             .withTypeText(paramType)
@@ -1237,7 +1239,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                 Editor editor = ctx.getEditor();
                                 editor.getCaretModel().moveToOffset(ctx.getTailOffset());
                             });
-                    result.addElement(PrioritizedLookupElement.withPriority(namedElement, 2000)); // Highest priority for current parameter
+                    result.addElement(PrioritizedLookupElement.withPriority(namedElement, 3000)); // Highest priority for current parameter
                     
                     // Also suggest possible values based on parameter type
                     Map<String, String> valueSuggestions = getValueSuggestionsForType(paramType, paramName, functionName, paramIndex);
@@ -1245,7 +1247,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         LookupElementBuilder element = LookupElementBuilder.create(entry.getKey())
                                 .withTypeText(entry.getValue())
                                 .withIcon(AllIcons.Nodes.Parameter);
-                        result.addElement(PrioritizedLookupElement.withPriority(element, 1950)); // Very high priority for parameter values
+                        result.addElement(PrioritizedLookupElement.withPriority(element, 2950)); // Very high priority for parameter values
                     }
                 }
             }
@@ -1267,7 +1269,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                     Editor editor = ctx.getEditor();
                                     editor.getCaretModel().moveToOffset(ctx.getTailOffset());
                                 });
-                        result.addElement(PrioritizedLookupElement.withPriority(element, 1900)); // High priority for other parameters
+                        result.addElement(PrioritizedLookupElement.withPriority(element, 2900)); // High priority for other parameters
                     }
                 }
             }
@@ -1280,7 +1282,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 LookupElementBuilder element = LookupElementBuilder.create(entry.getKey())
                         .withTypeText(entry.getValue())
                         .withIcon(AllIcons.Nodes.Parameter);
-                result.addElement(PrioritizedLookupElement.withPriority(element, 1920)); // High priority for special parameter suggestions
+                result.addElement(PrioritizedLookupElement.withPriority(element, 2920)); // High priority for special parameter suggestions
             }
         }
     }
@@ -1848,8 +1850,9 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         return;
                     }
                     
-                    // Trigger completion popup for parentheses, comma, or space inside function
-                    if (c == '(' || c == ',' || (c == ' ' && isInsideFunctionCall(documentText, offset))) {
+                    // Trigger completion popup for space inside function call or comma in function call (not header)
+                    if ((c == ' ' && isInsideFunctionCall(documentText, offset)) || 
+                        (c == ',' && isInsideFunctionCall(documentText, offset) && !isInFunctionHeader(documentText, offset))) {
                         // Use the project we already have
                         if (project != null) {
                             ApplicationManager.getApplication().invokeLater(() -> {
@@ -1875,7 +1878,30 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                     
                     return openCount > closeCount;
                 }
+
+                /**
+                 * Helper method to determine if the cursor is inside a function header/definition
+                 * rather than a function call
+                 */
+                private boolean isInFunctionHeader(String text, int offset) {
+                    // Look backward for "function" or "method" keyword before the opening parenthesis
+                    int startPos = Math.max(0, offset - 200); // Limit how far back we look
+                    String textToCheck = text.substring(startPos, offset);
+                    
+                    // Find the last open parenthesis
+                    int lastOpenParen = textToCheck.lastIndexOf('(');
+                    if (lastOpenParen == -1) return false;
+                    
+                    // Look backward from the open parenthesis for function or method keywords
+                    String beforeParen = textToCheck.substring(0, lastOpenParen).trim();
+                    
+                    // Use regex to find the last word before the parenthesis
+                    Pattern pattern = Pattern.compile("\\b(function|method)\\s+([a-zA-Z_]\\w*)\\s*$");
+                    Matcher matcher = pattern.matcher(beforeParen);
+                    
+                    return matcher.find();
+                }
             });
         }
     }
-} 
+}
