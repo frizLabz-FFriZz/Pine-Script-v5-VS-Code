@@ -274,14 +274,14 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         
         // Standard extension for completions
         extend(CompletionType.BASIC,
-               PlatformPatterns.psiElement().withLanguage(PineScriptLanguage.INSTANCE),
-               new CompletionProvider<>() {
-                   @Override
-                   protected void addCompletions(@NotNull CompletionParameters parameters,
-                                                @NotNull ProcessingContext context,
-                                                @NotNull CompletionResultSet result) {
+                PlatformPatterns.psiElement().withLanguage(PineScriptLanguage.INSTANCE),
+                new CompletionProvider<>() {
+                    @Override
+                    protected void addCompletions(@NotNull CompletionParameters parameters,
+                                                 @NotNull ProcessingContext context,
+                                                 @NotNull CompletionResultSet result) {
                        Document document = parameters.getEditor().getDocument();
-                       int offset = parameters.getOffset();
+                        int offset = parameters.getOffset();
                        String documentText = document.getText();
                        
                        // Explicitly write to IDE logs for diagnostics
@@ -489,9 +489,9 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 CompletionResultSet prefixResult = result.withPrefixMatcher(afterNewline);
                 
                 // First add namespaces for better prioritization - they should appear at the top
-                for (String namespace : NAMESPACES) {
+                        for (String namespace : NAMESPACES) {
                     LookupElementBuilder element = LookupElementBuilder.create(namespace)
-                            .withTypeText("namespace")
+                                .withTypeText("namespace")
                             .withIcon(AllIcons.Nodes.Package)
                             .withInsertHandler((ctx, item) -> {
                                 Editor editor = ctx.getEditor();
@@ -509,8 +509,14 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                     prefixResult.addElement(PrioritizedLookupElement.withPriority(element, 1000));
                 }
                 
-                // Add scanned completions (local variables)
-                addScannedCompletions(parameters, prefixResult);
+                // Add scanned completions (local variables) - pass expected type
+                String expectedType = null;
+                // Check if we're in a variable assignment context
+                if (textBeforeCursor.contains("=")) {
+                    expectedType = inferExpectedType(textBeforeCursor);
+                    LOG.warn("🔍 [fillCompletionVariants] Expected type for variable assignment: '" + expectedType + "'");
+                }
+                addScannedCompletions(parameters, prefixResult, expectedType);
                 
                 // Add all standard completions
                 addAllCompletionItems(prefixResult, version);
@@ -672,48 +678,55 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         LOG.warn("🔍 [fillCompletionVariants] Cursor is no longer in a namespace member completion context");
                     }
                 }
-                
-                // Case 3: Check for variable reassignment with := operator
-                int colonEqualsPos = textBeforeCursor.lastIndexOf(":=");
-                if (colonEqualsPos >= 0 && colonEqualsPos < textBeforeCursor.length() - 2) {
-                    try {
-                        // Extract text between start of line/statement and the := operator
+            }
+
+            // Case 3: Check for variable assignment with = operator
+            int equalsPos = textBeforeCursor.lastIndexOf("=");
+            if (equalsPos >= 0 && equalsPos < textBeforeCursor.length() - 1) {
+                try {
+                    // Check that this is a standalone equals, not part of ==, >=, etc.
+                    if (equalsPos == 0 || (equalsPos > 0 && 
+                        textBeforeCursor.charAt(equalsPos - 1) != ':' && 
+                        textBeforeCursor.charAt(equalsPos - 1) != '=' && 
+                        textBeforeCursor.charAt(equalsPos - 1) != '<' && 
+                        textBeforeCursor.charAt(equalsPos - 1) != '>' && 
+                        textBeforeCursor.charAt(equalsPos - 1) != '!')) {
+                        
+                        // Extract text between start of line/statement and the = operator
                         String lineText = textBeforeCursor;
                         int lineStart = Math.max(lineText.lastIndexOf('\n'), lineText.lastIndexOf(';'));
                         
                         // Ensure lineStart is valid (it might be -1 if not found)
                         lineStart = Math.max(lineStart, -1); // If both \n and ; are not found, use -1
                         
-                        // Check that lineStart is less than colonEqualsPos to avoid invalid range
-                        if (lineStart < colonEqualsPos) {
+                        // Check that lineStart is less than equalsPos to avoid invalid range
+                        if (lineStart < equalsPos) {
                             if (lineStart >= 0) {
-                                lineText = lineText.substring(lineStart + 1, colonEqualsPos).trim();
+                                lineText = lineText.substring(lineStart + 1, equalsPos).trim();
                             } else {
-                                lineText = lineText.substring(0, colonEqualsPos).trim();
+                                lineText = lineText.substring(0, equalsPos).trim();
                             }
                             
-                            // Extract the variable being assigned to
-                            String variableName = lineText.trim();
-                            LOG.warn("🔍 [fillCompletionVariants] Found variable reassignment: '" + variableName + " :='");
+                            LOG.warn("🔍 [fillCompletionVariants] Found variable assignment: '" + lineText + " ='");
                             
-                            // Try to find the type of this variable
+                            // Try to infer the expected type
+                            String expectedType = inferExpectedType(textBeforeCursor);
                             String version = detectPineScriptVersion(text);
-                            String expectedType = findTypeFromPreviousDeclarations(text, variableName);
                             
                             if (expectedType != null) {
-                                LOG.warn("🔍 [fillCompletionVariants] Variable type for '" + variableName + "' is '" + expectedType + "'");
+                                LOG.warn("🔍 [fillCompletionVariants] Expected type for '" + lineText + "' is '" + expectedType + "'");
                                 
-                                // Get text after := for prefix matching
-                                String textAfterColonEquals = textBeforeCursor.substring(colonEqualsPos + 2).trim();
-                                LOG.warn("🔍 [fillCompletionVariants] Text after := is: '" + textAfterColonEquals + "'");
+                                // Get text after = for prefix matching
+                                String textAfterEquals = textBeforeCursor.substring(equalsPos + 1).trim();
+                                LOG.warn("🔍 [fillCompletionVariants] Text after = is: '" + textAfterEquals + "'");
                                 
                                 // Check if the user is typing a namespace
-                                int lastDotInEquals = textAfterColonEquals.lastIndexOf('.');
+                                int lastDotInEquals = textAfterEquals.lastIndexOf('.');
                                 if (lastDotInEquals > 0) {
-                                    String potentialNamespace = textAfterColonEquals.substring(0, lastDotInEquals);
-                                    String textAfterDot = textAfterColonEquals.substring(lastDotInEquals + 1);
+                                    String potentialNamespace = textAfterEquals.substring(0, lastDotInEquals);
+                                    String textAfterDot = textAfterEquals.substring(lastDotInEquals + 1);
                                     
-                                    LOG.warn("🔍 [fillCompletionVariants] Potential namespace in reassignment: '" + potentialNamespace + "', after dot: '" + textAfterDot + "'");
+                                    LOG.warn("🔍 [fillCompletionVariants] Potential namespace in equals: '" + potentialNamespace + "', after dot: '" + textAfterDot + "'");
                                     
                                     // Check if this is a valid namespace
                                     boolean isBuiltInNamespace = Arrays.asList(NAMESPACES).contains(potentialNamespace);
@@ -759,138 +772,91 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                 }
                                 
                                 // Create a filtered result set with the prefix to match
-                                CompletionResultSet filteredResult = result.withPrefixMatcher(textAfterColonEquals);
+                                CompletionResultSet filteredResult = result.withPrefixMatcher(textAfterEquals);
                                 
                                 // First add local variables from the current document
-                                addScannedCompletions(parameters, filteredResult);
+                                // Pass the expected type to the scanned completions
+                                addScannedCompletions(parameters, filteredResult, expectedType);
                                 
                                 // Add type-specific completions from standard libraries
                                 addCompletionsForExpectedType(filteredResult, expectedType, version);
                                 return; // Skip standard completion
                             }
                         }
-                    } catch (StringIndexOutOfBoundsException e) {
-                        LOG.warn("🔍 [fillCompletionVariants] StringIndexOutOfBoundsException in case 3 (reassignment): " + e.getMessage());
-                        // Continue with standard completion
                     }
-                }
-                
-                // Case 4: Check for variable assignment with = operator and text after it
-                int equalsPos = textBeforeCursor.lastIndexOf("=");
-                if (equalsPos >= 0 && equalsPos < textBeforeCursor.length() - 1 
-                    && (colonEqualsPos == -1 || equalsPos > colonEqualsPos)) {
-                    try {
-                        // Check that this is a standalone equals, not part of ==, >=, etc.
-                        if (equalsPos == 0 || (equalsPos > 0 && 
-                            textBeforeCursor.charAt(equalsPos - 1) != ':' && 
-                            textBeforeCursor.charAt(equalsPos - 1) != '=' && 
-                            textBeforeCursor.charAt(equalsPos - 1) != '<' && 
-                            textBeforeCursor.charAt(equalsPos - 1) != '>' && 
-                            textBeforeCursor.charAt(equalsPos - 1) != '!')) {
-                            
-                            // Extract text between start of line/statement and the = operator
-                            String lineText = textBeforeCursor;
-                            int lineStart = Math.max(lineText.lastIndexOf('\n'), lineText.lastIndexOf(';'));
-                            
-                            // Ensure lineStart is valid (it might be -1 if not found)
-                            lineStart = Math.max(lineStart, -1); // If both \n and ; are not found, use -1
-                            
-                            // Check that lineStart is less than equalsPos to avoid invalid range
-                            if (lineStart < equalsPos) {
-                                if (lineStart >= 0) {
-                                    lineText = lineText.substring(lineStart + 1, equalsPos).trim();
-                                } else {
-                                    lineText = lineText.substring(0, equalsPos).trim();
-                                }
-                                
-                                LOG.warn("🔍 [fillCompletionVariants] Found variable assignment: '" + lineText + " ='");
-                                
-                                // Try to infer the expected type
-                                String expectedType = inferExpectedType(textBeforeCursor);
-                                String version = detectPineScriptVersion(text);
-                                
-                                if (expectedType != null) {
-                                    LOG.warn("🔍 [fillCompletionVariants] Expected type for '" + lineText + "' is '" + expectedType + "'");
-                                    
-                                    // Get text after = for prefix matching
-                                    String textAfterEquals = textBeforeCursor.substring(equalsPos + 1).trim();
-                                    LOG.warn("🔍 [fillCompletionVariants] Text after = is: '" + textAfterEquals + "'");
-                                    
-                                    // Check if the user is typing a namespace
-                                    int lastDotInEquals = textAfterEquals.lastIndexOf('.');
-                                    if (lastDotInEquals > 0) {
-                                        String potentialNamespace = textAfterEquals.substring(0, lastDotInEquals);
-                                        String textAfterDot = textAfterEquals.substring(lastDotInEquals + 1);
-                                        
-                                        LOG.warn("🔍 [fillCompletionVariants] Potential namespace in equals: '" + potentialNamespace + "', after dot: '" + textAfterDot + "'");
-                                        
-                                        // Check if this is a valid namespace
-                                        boolean isBuiltInNamespace = Arrays.asList(NAMESPACES).contains(potentialNamespace);
-                                        boolean hasMatchingDefinition = false;
-                                        
-                                        Set<String> functions = FUNCTIONS_MAP.getOrDefault(version, new HashSet<>());
-                                        Set<String> variables = VARIABLES_MAP.getOrDefault(version, new HashSet<>());
-                                        Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
-                                        
-                                        for (String def : functions) {
-                                            if (def.startsWith(potentialNamespace + ".")) {
-                                                hasMatchingDefinition = true;
-                                                break;
-                                            }
-                                        }
-                                        
-                                        if (!hasMatchingDefinition) {
-                                            for (String def : variables) {
-                                                if (def.startsWith(potentialNamespace + ".")) {
-                                                    hasMatchingDefinition = true;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        
-                                        if (!hasMatchingDefinition) {
-                                            for (String def : constants) {
-                                                if (def.startsWith(potentialNamespace + ".")) {
-                                                    hasMatchingDefinition = true;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        
-                                        if (isBuiltInNamespace || hasMatchingDefinition) {
-                                            // Create a filtered result set with the prefix to match
-                                            CompletionResultSet filteredResult = result.withPrefixMatcher(textAfterDot);
-                                            
-                                            // Add namespace method completions
-                                            addNamespaceMethodCompletions(filteredResult, potentialNamespace, version);
-                                            return; // Skip standard completion
-                                        }
-                                    }
-                                    
-                                    // Create a filtered result set with the prefix to match
-                                    CompletionResultSet filteredResult = result.withPrefixMatcher(textAfterEquals);
-                                    
-                                    // First add local variables from the current document
-                                    addScannedCompletions(parameters, filteredResult);
-                                    
-                                    // Add type-specific completions from standard libraries
-                                    addCompletionsForExpectedType(filteredResult, expectedType, version);
-                                    return; // Skip standard completion
-                                }
-                            }
-                        }
-                    } catch (StringIndexOutOfBoundsException e) {
-                        LOG.warn("🔍 [fillCompletionVariants] StringIndexOutOfBoundsException in case 4 (assignment): " + e.getMessage());
-                        // Continue with standard completion
-                    }
+                } catch (StringIndexOutOfBoundsException e) {
+                    LOG.warn("🔍 [fillCompletionVariants] StringIndexOutOfBoundsException in variable assignment: " + e.getMessage());
+                    // Continue with standard completion
                 }
             }
+        }
+        
+        // Check if we're inside a function call - this should be checked before falling back to standard completions
+        checkFunctionCallContext(text, offset);
+        
+        if (isInsideFunctionCall && currentFunctionName != null) {
+            LOG.warn("🔍 [fillCompletionVariants] Inside function call: " + currentFunctionName + ", param index: " + currentParamIndex);
+            
+            // Add parameter completions
+            String version = detectPineScriptVersion(text);
+            
+            // Modify prefixMatcher based on text after last comma
+            String textAfterComma = "";
+            int lastCommaPos = textBeforeCursor.lastIndexOf(',');
+            if (lastCommaPos >= 0) {
+                textAfterComma = textBeforeCursor.substring(lastCommaPos + 1).trim();
+            } else {
+                // If no comma, find the opening parenthesis
+                int lastParenPos = textBeforeCursor.lastIndexOf('(');
+                if (lastParenPos >= 0) {
+                    textAfterComma = textBeforeCursor.substring(lastParenPos + 1).trim();
+                }
+            }
+            
+            LOG.warn("🔍 [fillCompletionVariants] Text after comma/paren: '" + textAfterComma + "'");
+            
+            // Check if there's a dot after the comma, which might indicate namespace access
+            int dotAfterComma = textAfterComma.lastIndexOf('.');
+            if (dotAfterComma >= 0) {
+                String namespaceInParam = textAfterComma.substring(0, dotAfterComma).trim();
+                String afterDot = textAfterComma.substring(dotAfterComma + 1).trim();
+                
+                LOG.warn("🔍 [fillCompletionVariants] Potential namespace in parameter: '" + namespaceInParam + "', after dot: '" + afterDot + "'");
+                
+                boolean isBuiltInNamespace = Arrays.asList(NAMESPACES).contains(namespaceInParam);
+                if (isBuiltInNamespace) {
+                    CompletionResultSet filteredResult = result.withPrefixMatcher(afterDot);
+                    addNamespaceMethodCompletions(filteredResult, namespaceInParam, version);
+                    return;
+                }
+            }
+            
+            // Prepare a filtered result set based on the text after comma
+            CompletionResultSet filteredResult = result.withPrefixMatcher(textAfterComma);
+            
+            // Add parameter completions
+            addParameterCompletions(filteredResult, currentFunctionName, currentParamIndex, version);
+            
+            // For function parameters, also look for local variables that might match
+            // Pass null as expectedType since we handle type filtering separately for function params
+            addScannedCompletions(parameters, filteredResult, null);
+            
+            return; // Skip standard completion
         }
         
         // Call the parent implementation to handle the standard completion
         LOG.warn("🔍 [fillCompletionVariants] Calling super.fillCompletionVariants");
         super.fillCompletionVariants(parameters, result);
         LOG.warn("🔍 [fillCompletionVariants] Returned from super.fillCompletionVariants");
+        
+        // Add local variables and functions from the document
+        String expectedType = null;
+        // Check if we're in a variable assignment context
+        if (textBeforeCursor.contains("=")) {
+            expectedType = inferExpectedType(textBeforeCursor);
+            LOG.warn("🔍 [fillCompletionVariants] Expected type for standard completions: '" + expectedType + "'");
+        }
+        addScannedCompletions(parameters, result, expectedType);
     }
     
     /**
@@ -1222,11 +1188,11 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     private void processStandardCompletions(@NotNull CompletionParameters parameters,
                                            @NotNull CompletionResultSet result,
                                            String version) {
-        PsiElement position = parameters.getPosition();
+                        PsiElement position = parameters.getPosition();
         Document document = parameters.getEditor().getDocument();
         String documentText = document.getText();
-        int offset = parameters.getOffset();
-        
+                        int offset = parameters.getOffset();
+                        
         // Check if we're after a parameter equals sign - need full completions there
         boolean isAfterParamEquals = false;
         boolean isAfterEqualsSign = false;
@@ -1306,6 +1272,10 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         boolean afterEquals = textBeforeCursor.trim().endsWith("=");
         boolean afterColonEquals = textBeforeCursor.trim().endsWith(":=");
         
+        LOG.warn("🚨 [DEBUG] Assignment Context - Text Before Cursor: '" + 
+                (textBeforeCursor.length() > 50 ? "..." + textBeforeCursor.substring(textBeforeCursor.length() - 50) : textBeforeCursor) + 
+                "', After = : " + afterEquals + ", After := : " + afterColonEquals);
+        
         if (!afterEquals && !afterColonEquals) {
             // Check if we're after an equals sign followed by space(s)
             int equalsPos = textBeforeCursor.lastIndexOf("=");
@@ -1320,6 +1290,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 if (textAfterAssignment.trim().isEmpty()) {
                     // We are after an equals or := followed by whitespace
                     afterEquals = true;
+                    LOG.warn("🚨 [DEBUG] Detected whitespace after assignment operator at position " + assignmentPos + 
+                             ", Text after assignment: '" + textAfterAssignment + "'");
                 }
             }
         }
@@ -1336,6 +1308,17 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             LOG.info("💡 [addStandardCompletionsAfterEquals] Detected after " + 
                     (afterColonEquals ? ":=" : "=") + ", providing type-aware suggestions");
             
+            // Try to determine variable name from left-hand side
+            String leftHandSide = "";
+            if (equalsPos > 0) {
+                leftHandSide = textBeforeCursor.substring(0, equalsPos).trim();
+                String[] parts = leftHandSide.split("\\s+");
+                if (parts.length > 0) {
+                    String variableName = parts[parts.length - 1].trim();
+                    LOG.warn("🚨 [DEBUG] Assignment Context - Variable Name: '" + variableName + "', Left Hand Side: '" + leftHandSide + "'");
+                }
+            }
+            
             // Try to infer the type of the left-hand side variable
             String expectedType = inferExpectedType(textBeforeCursor);
             LOG.warn("🔍 [addStandardCompletionsAfterEquals] Expected type for '" + 
@@ -1344,10 +1327,15 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             // Log text after = for debugging
             if (!textAfterEquals.isEmpty()) {
                 LOG.warn("🔍 [addStandardCompletionsAfterEquals] Text after = is: '" + textAfterEquals + "'");
+                LOG.warn("🚨 [DEBUG] Filtering suggestions by prefix: '" + textAfterEquals + "', Expected Type: '" + expectedType + "'");
+            } else {
+                LOG.warn("🚨 [DEBUG] Providing all suggestions for Expected Type: '" + expectedType + "'");
             }
             
             // Add all known type-appropriate values and functions
             addCompletionsForExpectedType(result, expectedType, version);
+        } else {
+            LOG.warn("🚨 [DEBUG] Not in assignment context - No suggestions provided");
         }
     }
 
@@ -1357,6 +1345,9 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      * @return The expected type, or null if it cannot be determined
      */
     private String inferExpectedType(String textBeforeCursor) {
+        LOG.warn("🚨 [DEBUG] Starting Type Inference - Text before cursor: '" + 
+                 (textBeforeCursor.length() > 30 ? "..." + textBeforeCursor.substring(textBeforeCursor.length() - 30) : textBeforeCursor) + "'");
+        
         // First, check for variable declaration with explicit type: var TYPE varName = 
         Pattern typedVarPattern = Pattern.compile("(?:var|varip)\\s+([a-zA-Z_]\\w*)\\s+([a-zA-Z_]\\w*)\\s*=");
         Matcher typedVarMatcher = typedVarPattern.matcher(textBeforeCursor);
@@ -1371,6 +1362,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         
         if (lastTypeDeclaration != null && isKnownType(lastTypeDeclaration)) {
             LOG.warn("🎯 [inferExpectedType] Found variable declaration with explicit type: " + lastTypeDeclaration + " for variable: " + lastVarName);
+            LOG.warn("🚨 [DEBUG] Type Inference Result - Variable: '" + lastVarName + "', Explicit Type: '" + lastTypeDeclaration + "'");
             return lastTypeDeclaration;
         }
         
@@ -1396,6 +1388,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         String[] parts = trimmedText.split("\\s+");
         if (parts.length == 0) {
             LOG.warn("🔍 [inferExpectedType] No parts found in text: '" + trimmedText + "'");
+            LOG.warn("🚨 [DEBUG] Type Inference Failed - No parts found in text before equals sign");
             return null;
         }
         
@@ -1406,6 +1399,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         for (int i = 0; i < parts.length - 1; i++) {
             if (isKnownType(parts[i])) {
                 LOG.warn("🎯 [inferExpectedType] Found type declaration: " + parts[i]);
+                LOG.warn("🚨 [DEBUG] Type Inference Result - Variable: '" + variableName + "', Found Type: '" + parts[i] + "' in declaration");
                 return parts[i];
             }
         }
@@ -1414,11 +1408,13 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         String type = findTypeFromPreviousDeclarations(textBeforeCursor, variableName);
         if (type != null) {
             LOG.warn("🎯 [inferExpectedType] Found type from previous declarations: " + type + " for variable: " + variableName);
+            LOG.warn("🚨 [DEBUG] Type Inference Result - Variable: '" + variableName + "', Type from previous declaration: '" + type + "'");
             return type;
         }
         
         // If we couldn't determine the type, return null (will include all completions)
         LOG.warn("🔍 [inferExpectedType] Could not determine expected type for: '" + trimmedText + "'");
+        LOG.warn("🚨 [DEBUG] Type Inference Failed - Could not determine type for variable: '" + variableName + "'");
         return null;
     }
 
@@ -1429,6 +1425,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      * @return The detected type, or null if not found
      */
     private String findTypeFromPreviousDeclarations(String text, String variableName) {
+        LOG.warn("🚨 [DEBUG] Searching for previous declarations - Variable: '" + variableName + "'");
+        
         // Regular expression to find variable declarations
         // This handles cases like "var bool varName = " or "varName = "
         Pattern pattern = Pattern.compile("(?:var\\s+|export\\s+|)(\\w+)\\s+(" + Pattern.quote(variableName) + ")\\s*(?:=|:=)");
@@ -1436,12 +1434,28 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         
         // Find all occurrences (we want the last/most recent one)
         String type = null;
+        int matchCount = 0;
+        
         while (matcher.find()) {
+            matchCount++;
             String potentialType = matcher.group(1);
             if (isKnownType(potentialType)) {
                 type = potentialType;
                 LOG.info("🔍 [findTypeFromPreviousDeclarations] Found type " + type + " for variable " + variableName);
+                LOG.warn("🚨 [DEBUG] Found Previous Declaration - Variable: '" + variableName + 
+                         "', Type: '" + potentialType + "', Match #" + matchCount + 
+                         ", Text: '" + text.substring(Math.max(0, matcher.start() - 10), 
+                                                      Math.min(text.length(), matcher.end() + 10)) + "'");
+            } else {
+                LOG.warn("🚨 [DEBUG] Found Previous Declaration but type not known - Variable: '" + variableName + 
+                         "', Potential Type: '" + potentialType + "', Match #" + matchCount);
             }
+        }
+        
+        if (type != null) {
+            LOG.warn("🚨 [DEBUG] Final Type from Previous Declarations - Variable: '" + variableName + "', Type: '" + type + "'");
+        } else {
+            LOG.warn("🚨 [DEBUG] No Valid Type Found in Previous Declarations - Variable: '" + variableName + "'");
         }
         
         return type;
@@ -1669,11 +1683,11 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         }
         
         // Add keywords that can be used after equals
-        for (String keyword : KEYWORDS) {
+                        for (String keyword : KEYWORDS) {
             if (keyword.equals("if") || keyword.equals("switch") || keyword.equals("for") ||
                 keyword.equals("while") || keyword.equals("array") || keyword.equals("matrix") ||
                 keyword.equals("map") || keyword.equals("function")) {
-                result.addElement(LookupElementBuilder.create(keyword)
+                            result.addElement(LookupElementBuilder.create(keyword)
                     .withPresentableText(keyword)
                     .withBoldness(true));
             }
@@ -1733,7 +1747,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 }
                 
                 int addedCount = 0;
-                for (String method : methods) {
+                                    for (String method : methods) {
                     // Skip if already added
                     if (addedMembers.contains(method)) {
                         continue;
@@ -2520,6 +2534,16 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      */
     private void addScannedCompletions(@NotNull CompletionParameters parameters, 
                                       @NotNull CompletionResultSet result) {
+        addScannedCompletions(parameters, result, null);
+    }
+
+    /**
+     * Scans the document and adds completions for variables and functions found in the code
+     * with an option to filter by expected type
+     */
+    private void addScannedCompletions(@NotNull CompletionParameters parameters, 
+                                      @NotNull CompletionResultSet result,
+                                      String expectedType) {
         // Get document and offset
         Document document = parameters.getOriginalFile().getViewProvider().getDocument();
         if (document == null) return;
@@ -2527,16 +2551,39 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         String documentText = document.getText();
         int offset = parameters.getOffset();
         
-        // Infer expected type from context (if after an assignment)
+        // Use the provided expected type or try to infer it
         String textBeforeCursor = documentText.substring(0, offset);
-        String expectedType = null;
-        
-        // Check if we're after an equals sign
-        if (textBeforeCursor.trim().endsWith("=") || 
-            (textBeforeCursor.contains("=") && textBeforeCursor.substring(textBeforeCursor.lastIndexOf("=") + 1).trim().isEmpty())) {
-            expectedType = inferExpectedType(textBeforeCursor);
-            LOG.info("🔍 [addScannedCompletions] Inferred expected type for completion: " + expectedType);
+        if (expectedType == null) {
+            // Check if we're after an equals sign
+            if (textBeforeCursor.trim().endsWith("=") || 
+                (textBeforeCursor.contains("=") && textBeforeCursor.substring(textBeforeCursor.lastIndexOf("=") + 1).trim().isEmpty())) {
+                expectedType = inferExpectedType(textBeforeCursor);
+                LOG.info("🔍 [addScannedCompletions] Inferred expected type for completion: " + expectedType);
+            }
+        } else {
+            LOG.info("🔍 [addScannedCompletions] Using provided expected type: " + expectedType);
         }
+        
+        // Enhanced logging for variable assignment context
+        String varNameBeingAssigned = "";
+        if (textBeforeCursor.trim().endsWith("=")) {
+            // Extract variable name from left side of equals
+            String leftSide = textBeforeCursor.trim().substring(0, textBeforeCursor.trim().length() - 1).trim();
+            String[] parts = leftSide.split("\\s+");
+            if (parts.length > 0) {
+                varNameBeingAssigned = parts[parts.length - 1];
+            }
+        } else if (textBeforeCursor.contains("=")) {
+            String leftSide = textBeforeCursor.substring(0, textBeforeCursor.lastIndexOf("=")).trim();
+            String[] parts = leftSide.split("\\s+");
+            if (parts.length > 0) {
+                varNameBeingAssigned = parts[parts.length - 1];
+            }
+        }
+        
+        LOG.warn("🚨 [DEBUG] Variable Assignment Context - Name: '" + varNameBeingAssigned + 
+                 "', Expected Type: '" + expectedType + "', Text before cursor: '" + 
+                 (textBeforeCursor.length() > 30 ? "..." + textBeforeCursor.substring(textBeforeCursor.length() - 30) : textBeforeCursor) + "'");
         
         // Track found variables to avoid duplicates
         Set<String> foundVars = new HashSet<>();
@@ -2545,6 +2592,9 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         // Log expected type for debugging
         if (expectedType != null) {
             LOG.info("🎯 [addScannedCompletions] Looking for variables with type: " + expectedType);
+            LOG.warn("🚨 [DEBUG] Using expected type filter: '" + expectedType + "' for suggestions");
+        } else {
+            LOG.warn("🚨 [DEBUG] No type filter applied - showing all variable types");
         }
         
         // Check if we're in a request or declaration by examining the context
@@ -2552,6 +2602,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         
         if (textBeforeCursor.trim().matches(".*(?:var|varip)\\s+(?:[a-zA-Z_]\\w*)(?:\\s+[a-zA-Z_]\\w*)?\\s*(?:=)?\\s*$")) {
             LOG.info("🔍 [addScannedCompletions] In variable declaration context");
+            LOG.warn("🚨 [DEBUG] Detected variable declaration context - may limit suggestions");
             inVariableDeclaration = true;
         }
         
@@ -2573,8 +2624,10 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 // Add the variable to completions if:
                 // 1. It matches the expected type, OR
                 // 2. No specific type is expected AND we're not in a variable declaration context
-                if ((expectedType != null && type.equals(expectedType)) || 
-                    (expectedType == null && !inVariableDeclaration)) {
+                boolean matchesExpectedType = (expectedType != null && type.equals(expectedType));
+                boolean noExpectedTypeConstraint = (expectedType == null && !inVariableDeclaration);
+                
+                if (matchesExpectedType || noExpectedTypeConstraint) {
                     if (!foundVars.contains(varName)) {
                         result.addElement(LookupElementBuilder.create(varName)
                             .withPresentableText(varName)
@@ -2583,10 +2636,20 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                             .withBoldness(true));
                         foundVars.add(varName);
                         LOG.info("➕ [addScannedCompletions] Added typed variable to completions: " + varName + " (type: " + type + ")");
+                        
+                        // Enhanced logging for suggestions
+                        LOG.warn("🚨 [DEBUG] Suggestion Added - Variable: '" + varName + 
+                                 "', Type: '" + type + "', Matches Expected: '" + 
+                                 (expectedType != null ? (type.equals(expectedType) ? "YES" : "NO") : "NO EXPECTED TYPE") + "'");
                     }
                 } else {
                     LOG.info("⏩ [addScannedCompletions] Skipped variable " + varName + " - type " + type + 
                              " doesn't match expected " + expectedType + " or in variable declaration context");
+                    
+                    // Enhanced logging for skipped suggestions
+                    LOG.warn("🚨 [DEBUG] Suggestion Skipped - Variable: '" + varName + 
+                             "', Type: '" + type + "', Expected Type: '" + expectedType + 
+                             "', In Variable Declaration: " + inVariableDeclaration);
                 }
             }
         }
@@ -2606,6 +2669,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 if (inferredType != null) {
                     varTypeMap.put(varName, inferredType);
                     LOG.info("🔍 [addScannedCompletions] Found untyped variable with inferred type: " + varName + " - " + inferredType);
+                    LOG.warn("🚨 [DEBUG] Inferred Type - Variable: '" + varName + "', Inferred Type: '" + inferredType + 
+                             "', Expected Type: '" + expectedType + "'");
                     
                     // Add if it matches expected type or no specific type is expected (and not in variable declaration)
                     if ((expectedType != null && inferredType.equals(expectedType)) || 
@@ -2617,23 +2682,43 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                             .withBoldness(true));
                         foundVars.add(varName);
                         LOG.info("➕ [addScannedCompletions] Added untyped variable with inferred type: " + varName);
+                        
+                        // Enhanced logging for suggestions
+                        LOG.warn("🚨 [DEBUG] Suggestion Added - Variable: '" + varName + 
+                                 "', Inferred Type: '" + inferredType + "', Matches Expected: '" + 
+                                 (expectedType != null ? (inferredType.equals(expectedType) ? "YES" : "NO") : "NO EXPECTED TYPE") + "'");
                     } else {
                         LOG.info("⏩ [addScannedCompletions] Skipped untyped variable " + varName + " - inferred type " + 
                                  inferredType + " doesn't match expected " + expectedType + " or in variable declaration context");
+                        
+                        // Enhanced logging for skipped suggestions
+                        LOG.warn("🚨 [DEBUG] Suggestion Skipped - Variable: '" + varName + 
+                                 "', Inferred Type: '" + inferredType + "', Expected Type: '" + expectedType + 
+                                 "', In Variable Declaration: " + inVariableDeclaration);
                     }
-                } else if (expectedType == null && !inVariableDeclaration) {
-                    // For variables where we can't infer the type, include them only if no specific type is expected
-                    // and we're not in a variable declaration context
-                    result.addElement(LookupElementBuilder.create(varName)
-                        .withPresentableText(varName)
-                        .withTypeText("unknown")
-                        .withIcon(AllIcons.Nodes.Variable)
-                        .withBoldness(true));
-                    foundVars.add(varName);
-                    LOG.info("➕ [addScannedCompletions] Added untyped variable without known type: " + varName);
                 } else {
-                    LOG.info("⏩ [addScannedCompletions] Skipped untyped variable " + varName + " - unknown type doesn't match expected " + 
-                             expectedType + " or in variable declaration context");
+                    // For variables where we can't infer the type:
+                    // 1. Always include if no specific type is expected
+                    // 2. Include if we expect a bool type, as untyped vars might be boolean
+                    boolean includeUntyped = (expectedType == null && !inVariableDeclaration) || 
+                                            (expectedType != null && expectedType.equals("bool"));
+                    
+                    if (includeUntyped) {
+                        result.addElement(LookupElementBuilder.create(varName)
+                            .withPresentableText(varName)
+                            .withTypeText("unknown")
+                            .withIcon(AllIcons.Nodes.Variable)
+                            .withBoldness(true));
+                        foundVars.add(varName);
+                        LOG.info("➕ [addScannedCompletions] Added untyped variable without known type: " + varName);
+                        LOG.warn("🚨 [DEBUG] Suggestion Added - Variable: '" + varName + 
+                                "', Type: 'unknown', Included with expected type: '" + expectedType + "'");
+                    } else {
+                        LOG.info("⏩ [addScannedCompletions] Skipped untyped variable " + varName + " - unknown type doesn't match expected " + 
+                                expectedType + " or in variable declaration context");
+                        LOG.warn("🚨 [DEBUG] Suggestion Skipped - Variable: '" + varName + 
+                                "', Unknown Type, Expected: '" + expectedType + "'");
+                    }
                 }
             }
         }
@@ -2672,23 +2757,38 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         .withBoldness(true));
                     foundVars.add(varName);
                     LOG.info("➕ [addScannedCompletions] Added variable from assignment: " + varName);
+                    LOG.warn("🚨 [DEBUG] Suggestion Added - Variable: '" + varName + 
+                            "', Inferred Type: '" + inferredType + "', Matches Expected: '" + 
+                            (expectedType != null ? (inferredType.equals(expectedType) ? "YES" : "NO") : "NO EXPECTED TYPE") + "'");
                 } else {
                     LOG.info("⏩ [addScannedCompletions] Skipped variable from assignment " + varName + 
                              " - type " + inferredType + " doesn't match expected " + expectedType + " or in variable declaration context");
+                    LOG.warn("🚨 [DEBUG] Suggestion Skipped - Variable: '" + varName + 
+                            "', Inferred Type: '" + inferredType + "', Expected Type: '" + expectedType + "'");
                 }
-            } else if (expectedType == null && !inVariableDeclaration) {
-                // For variables where we can't infer the type, include them only if no specific type is expected
-                // and we're not in a variable declaration context
-                result.addElement(LookupElementBuilder.create(varName)
-                    .withPresentableText(varName)
-                    .withTypeText("unknown")
-                    .withIcon(AllIcons.Nodes.Variable)
-                    .withBoldness(true));
-                foundVars.add(varName);
-                LOG.info("➕ [addScannedCompletions] Added variable from assignment without known type: " + varName);
             } else {
-                LOG.info("⏩ [addScannedCompletions] Skipped variable " + varName + " - unknown type doesn't match expected " + 
-                         expectedType + " or in variable declaration context");
+                // For variables where we can't infer the type:
+                // 1. Always include if no specific type is expected
+                // 2. Include if we expect a bool type, as many untyped values are booleans
+                boolean includeUntyped = (expectedType == null && !inVariableDeclaration) || 
+                                        (expectedType != null && expectedType.equals("bool"));
+                
+                if (includeUntyped) {
+                    result.addElement(LookupElementBuilder.create(varName)
+                        .withPresentableText(varName)
+                        .withTypeText("unknown")
+                        .withIcon(AllIcons.Nodes.Variable)
+                        .withBoldness(true));
+                    foundVars.add(varName);
+                    LOG.info("➕ [addScannedCompletions] Added variable from assignment without known type: " + varName);
+                    LOG.warn("🚨 [DEBUG] Suggestion Added - Variable: '" + varName + 
+                            "', Type: 'unknown', Included with expected type: '" + expectedType + "'");
+                } else {
+                    LOG.info("⏩ [addScannedCompletions] Skipped variable " + varName + " - unknown type doesn't match expected " + 
+                             expectedType + " or in variable declaration context");
+                    LOG.warn("🚨 [DEBUG] Suggestion Skipped - Variable: '" + varName + 
+                            "', Unknown Type, Expected: '" + expectedType + "'");
+                }
             }
         }
         
@@ -2738,6 +2838,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         }
         
         if (lastValue == null) {
+            LOG.warn("🚨 [DEBUG] Type Inference Failed - Variable: '" + varName + "', No assignment value found");
             return null;
         }
         
@@ -2748,22 +2849,56 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         Matcher namespaceMatcher = namespacePattern.matcher(lastValue);
         if (namespaceMatcher.find()) {
             String namespace = namespaceMatcher.group(1);
-            if (namespace.equals("color")) return "color";
-            else if (namespace.equals("array")) return "array";
-            else if (namespace.equals("matrix")) return "matrix";
-            else if (namespace.equals("map")) return "map";
-            else if (namespace.equals("table")) return "table";
-            else if (namespace.equals("line")) return "line";
-            else if (namespace.equals("label")) return "label";
-            else if (namespace.equals("box")) return "box";
-            else if (namespace.equals("str")) return "string";
-            else if (namespace.equals("math")) return "float";
-            else if (namespace.equals("int")) return "int";
+            if (namespace.equals("color")) {
+                LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'color' (from namespace)");
+                return "color";
+            }
+            else if (namespace.equals("array")) {
+                LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'array' (from namespace)");
+                return "array";
+            }
+            else if (namespace.equals("matrix")) {
+                LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'matrix' (from namespace)");
+                return "matrix";
+            }
+            else if (namespace.equals("map")) {
+                LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'map' (from namespace)");
+                return "map";
+            }
+            else if (namespace.equals("table")) {
+                LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'table' (from namespace)");
+                return "table";
+            }
+            else if (namespace.equals("line")) {
+                LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'line' (from namespace)");
+                return "line";
+            }
+            else if (namespace.equals("label")) {
+                LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'label' (from namespace)");
+                return "label";
+            }
+            else if (namespace.equals("box")) {
+                LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'box' (from namespace)");
+                return "box";
+            }
+            else if (namespace.equals("str")) {
+                LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'string' (from namespace)");
+                return "string";
+            }
+            else if (namespace.equals("math")) {
+                LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'float' (from namespace)");
+                return "float";
+            }
+            else if (namespace.equals("int")) {
+                LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'int' (from namespace)");
+                return "int";
+            }
         }
         
         // Check for boolean literals (true/false)
         if (lastValue.equals("true") || lastValue.equals("false")) {
             LOG.info("🔍 [inferTypeFromAssignment] Boolean literal detected: " + lastValue);
+            LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'bool' (from boolean literal)");
             return "bool";
         }
         
@@ -2772,6 +2907,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             lastValue.matches("^not\\s+.*") || lastValue.matches(".*\\s+crosses\\s+.*") ||
             lastValue.matches(".*\\s+crossover\\s+.*") || lastValue.matches(".*\\s+crossunder\\s+.*")) {
             LOG.info("🔍 [inferTypeFromAssignment] Boolean operation detected: " + lastValue);
+            LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'bool' (from boolean operation)");
             return "bool";
         }
         
@@ -2779,21 +2915,25 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         if ((lastValue.startsWith("\"") && lastValue.endsWith("\"")) ||
             (lastValue.startsWith("'") && lastValue.endsWith("'"))) {
             LOG.info("🔍 [inferTypeFromAssignment] String literal detected: " + lastValue);
+            LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'string' (from string literal)");
             return "string";
         }
         
         // Check for numeric literals (distinguish between int and float)
         if (lastValue.matches("^-?\\d+$")) {
             LOG.info("🔍 [inferTypeFromAssignment] Integer literal detected: " + lastValue);
+            LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'int' (from integer literal)");
             return "int";
         } else if (lastValue.matches("^-?\\d+\\.\\d+$")) {
             LOG.info("🔍 [inferTypeFromAssignment] Float literal detected: " + lastValue);
+            LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'float' (from float literal)");
             return "float";
         }
         
         // Check for color literals (#RRGGBB format)
         if (lastValue.matches("^#[0-9A-Fa-f]{6}$")) {
             LOG.info("🔍 [inferTypeFromAssignment] Color literal detected: " + lastValue);
+            LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'color' (from color literal)");
             return "color";
         }
         
@@ -2825,18 +2965,21 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             // Check for common function patterns that indicate return types
             if (lastValue.matches("^(barstate\\.is|timeframe\\.is|syminfo\\.session\\.is|.*\\.is_)[a-zA-Z_]+.*")) {
                 LOG.info("🔍 [inferTypeFromAssignment] Boolean-returning function detected: " + lastValue);
+                LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'bool' (from boolean function)");
                 return "bool";
             }
             
             // Check for numeric functions
             if (lastValue.matches("^(math\\.|ta\\.)[a-zA-Z_]+.*")) {
                 LOG.info("🔍 [inferTypeFromAssignment] Numeric function call detected: " + lastValue);
+                LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'float' (from numeric function)");
                 return "float";
             }
             
             // Check for string functions
             if (lastValue.matches("^str\\.[a-zA-Z_]+.*")) {
                 LOG.info("🔍 [inferTypeFromAssignment] String function call detected: " + lastValue);
+                LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'string' (from string function)");
                 return "string";
             }
             
@@ -2845,11 +2988,13 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 lastValue.contains(" > ") || lastValue.contains(" < ") || 
                 lastValue.contains(" >= ") || lastValue.contains(" <= ")) {
                 LOG.info("🔍 [inferTypeFromAssignment] Comparison operation detected: " + lastValue);
+                LOG.warn("🚨 [DEBUG] Type Inference - Variable: '" + varName + "', Value: '" + lastValue + "', Inferred Type: 'bool' (from comparison)");
                 return "bool";
             }
         }
         
         LOG.info("🔍 [inferTypeFromAssignment] Could not determine type for: " + lastValue);
+        LOG.warn("🚨 [DEBUG] Type Inference Failed - Variable: '" + varName + "', Value: '" + lastValue + "', Could not determine type");
         return null;
     }
     
@@ -2994,7 +3139,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             LOG.warn(">>>>>> Installing PineScript CompletionAutoPopupHandler");
             
             typedAction.setupRawHandler(new TypedActionHandler() {
-                @Override
+        @Override
                 public void execute(@NotNull Editor editor, char c, @NotNull DataContext dataContext) {
                     if (oldHandler != null) {
                         oldHandler.execute(editor, c, dataContext);
@@ -3600,4 +3745,4 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         if (hex.toLowerCase().contains("color")) return "color";
         return "";
     }
-}
+} 
