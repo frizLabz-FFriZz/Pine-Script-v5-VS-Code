@@ -5,26 +5,33 @@ import com.intellij.codeInsight.completion.*;
 import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
 import com.intellij.icons.AllIcons;
+import com.intellij.openapi.actionSystem.DataContext;
+import com.intellij.openapi.actionSystem.IdeActions;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.Disposable;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorModificationUtil;
+import com.intellij.openapi.editor.actionSystem.EditorActionHandler;
 import com.intellij.openapi.editor.actionSystem.EditorActionManager;
 import com.intellij.openapi.editor.actionSystem.TypedAction;
 import com.intellij.openapi.editor.actionSystem.TypedActionHandler;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.Disposable;
-import com.intellij.openapi.actionSystem.DataContext;
-import com.intellij.openapi.actionSystem.IdeActions;
-import com.intellij.openapi.application.ModalityState;
+import com.intellij.openapi.util.TextRange;
 import com.intellij.patterns.PlatformPatterns;
+import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiFile;
 import com.intellij.util.ProcessingContext;
 import com.pinescript.plugin.completion.handlers.SmartInsertHandler;
 import com.pinescript.plugin.language.PineScriptLanguage;
 import com.pinescript.plugin.language.PineScriptIcons;
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import javax.swing.*;
 import java.io.BufferedReader;
@@ -38,15 +45,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Timer;
 import java.util.TimerTask;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import com.intellij.codeInsight.completion.CompletionService;
-import com.intellij.psi.PsiDocumentManager;
-import com.intellij.psi.PsiFile;
-import com.intellij.codeInsight.completion.PrefixMatcher;
-import com.intellij.codeInsight.completion.impl.CamelHumpMatcher;
-import com.intellij.icons.AllIcons;
-import com.intellij.openapi.util.TextRange;
 
 public class PineScriptCompletionContributor extends CompletionContributor {
     private static final Logger LOG = Logger.getInstance(PineScriptCompletionContributor.class);
@@ -238,7 +236,18 @@ public class PineScriptCompletionContributor extends CompletionContributor {
 
     // Static initialization to load definitions for default version on startup
     static {
-        loadDefinitionsForVersion(DEFAULT_VERSION);
+        try {
+            LOG.info("PineScriptCompletionContributor static initialization starting...");
+            if (DEFAULT_VERSION != null) {
+                loadDefinitionsForVersion(DEFAULT_VERSION);
+                LOG.info("Successfully loaded definitions for default version: " + DEFAULT_VERSION);
+            } else {
+                LOG.warn("DEFAULT_VERSION is null in static initializer, skipping definition loading");
+            }
+        } catch (Exception e) {
+            LOG.error("Error during static initialization", e);
+            // Continue initialization rather than failing entirely
+        }
     }
 
     private static final String[] KEYWORDS = {
@@ -880,68 +889,81 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     }
     
     /**
-     * Loads all JSON definition files for a specific Pine Script version.
+     * Loads Pine Script definitions for a specific version
      * @param version The Pine Script version
      */
     private static synchronized void loadDefinitionsForVersion(String version) {
-        if (CACHED_DEFINITIONS.containsKey(version)) {
-            LOG.info("Definitions for version " + version + " already loaded");
-            return;
-        }
-        
-        LOG.info("Loading definitions for Pine Script version: " + version);
-        
-        // Load variables with types
-        List<String> variableNames = loadNamesFromDefinitionFile(version, "variables.json");
-        VARIABLES_MAP.put(version, new HashSet<>(variableNames));
-        Map<String, String> variableTypes = loadTypesFromDefinitionFile(version, "variables.json");
-        VARIABLE_TYPES.put(version, variableTypes);
-        
-        // Load constants with types
-        List<String> constantNames = loadNamesFromDefinitionFile(version, "constants.json");
-        CONSTANTS_MAP.put(version, new HashSet<>(constantNames));
-        Map<String, String> constantTypes = loadTypesFromDefinitionFile(version, "constants.json");
-        CONSTANT_TYPES.put(version, constantTypes);
-        
-        // Load functions with return types
-        List<String> functionNames = loadNamesFromDefinitionFile(version, "functions.json");
-        Set<String> functionsSet = new HashSet<>();
-        // Store clean function names (without parentheses) for proper completion
-        List<String> cleanFunctionNames = new ArrayList<>();
-        for (String funcName : functionNames) {
-            String cleanName = funcName;
-            if (cleanName.endsWith("()")) {
-                cleanName = cleanName.substring(0, cleanName.length() - 2);
+        try {
+            if (version == null) {
+                LOG.warn("Attempted to load definitions for null version, using DEFAULT_VERSION");
+                version = DEFAULT_VERSION;
+                
+                // If default version is also null, use a fallback
+                if (version == null) {
+                    LOG.warn("DEFAULT_VERSION is also null, using fallback version '5'");
+                    version = "5";
+                }
             }
-            functionsSet.add(cleanName);
-            cleanFunctionNames.add(cleanName);
+            
+            LOG.info("Loading definitions for Pine Script version " + version);
+            
+            // If already loaded, skip
+            if (CACHED_DEFINITIONS.containsKey(version)) {
+                LOG.info("Definitions for version " + version + " already loaded");
+                return;
+            }
+            
+            List<String> functions = loadNamesFromDefinitionFile(version, "functions.json");
+            List<String> variables = loadNamesFromDefinitionFile(version, "variables.json");
+            List<String> constants = loadNamesFromDefinitionFile(version, "constants.json");
+            
+            Map<String, List<Map<String, String>>> functionArguments = loadFunctionArguments(version);
+            Map<String, String> returnTypes = loadReturnTypesFromDefinitionFile(version, "functions.json");
+            Map<String, String> variableTypes = loadTypesFromDefinitionFile(version, "variables.json");
+            Map<String, String> constantTypes = loadTypesFromDefinitionFile(version, "constants.json");
+            
+            // Store all definitions together for general lookup, plus type-specific collections
+            List<String> allDefinitions = new ArrayList<>();
+            allDefinitions.addAll(functions);
+            allDefinitions.addAll(variables);
+            allDefinitions.addAll(constants);
+            
+            Set<String> functionsSet = new HashSet<>(functions);
+            Set<String> variablesSet = new HashSet<>(variables);
+            Set<String> constantsSet = new HashSet<>(constants);
+            
+            CACHED_DEFINITIONS.put(version, allDefinitions);
+            FUNCTIONS_MAP.put(version, functionsSet);
+            VARIABLES_MAP.put(version, variablesSet);
+            CONSTANTS_MAP.put(version, constantsSet);
+            
+            FUNCTION_ARGUMENTS_CACHE.put(version, functionArguments);
+            FUNCTION_RETURN_TYPES.put(version, returnTypes);
+            VARIABLE_TYPES.put(version, variableTypes);
+            CONSTANT_TYPES.put(version, constantTypes);
+            
+            // Initialize namespace methods
+            NAMESPACE_METHODS_CACHE.put(version, initNamespaceMethodsForVersion(version, functions));
+            
+            // Initialize function parameters
+            FUNCTION_PARAMETERS_CACHE.put(version, initFunctionParametersForVersion(version));
+            
+            LOG.info("Successfully loaded definitions for Pine Script version " + version);
+        } catch (Exception e) {
+            LOG.error("Error loading definitions for version " + version, e);
+            
+            // Create empty maps/sets if they don't exist yet to prevent further errors
+            CACHED_DEFINITIONS.putIfAbsent(version, new ArrayList<>());
+            FUNCTIONS_MAP.putIfAbsent(version, new HashSet<>());
+            VARIABLES_MAP.putIfAbsent(version, new HashSet<>());
+            CONSTANTS_MAP.putIfAbsent(version, new HashSet<>());
+            FUNCTION_ARGUMENTS_CACHE.putIfAbsent(version, new HashMap<>());
+            FUNCTION_RETURN_TYPES.putIfAbsent(version, new HashMap<>());
+            VARIABLE_TYPES.putIfAbsent(version, new HashMap<>());
+            CONSTANT_TYPES.putIfAbsent(version, new HashMap<>());
+            NAMESPACE_METHODS_CACHE.putIfAbsent(version, new HashMap<>());
+            FUNCTION_PARAMETERS_CACHE.putIfAbsent(version, new HashMap<>());
         }
-        FUNCTIONS_MAP.put(version, functionsSet);
-        
-        // Load function return types
-        Map<String, String> functionReturnTypes = loadReturnTypesFromDefinitionFile(version, "functions.json");
-        FUNCTION_RETURN_TYPES.put(version, functionReturnTypes);
-
-        // Load function arguments from functions.json
-        Map<String, List<Map<String, String>>> functionArgs = loadFunctionArguments(version);
-        FUNCTION_ARGUMENTS_CACHE.put(version, functionArgs);
-        
-        // Combine all definitions
-        List<String> allDefinitions = new ArrayList<>();
-        allDefinitions.addAll(variableNames);
-        allDefinitions.addAll(constantNames);
-        allDefinitions.addAll(cleanFunctionNames);
-        
-        // Cache the combined definitions
-        CACHED_DEFINITIONS.put(version, allDefinitions);
-        
-        // Also initialize namespace methods for this version
-        NAMESPACE_METHODS_CACHE.put(version, initNamespaceMethodsForVersion(version, cleanFunctionNames));
-        
-        // And function parameters
-        FUNCTION_PARAMETERS_CACHE.put(version, initFunctionParametersForVersion(version));
-        
-        LOG.info("Loaded " + allDefinitions.size() + " definitions for version " + version);
     }
     
     /**
@@ -1731,41 +1753,69 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                    Map<String, Set<String>> typedVariables,
                                    Map<String, Set<String>> typedConstants,
                                    String version) {
-        // This would ideally use type information from the Pine Script definitions
-        // For now, we'll use simplified mapping based on naming conventions and known return types
+        LOG.warn("🚨 [initializeTypeMaps] Initializing type maps for version: " + version);
+
+        // Instead of hardcoding functions, get them from the JSON files
+        Map<String, String> functionReturnTypes = FUNCTION_RETURN_TYPES.getOrDefault(version, new HashMap<>());
+        Map<String, String> variableTypes = VARIABLE_TYPES.getOrDefault(version, new HashMap<>());
+        Map<String, String> constantTypes = CONSTANT_TYPES.getOrDefault(version, new HashMap<>());
         
-        // Example initialization for boolean type
-        Set<String> boolFunctions = new HashSet<>(Arrays.asList(
-            "and", "or", "not", "crosses", "crossover", "crossunder", "change", "rising", "falling",
-            "na", "nz", "barstate.isfirst", "barstate.islast", "barstate.ishistory", "barstate.isrealtime",
-            "barstate.isnew", "barstate.isconfirmed", "timeframe.isdaily", "timeframe.isweekly", "timeframe.ismonthly", 
-            "syminfo.session.ismarket", "syminfo.session.ispremarket", "syminfo.session.ispostmarket", 
-            "line.is_expired", "box.is_expired", "label.is_expired"
-        ));
-        typedFunctions.put("bool", boolFunctions);
+        // Process functions by return type
+        for (Map.Entry<String, String> entry : functionReturnTypes.entrySet()) {
+            String functionName = entry.getKey();
+            String returnType = entry.getValue();
+            
+            // Extract the base type (without qualifiers)
+            String baseType = returnType.replaceAll("^(?:series|simple|const|input|var|varip)\\s+", "");
+            baseType = baseType.replaceAll("\\s*\\[.*\\]\\s*$", ""); // Remove array notation if present
+            
+            // Add to the appropriate type category
+            typedFunctions.computeIfAbsent(baseType, k -> new HashSet<>()).add(functionName);
+            LOG.info("🔍 [initializeTypeMaps] Added function '" + functionName + "' to type '" + baseType + "' from return type '" + returnType + "'");
+        }
         
-        Set<String> boolConstants = new HashSet<>(Arrays.asList("true", "false"));
-        typedConstants.put("bool", boolConstants);
+        // Process variables by type
+        for (Map.Entry<String, String> entry : variableTypes.entrySet()) {
+            String variableName = entry.getKey();
+            String variableType = entry.getValue();
+            
+            // Extract the base type (without qualifiers)
+            String baseType = variableType.replaceAll("^(?:series|simple|const|input|var|varip)\\s+", "");
+            baseType = baseType.replaceAll("\\s*\\[.*\\]\\s*$", ""); // Remove array notation if present
+            
+            // Add to the appropriate type category
+            typedVariables.computeIfAbsent(baseType, k -> new HashSet<>()).add(variableName);
+            LOG.info("🔍 [initializeTypeMaps] Added variable '" + variableName + "' to type '" + baseType + "' from variable type '" + variableType + "'");
+        }
         
-        // Example initialization for numeric types (int, float)
-        Set<String> numericFunctions = new HashSet<>(Arrays.asList(
-            "abs", "avg", "ceil", "floor", "log", "log10", "max", "min", "pow", "round", "sign", "sqrt",
-            "sum", "acos", "asin", "atan", "cos", "sin", "tan", "exp", "random", "round", "close", "open",
-            "high", "low", "volume", "time", "timenow", "timestamp", "year", "month", "weekofyear", "dayofmonth",
-            "dayofweek", "hour", "minute", "second"
-        ));
-        typedFunctions.put("int", numericFunctions);
-        typedFunctions.put("float", numericFunctions);
+        // Process constants by type
+        for (Map.Entry<String, String> entry : constantTypes.entrySet()) {
+            String constantName = entry.getKey();
+            String constantType = entry.getValue();
+            
+            // Extract the base type (without qualifiers)
+            String baseType = constantType.replaceAll("^(?:series|simple|const|input|var|varip)\\s+", "");
+            baseType = baseType.replaceAll("\\s*\\[.*\\]\\s*$", ""); // Remove array notation if present
+            
+            // Add to the appropriate type category
+            typedConstants.computeIfAbsent(baseType, k -> new HashSet<>()).add(constantName);
+            LOG.info("🔍 [initializeTypeMaps] Added constant '" + constantName + "' to type '" + baseType + "' from constant type '" + constantType + "'");
+        }
         
-        // String functions
-        Set<String> stringFunctions = new HashSet<>(Arrays.asList(
-            "str.tostring", "str.format", "str.length", "str.contains", "str.startswith", "str.endswith",
-            "str.split", "str.replace", "str.replace_all", "str.lower", "str.upper", "syminfo.ticker",
-            "syminfo.description", "syminfo.prefix", "syminfo.root", "syminfo.currency", "timeframe.period"
-        ));
-        typedFunctions.put("string", stringFunctions);
+        // Handle boolean constants specifically
+        if (!typedConstants.containsKey("bool") || !typedConstants.get("bool").contains("true")) {
+            typedConstants.computeIfAbsent("bool", k -> new HashSet<>()).add("true");
+            typedConstants.computeIfAbsent("bool", k -> new HashSet<>()).add("false");
+            LOG.info("🔍 [initializeTypeMaps] Added default boolean constants 'true' and 'false'");
+        }
         
-        // Add more types as needed...
+        // Add NA as a special value that can be assigned to any type
+        for (String baseType : new String[]{"int", "float", "bool", "string", "color", "any"}) {
+            typedConstants.computeIfAbsent(baseType, k -> new HashSet<>()).add("na");
+            LOG.info("🔍 [initializeTypeMaps] Added 'na' as assignable to type '" + baseType + "'");
+        }
+        
+        LOG.warn("🚨 [initializeTypeMaps] Completed type maps initialization for version: " + version);
     }
 
     /**
@@ -3162,52 +3212,61 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     private static Map<String, String[]> initNamespaceMethodsForVersion(String version, List<String> functionNames) {
         Map<String, String[]> result = new HashMap<>();
         
+        LOG.warn("🚨 [initNamespaceMethodsForVersion] Initializing namespace methods for version: " + version);
+        
+        // Define default namespaces if NAMESPACES is null
+        String[] namespacesList = NAMESPACES != null ? NAMESPACES : 
+            new String[]{"ta", "math", "array", "str", "color", "chart", "strategy", "syminfo", "request", "ticker"};
+        
         // Filter function names that belong to each namespace
         Map<String, List<String>> namespaceMethodsMap = new HashMap<>();
         
-        for (String namespace : new String[]{"ta", "math", "array", "str", "color", 
-                                             "chart", "strategy", "syminfo", "request", "ticker"}) {
+        for (String namespace : namespacesList) {
             namespaceMethodsMap.put(namespace, new ArrayList<>());
         }
         
-        for (String functionName : functionNames) {
-            if (functionName.contains(".")) {
-                String[] parts = functionName.split("\\.", 2);
-                if (parts.length == 2 && namespaceMethodsMap.containsKey(parts[0])) {
-                    namespaceMethodsMap.get(parts[0]).add(parts[1]);
+        // Safely process the function names (could be null in some cases)
+        if (functionNames != null) {
+            // Process the function names from JSON to extract namespace methods
+            for (String functionName : functionNames) {
+                if (functionName != null && functionName.contains(".")) {
+                    String[] parts = functionName.split("\\.", 2);
+                    if (parts.length == 2 && namespaceMethodsMap.containsKey(parts[0])) {
+                        String namespace = parts[0];
+                        String method = parts[1];
+                        
+                        // Add the method to the appropriate namespace list
+                        namespaceMethodsMap.get(namespace).add(method);
+                        LOG.info("🔍 [initNamespaceMethodsForVersion] Added method '" + method + 
+                                "' to namespace '" + namespace + "' from function '" + functionName + "'");
+                    }
                 }
             }
+        } else {
+            LOG.warn("🚨 [initNamespaceMethodsForVersion] Function names list is null!");
         }
         
         // Convert lists to arrays for the final map
         for (Map.Entry<String, List<String>> entry : namespaceMethodsMap.entrySet()) {
-            result.put(entry.getKey(), entry.getValue().toArray(new String[0]));
+            String namespace = entry.getKey();
+            List<String> methods = entry.getValue();
+            
+            // Sort the methods alphabetically for better presentation (safely)
+            if (methods != null) {
+                try {
+                    Collections.sort(methods);
+                } catch (Exception e) {
+                    LOG.warn("🚨 [initNamespaceMethodsForVersion] Failed to sort methods for namespace '" + 
+                            namespace + "': " + e.getMessage());
+                }
+            }
+            
+            result.put(namespace, methods != null ? methods.toArray(new String[0]) : new String[0]);
+            LOG.info("🔍 [initNamespaceMethodsForVersion] Namespace '" + namespace + 
+                    "' has " + (methods != null ? methods.size() : 0) + " methods");
         }
         
-        // Add predefined method sets for common namespaces (without trailing parentheses)
-        result.put("str", new String[]{
-            "length", "format", "tostring", "tonumber", "replace", "replace_all", 
-            "lower", "upper", "startswith", "endswith", "contains", "split",
-            "substring", "pos", "match"
-        });
-        
-        result.put("math", new String[]{
-            "abs", "acos", "asin", "atan", "avg", "ceil", "cos", "exp", 
-            "floor", "log", "log10", "max", "min", "pow", "random", 
-            "round", "round_to_mintick", "sign", "sin", "sqrt", "sum", 
-            "tan", "todegrees", "toradians"
-        });
-        
-        result.put("array", new String[]{
-            "new", "new_float", "new_int", "new_bool", "new_string", "new_color",
-            "new_line", "new_label", "new_box", "new_table", "new_linefill",
-            "get", "set", "push", "pop", "insert", "remove", "clear",
-            "size", "copy", "slice", "concat", "fill", "join",
-            "min", "max", "avg", "median", "mode", "stdev", "variance",
-            "sort", "reverse", "binary_search", "includes", "indexof", "lastindexof",
-            "shift", "unshift"
-        });
-        
+        LOG.warn("🚨 [initNamespaceMethodsForVersion] Completed namespace methods initialization for version: " + version);
         return result;
     }
     
@@ -3661,179 +3720,69 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         Map<String, String> suggestions = new HashMap<>();
         String normalizedType = normalizeType(type.toLowerCase());
         
+        LOG.warn("🚨 [getValueSuggestionsForTypeWithPrefix] Getting suggestions for type: " + type + ", variable: " + variableName);
+        
+        // Always include certain basic suggestions based on type
+        
         // Boolean suggestions
         if (normalizedType.contains("bool")) {
             suggestions.put("true", "boolean");
             suggestions.put("false", "boolean");
+            suggestions.put("na", "boolean");
         }
         
         // String suggestions
         else if (normalizedType.contains("string")) {
             suggestions.put("\"\"", "string");
-            // Add common string values based on variable name
-            if (variableName.toLowerCase().contains("title")) {
+            suggestions.put("na", "string");
+            
+            // Add variable-name based suggestion
+            if (variableName != null && !variableName.isEmpty()) {
                 suggestions.put("\"" + variableName + "\"", "string");
-            } else if (variableName.toLowerCase().contains("color")) {
-                suggestions.put("\"blue\"", "string");
-                suggestions.put("\"red\"", "string");
-                suggestions.put("\"green\"", "string");
-                suggestions.put("\"yellow\"", "string");
-                suggestions.put("\"purple\"", "string");
-                suggestions.put("\"orange\"", "string");
-                suggestions.put("\"black\"", "string");
-                suggestions.put("\"white\"", "string");
-            } else if (variableName.toLowerCase().contains("time") || variableName.toLowerCase().contains("date")) {
-                suggestions.put("\"YYYY-MM-DD\"", "string");
-                suggestions.put("\"HH:mm:ss\"", "string");
             }
         }
         
-        // Color suggestions
+        // Color suggestions - these are universal constants
         else if (normalizedType.contains("color")) {
+            // Include just the basic color suggestions - don't hardcode an exhaustive list
             suggestions.put("color.new(255, 255, 255, 0)", "color");
             suggestions.put("color.rgb(255, 255, 255)", "color");
-            suggestions.put("color.red", "color");
-            suggestions.put("color.green", "color");
-            suggestions.put("color.blue", "color");
-            suggestions.put("color.yellow", "color");
-            suggestions.put("color.purple", "color");
-            suggestions.put("color.orange", "color");
-            suggestions.put("color.white", "color");
-            suggestions.put("color.black", "color");
+            suggestions.put("na", "color");
+            
+            // Let the JSON-loaded color constants fill in the rest
         }
         
         // Integer/float suggestions
-        else if (normalizedType.contains("int")) {
-            suggestions.put("0", "integer");
-            suggestions.put("1", "integer");
-            suggestions.put("-1", "integer");
-            // Add specific integer suggestions based on variable name
-            if (variableName.toLowerCase().contains("length") || 
-                variableName.toLowerCase().contains("period") || 
-                variableName.toLowerCase().contains("size")) {
-                suggestions.put("14", "integer");
-                suggestions.put("20", "integer");
-                suggestions.put("50", "integer");
-                suggestions.put("200", "integer");
-            } else if (variableName.toLowerCase().contains("offset")) {
-                suggestions.put("0", "integer");
-                suggestions.put("1", "integer");
-                suggestions.put("2", "integer");
-            }
-        }
-        else if (normalizedType.contains("float")) {
-            suggestions.put("0.0", "float");
-            suggestions.put("1.0", "float");
-            suggestions.put("-1.0", "float");
-            // Add specific float suggestions based on variable name
-            if (variableName.toLowerCase().contains("percent") || 
-                variableName.toLowerCase().contains("ratio")) {
-                suggestions.put("0.5", "float");
-                suggestions.put("0.1", "float");
-                suggestions.put("0.01", "float");
-            } else if (variableName.toLowerCase().contains("price")) {
+        else if (normalizedType.contains("int") || normalizedType.contains("float")) {
+            suggestions.put("0", normalizedType.contains("int") ? "integer" : "float");
+            suggestions.put("1", normalizedType.contains("int") ? "integer" : "float");
+            suggestions.put("-1", normalizedType.contains("int") ? "integer" : "float");
+            suggestions.put("na", normalizedType);
+            
+            // Include the common OHLC variables for 'price' related variables
+            if (variableName != null && variableName.toLowerCase().contains("price")) {
                 suggestions.put("close", "float");
                 suggestions.put("open", "float");
                 suggestions.put("high", "float");
                 suggestions.put("low", "float");
-                suggestions.put("hl2", "float");
-                suggestions.put("hlc3", "float");
-                suggestions.put("ohlc4", "float");
             }
         }
         
-        // Array suggestions
-        else if (normalizedType.contains("array")) {
-            String elementType = extractArrayElementType(type);
-            if (!elementType.isEmpty()) {
-                suggestions.put("array.new_" + normalizeType(elementType) + "(0)", "array");
-                if (normalizedType.contains("float")) {
-                    suggestions.put("array.new_float(0)", "array<float>");
-                } else if (normalizedType.contains("int")) {
-                    suggestions.put("array.new_int(0)", "array<int>");
-                } else if (normalizedType.contains("bool")) {
-                    suggestions.put("array.new_bool(0)", "array<bool>");
-                } else if (normalizedType.contains("string")) {
-                    suggestions.put("array.new_string(0)", "array<string>");
-                } else if (normalizedType.contains("color")) {
-                    suggestions.put("array.new_color(0)", "array<color>");
-                } else {
-                    suggestions.put("array.new_float(0)", "array<float>");
-                    suggestions.put("array.new_int(0)", "array<int>");
-                    suggestions.put("array.new_bool(0)", "array<bool>");
-                    suggestions.put("array.new_string(0)", "array<string>");
-                    suggestions.put("array.new_color(0)", "array<color>");
-                }
-            } else {
-                // If element type is not specified
-                suggestions.put("array.new_float(0)", "array<float>");
-                suggestions.put("array.new_int(0)", "array<int>");
-                suggestions.put("array.new_bool(0)", "array<bool>");
-                suggestions.put("array.new_string(0)", "array<string>");
-                suggestions.put("array.new_color(0)", "array<color>");
+        // Use the default version for simplicity
+        String version = DEFAULT_VERSION;
+        
+        // Add constants with matching types from the loaded data
+        Map<String, String> constantTypes = CONSTANT_TYPES.getOrDefault(version, new HashMap<>());
+        for (Map.Entry<String, String> entry : constantTypes.entrySet()) {
+            String constant = entry.getKey();
+            String constantType = entry.getValue();
+            
+            // If the constant type matches our target type and it's not already in suggestions, add it
+            if (constantType.toLowerCase().contains(normalizedType) && !suggestions.containsKey(constant)) {
+                suggestions.put(constant, normalizedType);
+                LOG.info("🔍 [getValueSuggestionsForTypeWithPrefix] Added constant '" + constant + 
+                         "' as suggestion for type '" + normalizedType + "'");
             }
-        }
-        
-        // Matrix suggestions
-        else if (normalizedType.contains("matrix")) {
-            suggestions.put("matrix.new<float>(0, 0)", "matrix");
-            suggestions.put("matrix.new<int>(0, 0)", "matrix");
-            suggestions.put("matrix.new<bool>(0, 0)", "matrix");
-            suggestions.put("matrix.new<string>(0, 0)", "matrix");
-            suggestions.put("matrix.new<color>(0, 0)", "matrix");
-        }
-        
-        // Linestyle suggestions
-        else if (normalizedType.contains("linestyle") || 
-                 (variableName.toLowerCase().contains("style") && variableName.toLowerCase().contains("line"))) {
-            suggestions.put("line.style_solid", "linestyle");
-            suggestions.put("line.style_dotted", "linestyle");
-            suggestions.put("line.style_dashed", "linestyle");
-            suggestions.put("line.style_arrow_left", "linestyle");
-            suggestions.put("line.style_arrow_right", "linestyle");
-            suggestions.put("line.style_arrow_both", "linestyle");
-        }
-        
-        // Label style suggestions
-        else if (normalizedType.contains("labelstyle") || 
-                 (variableName.toLowerCase().contains("style") && variableName.toLowerCase().contains("label"))) {
-            suggestions.put("label.style_none", "labelstyle");
-            suggestions.put("label.style_label_down", "labelstyle");
-            suggestions.put("label.style_label_up", "labelstyle");
-            suggestions.put("label.style_label_left", "labelstyle");
-            suggestions.put("label.style_label_right", "labelstyle");
-            suggestions.put("label.style_label_center", "labelstyle");
-        }
-        
-        // Chart position suggestions
-        else if (normalizedType.contains("position") || 
-                 variableName.toLowerCase().contains("position")) {
-            suggestions.put("position.top_left", "position");
-            suggestions.put("position.top_center", "position");
-            suggestions.put("position.top_right", "position");
-            suggestions.put("position.middle_left", "position");
-            suggestions.put("position.middle_center", "position");
-            suggestions.put("position.middle_right", "position");
-            suggestions.put("position.bottom_left", "position");
-            suggestions.put("position.bottom_center", "position");
-            suggestions.put("position.bottom_right", "position");
-        }
-        
-        // Any other type case, provide some generic suggestions
-        if (suggestions.isEmpty()) {
-            // Add null as a fallback for any type
-            suggestions.put("na", "null");
-        }
-        
-        // Filter suggestions by prefix if provided
-        if (prefix != null && !prefix.isEmpty()) {
-            Map<String, String> filteredSuggestions = new HashMap<>();
-            for (Map.Entry<String, String> entry : suggestions.entrySet()) {
-                if (entry.getKey().startsWith(prefix)) {
-                    filteredSuggestions.put(entry.getKey(), entry.getValue());
-                }
-            }
-            return filteredSuggestions;
         }
         
         return suggestions;
