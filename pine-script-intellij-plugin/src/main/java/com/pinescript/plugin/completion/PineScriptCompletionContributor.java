@@ -1239,25 +1239,38 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         LOG.warn("🚨 [DEBUG] Starting Type Inference - Text before cursor: '" + 
                  (textBeforeCursor.length() > 30 ? "..." + textBeforeCursor.substring(textBeforeCursor.length() - 30) : textBeforeCursor) + "'");
         
-        // First, check for variable declaration with explicit type: var TYPE varName = 
-        Pattern typedVarPattern = Pattern.compile("(?:var|varip)\\s+([a-zA-Z_]\\w*)\\s+([a-zA-Z_]\\w*)\\s*=");
+        // First, check for variable declaration with explicit type and qualifiers
+        // Patterns to match:
+        // 1. var TYPE varName =  (var qualifier)
+        // 2. varip TYPE varName =  (varip qualifier)
+        // 3. series TYPE varName =  (series qualifier)
+        // 4. simple TYPE varName =  (simple qualifier)
+        // 5. const TYPE varName =  (const qualifier)
+        
+        // Match pattern: <qualifier> <type> <varName> =
+        Pattern typedVarPattern = Pattern.compile(
+            "(?:(var|varip|series|simple|const)\\s+)?([a-zA-Z_]\\w*)\\s+([a-zA-Z_]\\w*)\\s*="
+        );
         Matcher typedVarMatcher = typedVarPattern.matcher(textBeforeCursor);
         
+        String lastQualifier = null;
         String lastTypeDeclaration = null;
         String lastVarName = null;
         
         while (typedVarMatcher.find()) {
-            lastTypeDeclaration = typedVarMatcher.group(1);
-            lastVarName = typedVarMatcher.group(2);
+            lastQualifier = typedVarMatcher.group(1); // May be null if not specified
+            lastTypeDeclaration = typedVarMatcher.group(2);
+            lastVarName = typedVarMatcher.group(3);
         }
         
         if (lastTypeDeclaration != null && isKnownType(lastTypeDeclaration)) {
-            LOG.warn("🎯 [inferExpectedType] Found variable declaration with explicit type: " + lastTypeDeclaration + " for variable: " + lastVarName);
-            LOG.warn("🚨 [DEBUG] Type Inference Result - Variable: '" + lastVarName + "', Explicit Type: '" + lastTypeDeclaration + "'");
-            return lastTypeDeclaration;
+            String fullType = (lastQualifier != null ? lastQualifier + " " : "") + lastTypeDeclaration;
+            LOG.warn("🎯 [inferExpectedType] Found variable declaration with type: " + fullType + " for variable: " + lastVarName);
+            LOG.warn("🚨 [DEBUG] Type Inference Result - Variable: '" + lastVarName + "', Type: '" + fullType + "'");
+            return fullType;
         }
         
-        // If no explicit type declaration is found, proceed with the old method
+        // If no explicit type declaration is found, proceed with analyzing the context
         // Trim to get the text right before the equals sign
         String trimmedText = textBeforeCursor.trim();
         if (trimmedText.endsWith("=")) {
@@ -1275,7 +1288,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         // Log the text we're analyzing
         LOG.warn("🔍 [inferExpectedType] Analyzing for type inference: '" + trimmedText + "'");
         
-        // Extract the variable name from the left-hand side
+        // Extract the variable name and any qualifiers from the left-hand side
         String[] parts = trimmedText.split("\\s+");
         if (parts.length == 0) {
             LOG.warn("🔍 [inferExpectedType] No parts found in text: '" + trimmedText + "'");
@@ -1283,24 +1296,52 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             return null;
         }
         
+        // The variable name should be the last part
         String variableName = parts[parts.length - 1].trim();
         LOG.warn("🔍 [inferExpectedType] Extracted variable name: '" + variableName + "'");
         
-        // Check if the variable declaration includes a type
+        // Check for qualifiers and type in the declaration
+        String qualifier = null;
+        String type = null;
+        
         for (int i = 0; i < parts.length - 1; i++) {
-            if (isKnownType(parts[i])) {
-                LOG.warn("🎯 [inferExpectedType] Found type declaration: " + parts[i]);
-                LOG.warn("🚨 [DEBUG] Type Inference Result - Variable: '" + variableName + "', Found Type: '" + parts[i] + "' in declaration");
-                return parts[i];
+            String part = parts[i];
+            
+            // Check if this part is a qualifier
+            if (part.equals("var") || part.equals("varip") || part.equals("series") || 
+                part.equals("simple") || part.equals("const")) {
+                qualifier = part;
+                LOG.warn("🔍 [inferExpectedType] Found qualifier: " + qualifier);
+            } 
+            // Check if this part is a known type
+            else if (isKnownType(part)) {
+                type = part;
+                LOG.warn("🎯 [inferExpectedType] Found type declaration: " + type);
             }
         }
         
-        // Try to find previous declarations of this variable
-        String type = findTypeFromPreviousDeclarations(textBeforeCursor, variableName);
+        // If we found both qualifier and type, combine them
+        if (qualifier != null && type != null) {
+            String fullType = qualifier + " " + type;
+            LOG.warn("🎯 [inferExpectedType] Inferred full type: " + fullType + " for variable: " + variableName);
+            LOG.warn("🚨 [DEBUG] Type Inference Result - Variable: '" + variableName + "', Type: '" + fullType + "'");
+            return fullType;
+        }
+        
+        // If we only found a type (no qualifier), assume it's a series type
         if (type != null) {
-            LOG.warn("🎯 [inferExpectedType] Found type from previous declarations: " + type + " for variable: " + variableName);
-            LOG.warn("🚨 [DEBUG] Type Inference Result - Variable: '" + variableName + "', Type from previous declaration: '" + type + "'");
-            return type;
+            String fullType = "series " + type;
+            LOG.warn("🎯 [inferExpectedType] Inferred type with default series qualifier: " + fullType);
+            LOG.warn("🚨 [DEBUG] Type Inference Result - Variable: '" + variableName + "', Type: '" + fullType + "'");
+            return fullType;
+        }
+        
+        // Try to find previous declarations of this variable
+        String typeFromPrevious = findTypeFromPreviousDeclarations(textBeforeCursor, variableName);
+        if (typeFromPrevious != null) {
+            LOG.warn("🎯 [inferExpectedType] Found type from previous declarations: " + typeFromPrevious + " for variable: " + variableName);
+            LOG.warn("🚨 [DEBUG] Type Inference Result - Variable: '" + variableName + "', Type from previous declaration: '" + typeFromPrevious + "'");
+            return typeFromPrevious;
         }
         
         // If we couldn't determine the type, return null (will include all completions)
@@ -1318,38 +1359,55 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     private String findTypeFromPreviousDeclarations(String text, String variableName) {
         LOG.warn("🚨 [DEBUG] Searching for previous declarations - Variable: '" + variableName + "'");
         
-        // Regular expression to find variable declarations
-        // This handles cases like "var bool varName = " or "varName = "
-        Pattern pattern = Pattern.compile("(?:var\\s+|export\\s+|)(\\w+)\\s+(" + Pattern.quote(variableName) + ")\\s*(?:=|:=)");
+        // Regular expression to find variable declarations with qualifiers
+        // This handles cases like:
+        // - "var bool varName = " 
+        // - "series float varName = "
+        // - "varName = "
+        Pattern pattern = Pattern.compile(
+            "(?:(var|varip|series|simple|const)\\s+)?([a-zA-Z_]\\w*)\\s+(" + 
+            Pattern.quote(variableName) + ")\\s*(?:=|:=)"
+        );
         Matcher matcher = pattern.matcher(text);
         
         // Find all occurrences (we want the last/most recent one)
+        String qualifier = null;
         String type = null;
         int matchCount = 0;
         
         while (matcher.find()) {
             matchCount++;
-            String potentialType = matcher.group(1);
+            String foundQualifier = matcher.group(1); // May be null
+            String potentialType = matcher.group(2);
+            
             if (isKnownType(potentialType)) {
+                qualifier = foundQualifier;
                 type = potentialType;
-                LOG.info("🔍 [findTypeFromPreviousDeclarations] Found type " + type + " for variable " + variableName);
+                LOG.info("🔍 [findTypeFromPreviousDeclarations] Found type " + type + 
+                        (qualifier != null ? " with qualifier " + qualifier : "") + 
+                        " for variable " + variableName);
                 LOG.warn("🚨 [DEBUG] Found Previous Declaration - Variable: '" + variableName + 
-                         "', Type: '" + potentialType + "', Match #" + matchCount + 
-                         ", Text: '" + text.substring(Math.max(0, matcher.start() - 10), 
-                                                      Math.min(text.length(), matcher.end() + 10)) + "'");
+                        "', Type: '" + potentialType + 
+                        (qualifier != null ? "', Qualifier: '" + qualifier : "") + 
+                        "', Match #" + matchCount + 
+                        ", Text: '" + text.substring(Math.max(0, matcher.start() - 10), 
+                                                     Math.min(text.length(), matcher.end() + 10)) + "'");
             } else {
                 LOG.warn("🚨 [DEBUG] Found Previous Declaration but type not known - Variable: '" + variableName + 
-                         "', Potential Type: '" + potentialType + "', Match #" + matchCount);
+                        "', Potential Type: '" + potentialType + "', Match #" + matchCount);
             }
         }
         
         if (type != null) {
-            LOG.warn("🚨 [DEBUG] Final Type from Previous Declarations - Variable: '" + variableName + "', Type: '" + type + "'");
+            // Combine qualifier and type if both are present
+            String fullType = (qualifier != null ? qualifier + " " : "series ") + type;
+            LOG.warn("🚨 [DEBUG] Final Type from Previous Declarations - Variable: '" + variableName + 
+                    "', Full Type: '" + fullType + "'");
+            return fullType;
         } else {
             LOG.warn("🚨 [DEBUG] No Valid Type Found in Previous Declarations - Variable: '" + variableName + "'");
+            return null;
         }
-        
-        return type;
     }
 
     /**
@@ -1377,6 +1435,9 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     private void addCompletionsForExpectedType(CompletionResultSet result, String expectedType, String version) {
         LOG.info("💡 [addCompletionsForExpectedType] Adding completions for type: " + expectedType);
         
+        // Extract the base type and qualifier from the expected type
+        TypeInfo targetTypeInfo = parseTypeString(expectedType);
+        
         loadDefinitionsForVersion(version);
         Map<String, Set<String>> typedFunctions = new HashMap<>();
         Map<String, Set<String>> typedVariables = new HashMap<>();
@@ -1393,11 +1454,273 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         } else {
             LOG.info("💡 [addCompletionsForExpectedType] Adding completions for type: " + expectedType);
             
-            // Add type-specific items
-            addTypeSpecificCompletions(result, expectedType, typedFunctions, typedVariables, typedConstants);
+            // Add type-specific items with type compatibility check
+            addTypeSpecificCompletionsWithCompatibility(result, targetTypeInfo, typedFunctions, typedVariables, typedConstants, version);
             
-            // Add items with undefined or ambiguous types
-            addUntypedCompletions(result, typedFunctions, typedVariables, typedConstants);
+            // Add items with undefined or ambiguous types if compatible
+            addUntypedCompletionsWithCompatibility(result, targetTypeInfo, typedFunctions, typedVariables, typedConstants);
+        }
+    }
+
+    /**
+     * Represents Pine Script type information including the base type and qualifier
+     */
+    private static class TypeInfo {
+        String baseType;      // e.g., int, float, bool, string
+        String qualifier;     // e.g., series, simple, const, var, varip, local (or null if not specified)
+        
+        TypeInfo(String baseType, String qualifier) {
+            this.baseType = baseType;
+            this.qualifier = qualifier;
+        }
+        
+        @Override
+        public String toString() {
+            return qualifier != null ? qualifier + " " + baseType : baseType;
+        }
+    }
+    
+    /**
+     * Parse a type string into its base type and qualifier components
+     */
+    private TypeInfo parseTypeString(String typeString) {
+        if (typeString == null) {
+            return new TypeInfo("any", null);
+        }
+        
+        String trimmedType = typeString.trim();
+        String baseType;
+        String qualifier = null;
+        
+        // Check for common qualifiers
+        if (trimmedType.startsWith("series ")) {
+            qualifier = "series";
+            baseType = trimmedType.substring(7).trim();
+        } else if (trimmedType.startsWith("simple ")) {
+            qualifier = "simple";
+            baseType = trimmedType.substring(7).trim();
+        } else if (trimmedType.startsWith("const ")) {
+            qualifier = "const";
+            baseType = trimmedType.substring(6).trim();
+        } else if (trimmedType.startsWith("var ")) {
+            qualifier = "var";
+            baseType = trimmedType.substring(4).trim();
+        } else if (trimmedType.startsWith("varip ")) {
+            qualifier = "varip";
+            baseType = trimmedType.substring(6).trim();
+        } else {
+            // Assume it's a local type if no qualifier is specified
+            qualifier = "local";
+            baseType = trimmedType;
+        }
+        
+        LOG.info("🔍 [parseTypeString] Parsed type '" + typeString + "' into base: '" + baseType + "', qualifier: '" + qualifier + "'");
+        return new TypeInfo(baseType, qualifier);
+    }
+    
+    /**
+     * Check if an assignment from source type to target type is valid according to Pine Script rules
+     * 
+     * Assignment compatibility rules:
+     * TO series     FROM: series, var local, varip local, local
+     * TO simple     FROM: series, simple
+     * TO const      FROM: series, simple, const
+     * TO var local  FROM: all types
+     * TO varip local FROM: all types
+     * TO local      FROM: all types
+     */
+    private boolean isValidAssignment(TypeInfo targetType, TypeInfo sourceType) {
+        if (targetType == null || sourceType == null || targetType.baseType == null || sourceType.baseType == null) {
+            return true; // Allow if we don't have enough information
+        }
+        
+        // If base types don't match and neither is "any", assignment is invalid
+        if (!targetType.baseType.equals("any") && !sourceType.baseType.equals("any") 
+            && !targetType.baseType.equals(sourceType.baseType)) {
+            LOG.info("❌ [isValidAssignment] Invalid - base types don't match: " + targetType.baseType + " vs " + sourceType.baseType);
+            return false;
+        }
+        
+        String targetQualifier = targetType.qualifier != null ? targetType.qualifier : "local";
+        String sourceQualifier = sourceType.qualifier != null ? sourceType.qualifier : "local";
+        
+        // Now check qualifier compatibility
+        switch (targetQualifier) {
+            case "series":
+                // Series can accept: series, var local, varip local, local
+                return "series".equals(sourceQualifier) || 
+                       "var".equals(sourceQualifier) || 
+                       "varip".equals(sourceQualifier) || 
+                       "local".equals(sourceQualifier);
+                
+            case "simple":
+                // Simple can accept: series, simple
+                return "series".equals(sourceQualifier) || 
+                       "simple".equals(sourceQualifier);
+                
+            case "const":
+                // Const can accept: series, simple, const
+                return "series".equals(sourceQualifier) || 
+                       "simple".equals(sourceQualifier) || 
+                       "const".equals(sourceQualifier);
+                
+            case "var":
+            case "varip":
+            case "local":
+                // These can accept any type qualifier
+                return true;
+                
+            default:
+                // Unknown qualifier, assume compatible
+                return true;
+        }
+    }
+    
+    /**
+     * Add completions for a specific expected type considering type compatibility
+     */
+    private void addTypeSpecificCompletionsWithCompatibility(
+            CompletionResultSet result, 
+            TypeInfo targetTypeInfo,
+            Map<String, Set<String>> typedFunctions,
+            Map<String, Set<String>> typedVariables,
+            Map<String, Set<String>> typedConstants,
+            String version) {
+        
+        LOG.info("💡 [addTypeSpecificCompletionsWithCompatibility] Adding completions for type: " + targetTypeInfo);
+        
+        // Filter function return types based on compatibility
+        Map<String, String> functionReturnTypes = FUNCTION_RETURN_TYPES.getOrDefault(version, new HashMap<>());
+        
+        // Add functions that return the expected type
+        if (typedFunctions.containsKey(targetTypeInfo.baseType) || "any".equals(targetTypeInfo.baseType)) {
+            Set<String> functions = new HashSet<>();
+            if ("any".equals(targetTypeInfo.baseType)) {
+                // If target type is "any", include all functions
+                for (Set<String> funcs : typedFunctions.values()) {
+                    functions.addAll(funcs);
+                }
+            } else {
+                functions = typedFunctions.get(targetTypeInfo.baseType);
+            }
+            
+            for (String function : functions) {
+                String returnTypeStr = functionReturnTypes.getOrDefault(function, "series " + targetTypeInfo.baseType);
+                TypeInfo sourceTypeInfo = parseTypeString(returnTypeStr);
+                
+                if (isValidAssignment(targetTypeInfo, sourceTypeInfo)) {
+                    result.addElement(LookupElementBuilder.create(function)
+                        .withPresentableText(function)
+                        .withTypeText(returnTypeStr)
+                        .withIcon(AllIcons.Nodes.Function)
+                        .withBoldness(true));
+                    LOG.info("➕ [addTypeSpecificCompletionsWithCompatibility] Added compatible function: " + 
+                             function + " (returns: " + returnTypeStr + ")");
+                } else {
+                    LOG.info("❌ [addTypeSpecificCompletionsWithCompatibility] Skipped incompatible function: " + 
+                             function + " (returns: " + returnTypeStr + ", target: " + targetTypeInfo + ")");
+                }
+            }
+        }
+        
+        // Add variables with compatible types
+        Map<String, String> variableTypes = VARIABLE_TYPES.getOrDefault(version, new HashMap<>());
+        for (String variable : VARIABLES_MAP.getOrDefault(version, new HashSet<>())) {
+            String variableTypeStr = variableTypes.getOrDefault(variable, "series any");
+            TypeInfo sourceTypeInfo = parseTypeString(variableTypeStr);
+            
+            if (isValidAssignment(targetTypeInfo, sourceTypeInfo)) {
+                result.addElement(LookupElementBuilder.create(variable)
+                    .withPresentableText(variable)
+                    .withTypeText(variableTypeStr)
+                    .withIcon(AllIcons.Nodes.Variable)
+                    .withBoldness(true));
+                LOG.info("➕ [addTypeSpecificCompletionsWithCompatibility] Added compatible variable: " + 
+                         variable + " (type: " + variableTypeStr + ")");
+            }
+        }
+        
+        // Add constants with compatible types
+        Map<String, String> constantTypes = CONSTANT_TYPES.getOrDefault(version, new HashMap<>());
+        for (String constant : CONSTANTS_MAP.getOrDefault(version, new HashSet<>())) {
+            String constantTypeStr = constantTypes.getOrDefault(constant, "const any");
+            TypeInfo sourceTypeInfo = parseTypeString(constantTypeStr);
+            
+            if (isValidAssignment(targetTypeInfo, sourceTypeInfo)) {
+                result.addElement(LookupElementBuilder.create(constant)
+                    .withPresentableText(constant)
+                    .withTypeText(constantTypeStr)
+                    .withIcon(AllIcons.Nodes.Constant)
+                    .withBoldness(true));
+                LOG.info("➕ [addTypeSpecificCompletionsWithCompatibility] Added compatible constant: " + 
+                         constant + " (type: " + constantTypeStr + ")");
+            }
+        }
+    }
+
+    /**
+     * Add completions for undefined or ambiguous types with compatibility check
+     */
+    private void addUntypedCompletionsWithCompatibility(
+            CompletionResultSet result,
+            TypeInfo targetTypeInfo,
+            Map<String, Set<String>> typedFunctions,
+            Map<String, Set<String>> typedVariables,
+            Map<String, Set<String>> typedConstants) {
+        
+        LOG.info("💡 [addUntypedCompletionsWithCompatibility] Adding completions with unknown types");
+        
+        // Get all typed items to exclude them
+        Set<String> allTypedFunctions = new HashSet<>();
+        Set<String> allTypedVariables = new HashSet<>();
+        Set<String> allTypedConstants = new HashSet<>();
+        
+        for (Set<String> functions : typedFunctions.values()) {
+            allTypedFunctions.addAll(functions);
+        }
+        
+        for (Set<String> variables : typedVariables.values()) {
+            allTypedVariables.addAll(variables);
+        }
+        
+        for (Set<String> constants : typedConstants.values()) {
+            allTypedConstants.addAll(constants);
+        }
+        
+        // For untyped items, we assume they could be compatible
+        // But we can still check the target qualifier for restrictions
+        
+        // Add untyped functions (assume series return type)
+        TypeInfo defaultFunctionType = new TypeInfo("any", "series");
+        for (String function : FUNCTIONS_MAP.getOrDefault(DEFAULT_VERSION, new HashSet<>())) {
+            if (!allTypedFunctions.contains(function) && isValidAssignment(targetTypeInfo, defaultFunctionType)) {
+                result.addElement(LookupElementBuilder.create(function)
+                    .withPresentableText(function)
+                    .withTypeText("series any")
+                    .withIcon(AllIcons.Nodes.Function));
+            }
+        }
+        
+        // Add untyped variables (assume series type)
+        TypeInfo defaultVarType = new TypeInfo("any", "series");
+        for (String variable : VARIABLES_MAP.getOrDefault(DEFAULT_VERSION, new HashSet<>())) {
+            if (!allTypedVariables.contains(variable) && isValidAssignment(targetTypeInfo, defaultVarType)) {
+                result.addElement(LookupElementBuilder.create(variable)
+                    .withPresentableText(variable)
+                    .withTypeText("series any")
+                    .withIcon(AllIcons.Nodes.Variable));
+            }
+        }
+        
+        // Add untyped constants (assume const type)
+        TypeInfo defaultConstType = new TypeInfo("any", "const");
+        for (String constant : CONSTANTS_MAP.getOrDefault(DEFAULT_VERSION, new HashSet<>())) {
+            if (!allTypedConstants.contains(constant) && isValidAssignment(targetTypeInfo, defaultConstType)) {
+                result.addElement(LookupElementBuilder.create(constant)
+                    .withPresentableText(constant)
+                    .withTypeText("const any")
+                    .withIcon(AllIcons.Nodes.Constant));
+            }
         }
     }
 
@@ -1446,109 +1769,6 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     }
 
     /**
-     * Add completions for a specific expected type
-     */
-    private void addTypeSpecificCompletions(CompletionResultSet result, String expectedType,
-                                           Map<String, Set<String>> typedFunctions,
-                                           Map<String, Set<String>> typedVariables,
-                                           Map<String, Set<String>> typedConstants) {
-        LOG.info("💡 [addTypeSpecificCompletions] Adding completions for type: " + expectedType);
-        
-        // Add functions that return the expected type
-        if (typedFunctions.containsKey(expectedType)) {
-            for (String function : typedFunctions.get(expectedType)) {
-                result.addElement(LookupElementBuilder.create(function)
-                    .withPresentableText(function)
-                    .withTypeText(expectedType)
-                    .withIcon(AllIcons.Nodes.Function)
-                    .withBoldness(true));
-                LOG.info("➕ [addTypeSpecificCompletions] Added typed function: " + function + " (type: " + expectedType + ")");
-            }
-        }
-        
-        // Add variables of the expected type
-        if (typedVariables.containsKey(expectedType)) {
-            for (String variable : typedVariables.get(expectedType)) {
-                result.addElement(LookupElementBuilder.create(variable)
-                    .withPresentableText(variable)
-                    .withTypeText(expectedType)
-                    .withIcon(AllIcons.Nodes.Variable)
-                    .withBoldness(true));
-                LOG.info("➕ [addTypeSpecificCompletions] Added typed variable: " + variable + " (type: " + expectedType + ")");
-            }
-        }
-        
-        // Add constants of the expected type
-        if (typedConstants.containsKey(expectedType)) {
-            for (String constant : typedConstants.get(expectedType)) {
-                result.addElement(LookupElementBuilder.create(constant)
-                    .withPresentableText(constant)
-                    .withTypeText(expectedType)
-                    .withIcon(AllIcons.Nodes.Constant)
-                    .withBoldness(true));
-                LOG.info("➕ [addTypeSpecificCompletions] Added typed constant: " + constant + " (type: " + expectedType + ")");
-            }
-        }
-    }
-
-    /**
-     * Add completions for undefined or ambiguous types
-     */
-    private void addUntypedCompletions(CompletionResultSet result,
-                                      Map<String, Set<String>> typedFunctions,
-                                      Map<String, Set<String>> typedVariables,
-                                      Map<String, Set<String>> typedConstants) {
-        LOG.info("💡 [addUntypedCompletions] Adding completions for undefined or ambiguous types");
-        
-        // Get all typed items to exclude them
-        Set<String> allTypedFunctions = new HashSet<>();
-        Set<String> allTypedVariables = new HashSet<>();
-        Set<String> allTypedConstants = new HashSet<>();
-        
-        for (Set<String> functions : typedFunctions.values()) {
-            allTypedFunctions.addAll(functions);
-        }
-        
-        for (Set<String> variables : typedVariables.values()) {
-            allTypedVariables.addAll(variables);
-        }
-        
-        for (Set<String> constants : typedConstants.values()) {
-            allTypedConstants.addAll(constants);
-        }
-        
-        // Add untyped or ambiguous functions
-        for (String function : FUNCTIONS_MAP.getOrDefault(DEFAULT_VERSION, new HashSet<>())) {
-            if (!allTypedFunctions.contains(function)) {
-                result.addElement(LookupElementBuilder.create(function)
-                    .withPresentableText(function)
-                    .withTypeText("any")
-                    .withIcon(AllIcons.Nodes.Function));
-            }
-        }
-        
-        // Add untyped or ambiguous variables
-        for (String variable : VARIABLES_MAP.getOrDefault(DEFAULT_VERSION, new HashSet<>())) {
-            if (!allTypedVariables.contains(variable)) {
-                result.addElement(LookupElementBuilder.create(variable)
-                    .withPresentableText(variable)
-                    .withTypeText("any")
-                    .withIcon(AllIcons.Nodes.Variable));
-            }
-        }
-        
-        // Add untyped or ambiguous constants
-        for (String constant : CONSTANTS_MAP.getOrDefault(DEFAULT_VERSION, new HashSet<>())) {
-            if (!allTypedConstants.contains(constant)) {
-                result.addElement(LookupElementBuilder.create(constant)
-                    .withPresentableText(constant)
-                    .withTypeText("any")
-                    .withIcon(AllIcons.Nodes.Constant));
-            }
-        }
-    }
-
-    /**
      * Add all completion items regardless of type
      */
     private void addAllCompletionItems(CompletionResultSet result, String version) {
@@ -1557,7 +1777,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         LOG.info("🔍 [addAllCompletionItems] Adding functions with return types. Found " + functionReturnTypes.size() + " return types");
         
         for (String function : FUNCTIONS_MAP.getOrDefault(version, new HashSet<>())) {
-            String returnType = functionReturnTypes.getOrDefault(function, "any");
+            String returnType = functionReturnTypes.getOrDefault(function, "series any");
             LOG.info("➕ [addAllCompletionItems] Adding function: " + function + " with return type: " + returnType);
             result.addElement(LookupElementBuilder.create(function)
                 .withPresentableText(function)
@@ -1570,7 +1790,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         LOG.info("🔍 [addAllCompletionItems] Adding variables with types. Found " + variableTypes.size() + " variable types");
         
         for (String variable : VARIABLES_MAP.getOrDefault(version, new HashSet<>())) {
-            String type = variableTypes.getOrDefault(variable, "any");
+            String type = variableTypes.getOrDefault(variable, "series any");
             LOG.info("➕ [addAllCompletionItems] Adding variable: " + variable + " with type: " + type);
             result.addElement(LookupElementBuilder.create(variable)
                 .withPresentableText(variable)
@@ -1583,7 +1803,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         LOG.info("🔍 [addAllCompletionItems] Adding constants with types. Found " + constantTypes.size() + " constant types");
         
         for (String constant : CONSTANTS_MAP.getOrDefault(version, new HashSet<>())) {
-            String type = constantTypes.getOrDefault(constant, "any");
+            String type = constantTypes.getOrDefault(constant, "const any");
             LOG.info("➕ [addAllCompletionItems] Adding constant: " + constant + " with type: " + type);
             result.addElement(LookupElementBuilder.create(constant)
                 .withPresentableText(constant)
@@ -2469,6 +2689,9 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             LOG.info("🔍 [addScannedCompletions] Using provided expected type: " + expectedType);
         }
         
+        // Parse the expected type into base type and qualifier for compatibility checks
+        TypeInfo targetTypeInfo = expectedType != null ? parseTypeString(expectedType) : null;
+        
         // Enhanced logging for variable assignment context
         String varNameBeingAssigned = "";
         if (textBeforeCursor.trim().endsWith("=")) {
@@ -2518,42 +2741,46 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         Matcher typedVarMatcher = typedVarPattern.matcher(documentText);
         
         while (typedVarMatcher.find()) {
-            String type = typedVarMatcher.group(1);
+            String typeStr = typedVarMatcher.group(1);
             String varName = typedVarMatcher.group(2);
             
             // Check if it's a valid type (not just another variable)
-            if (isKnownType(type)) {
-                varTypeMap.put(varName, type);
-                LOG.info("🔍 [addScannedCompletions] Found typed variable: " + varName + " with type: " + type);
+            if (isKnownType(typeStr)) {
+                // Store original type string
+                varTypeMap.put(varName, typeStr);
+                LOG.info("🔍 [addScannedCompletions] Found typed variable: " + varName + " with type: " + typeStr);
                 
-                // Add the variable to completions if:
-                // 1. It matches the expected type, OR
-                // 2. No specific type is expected AND we're not in a variable declaration context
-                boolean matchesExpectedType = (expectedType != null && type.equals(expectedType));
-                boolean noExpectedTypeConstraint = (expectedType == null && !inVariableDeclaration);
+                // MODIFIED: Always add the variable unless we're in a variable declaration context
+                // Or if we're in a typed context, check compatibility
+                boolean shouldAdd = false;
                 
-                if (matchesExpectedType || noExpectedTypeConstraint) {
-                    if (!foundVars.contains(varName)) {
-                        result.addElement(LookupElementBuilder.create(varName)
-                            .withPresentableText(varName)
-                            .withTypeText(type)
-                            .withIcon(AllIcons.Nodes.Variable)
-                            .withBoldness(true));
-                        foundVars.add(varName);
-                        LOG.info("➕ [addScannedCompletions] Added typed variable to completions: " + varName + " (type: " + type + ")");
-                        
-                        // Enhanced logging for suggestions
-                        LOG.warn("🚨 [DEBUG] Suggestion Added - Variable: '" + varName + 
-                                 "', Type: '" + type + "', Matches Expected: '" + 
-                                 (expectedType != null ? (type.equals(expectedType) ? "YES" : "NO") : "NO EXPECTED TYPE") + "'");
-                    }
+                if (targetTypeInfo == null) {
+                    // No type constraint, always add unless in variable declaration
+                    shouldAdd = !inVariableDeclaration;
+                    LOG.warn("🚨 [DEBUG] No type constraint - adding variable: " + varName);
                 } else {
-                    LOG.info("⏩ [addScannedCompletions] Skipped variable " + varName + " - type " + type + 
+                    // We have a type constraint, check compatibility
+                    TypeInfo sourceTypeInfo = parseTypeString(typeStr);
+                    shouldAdd = isValidAssignment(targetTypeInfo, sourceTypeInfo);
+                    LOG.warn("🚨 [DEBUG] Type compatibility check for: " + varName + 
+                            " - source: " + sourceTypeInfo + ", target: " + targetTypeInfo + 
+                            ", compatible: " + shouldAdd);
+                }
+                
+                if (shouldAdd && !foundVars.contains(varName)) {
+                    result.addElement(LookupElementBuilder.create(varName)
+                        .withPresentableText(varName)
+                        .withTypeText(typeStr)
+                        .withIcon(AllIcons.Nodes.Variable)
+                        .withBoldness(true));
+                    foundVars.add(varName);
+                    LOG.info("➕ [addScannedCompletions] Added typed variable to completions: " + varName + " (type: " + typeStr + ")");
+                    LOG.warn("🚨 [DEBUG] Suggestion Added - Variable: '" + varName + "', Type: '" + typeStr + "'");
+                } else if (!shouldAdd) {
+                    LOG.info("⏩ [addScannedCompletions] Skipped variable " + varName + " - type " + typeStr + 
                              " doesn't match expected " + expectedType + " or in variable declaration context");
-                    
-                    // Enhanced logging for skipped suggestions
                     LOG.warn("🚨 [DEBUG] Suggestion Skipped - Variable: '" + varName + 
-                             "', Type: '" + type + "', Expected Type: '" + expectedType + 
+                             "', Type: '" + typeStr + "', Expected Type: '" + expectedType + 
                              "', In Variable Declaration: " + inVariableDeclaration);
                 }
             }
@@ -2577,9 +2804,20 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                     LOG.warn("🚨 [DEBUG] Inferred Type - Variable: '" + varName + "', Inferred Type: '" + inferredType + 
                              "', Expected Type: '" + expectedType + "'");
                     
-                    // Add if it matches expected type or no specific type is expected (and not in variable declaration)
-                    if ((expectedType != null && inferredType.equals(expectedType)) || 
-                        (expectedType == null && !inVariableDeclaration)) {
+                    // MODIFIED: Always add the variable unless we're in a variable declaration context
+                    // Or if we're in a typed context, check compatibility
+                    boolean shouldAdd = false;
+                    
+                    if (targetTypeInfo == null) {
+                        // No type constraint, always add unless in variable declaration
+                        shouldAdd = !inVariableDeclaration;
+                    } else {
+                        // We have a type constraint, check compatibility
+                        TypeInfo sourceTypeInfo = parseTypeString(inferredType);
+                        shouldAdd = isValidAssignment(targetTypeInfo, sourceTypeInfo);
+                    }
+                    
+                    if (shouldAdd) {
                         result.addElement(LookupElementBuilder.create(varName)
                             .withPresentableText(varName)
                             .withTypeText(inferredType)
@@ -2587,28 +2825,25 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                             .withBoldness(true));
                         foundVars.add(varName);
                         LOG.info("➕ [addScannedCompletions] Added untyped variable with inferred type: " + varName);
-                        
-                        // Enhanced logging for suggestions
-                        LOG.warn("🚨 [DEBUG] Suggestion Added - Variable: '" + varName + 
-                                 "', Inferred Type: '" + inferredType + "', Matches Expected: '" + 
-                                 (expectedType != null ? (inferredType.equals(expectedType) ? "YES" : "NO") : "NO EXPECTED TYPE") + "'");
+                        LOG.warn("🚨 [DEBUG] Suggestion Added - Variable: '" + varName + "', Inferred Type: '" + inferredType + "'");
                     } else {
                         LOG.info("⏩ [addScannedCompletions] Skipped untyped variable " + varName + " - inferred type " + 
                                  inferredType + " doesn't match expected " + expectedType + " or in variable declaration context");
-                        
-                        // Enhanced logging for skipped suggestions
                         LOG.warn("🚨 [DEBUG] Suggestion Skipped - Variable: '" + varName + 
                                  "', Inferred Type: '" + inferredType + "', Expected Type: '" + expectedType + 
                                  "', In Variable Declaration: " + inVariableDeclaration);
                     }
                 } else {
-                    // For variables where we can't infer the type:
-                    // 1. Always include if no specific type is expected
-                    // 2. Include if we expect a bool type, as untyped vars might be boolean
-                    boolean includeUntyped = (expectedType == null && !inVariableDeclaration) || 
-                                            (expectedType != null && expectedType.equals("bool"));
+                    // MODIFIED: For variables without a type, always include them unless we're in a variable declaration
+                    boolean shouldAdd = !inVariableDeclaration;
                     
-                    if (includeUntyped) {
+                    // If there's a type constraint and it's "bool", we might still add untyped variables
+                    // as they could be booleans
+                    if (targetTypeInfo != null && "bool".equals(targetTypeInfo.baseType)) {
+                        shouldAdd = true;
+                    }
+                    
+                    if (shouldAdd) {
                         result.addElement(LookupElementBuilder.create(varName)
                             .withPresentableText(varName)
                             .withTypeText("unknown")
@@ -2616,13 +2851,11 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                             .withBoldness(true));
                         foundVars.add(varName);
                         LOG.info("➕ [addScannedCompletions] Added untyped variable without known type: " + varName);
-                        LOG.warn("🚨 [DEBUG] Suggestion Added - Variable: '" + varName + 
-                                "', Type: 'unknown', Included with expected type: '" + expectedType + "'");
+                        LOG.warn("🚨 [DEBUG] Suggestion Added - Variable: '" + varName + "', Type: 'unknown'");
                     } else {
                         LOG.info("⏩ [addScannedCompletions] Skipped untyped variable " + varName + " - unknown type doesn't match expected " + 
                                 expectedType + " or in variable declaration context");
-                        LOG.warn("🚨 [DEBUG] Suggestion Skipped - Variable: '" + varName + 
-                                "', Unknown Type, Expected: '" + expectedType + "'");
+                        LOG.warn("🚨 [DEBUG] Suggestion Skipped - Variable: '" + varName + "', Unknown Type, Expected: '" + expectedType + "'");
                     }
                 }
             }
@@ -2652,9 +2885,20 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 
                 LOG.info("🔍 [addScannedCompletions] Found variable from assignment: " + varName + " with type: " + inferredType);
                 
-                // Add if it matches expected type or no type is expected (and not in variable declaration)
-                if ((expectedType != null && inferredType.equals(expectedType)) || 
-                    (expectedType == null && !inVariableDeclaration)) {
+                // MODIFIED: Always add the variable unless we're in a variable declaration context
+                // Or if we're in a typed context, check compatibility
+                boolean shouldAdd = false;
+                
+                if (targetTypeInfo == null) {
+                    // No type constraint, always add unless in variable declaration
+                    shouldAdd = !inVariableDeclaration;
+                } else {
+                    // We have a type constraint, check compatibility
+                    TypeInfo sourceTypeInfo = parseTypeString(inferredType);
+                    shouldAdd = isValidAssignment(targetTypeInfo, sourceTypeInfo);
+                }
+                
+                if (shouldAdd) {
                     result.addElement(LookupElementBuilder.create(varName)
                         .withPresentableText(varName)
                         .withTypeText(inferredType)
@@ -2662,9 +2906,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         .withBoldness(true));
                     foundVars.add(varName);
                     LOG.info("➕ [addScannedCompletions] Added variable from assignment: " + varName);
-                    LOG.warn("🚨 [DEBUG] Suggestion Added - Variable: '" + varName + 
-                            "', Inferred Type: '" + inferredType + "', Matches Expected: '" + 
-                            (expectedType != null ? (inferredType.equals(expectedType) ? "YES" : "NO") : "NO EXPECTED TYPE") + "'");
+                    LOG.warn("🚨 [DEBUG] Suggestion Added - Variable: '" + varName + "', Inferred Type: '" + inferredType + "'");
                 } else {
                     LOG.info("⏩ [addScannedCompletions] Skipped variable from assignment " + varName + 
                              " - type " + inferredType + " doesn't match expected " + expectedType + " or in variable declaration context");
@@ -2672,13 +2914,15 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                             "', Inferred Type: '" + inferredType + "', Expected Type: '" + expectedType + "'");
                 }
             } else {
-                // For variables where we can't infer the type:
-                // 1. Always include if no specific type is expected
-                // 2. Include if we expect a bool type, as many untyped values are booleans
-                boolean includeUntyped = (expectedType == null && !inVariableDeclaration) || 
-                                        (expectedType != null && expectedType.equals("bool"));
+                // MODIFIED: For variables without a type, always include them unless we're in a variable declaration
+                boolean shouldAdd = !inVariableDeclaration;
                 
-                if (includeUntyped) {
+                // If there's a type constraint and it's "bool", we might still add untyped variables
+                if (targetTypeInfo != null && "bool".equals(targetTypeInfo.baseType)) {
+                    shouldAdd = true;
+                }
+                
+                if (shouldAdd) {
                     result.addElement(LookupElementBuilder.create(varName)
                         .withPresentableText(varName)
                         .withTypeText("unknown")
@@ -2686,8 +2930,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         .withBoldness(true));
                     foundVars.add(varName);
                     LOG.info("➕ [addScannedCompletions] Added variable from assignment without known type: " + varName);
-                    LOG.warn("🚨 [DEBUG] Suggestion Added - Variable: '" + varName + 
-                            "', Type: 'unknown', Included with expected type: '" + expectedType + "'");
+                    LOG.warn("🚨 [DEBUG] Suggestion Added - Variable: '" + varName + "', Type: 'unknown'");
                 } else {
                     LOG.info("⏩ [addScannedCompletions] Skipped variable " + varName + " - unknown type doesn't match expected " + 
                              expectedType + " or in variable declaration context");
@@ -2704,15 +2947,25 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         while (functionMatcher.find()) {
             String funcName = functionMatcher.group(1);
             
-            // Functions can be used in any context unless we specifically expect a function type
-            // But not in variable declarations with explicit type
-            if ((expectedType == null || expectedType.equals("function")) && !inVariableDeclaration) {
+            // MODIFIED: Always include functions unless we're in a variable declaration
+            // And if there's a type constraint, only include them if expected type is "function"
+            boolean shouldAdd = !inVariableDeclaration;
+            
+            // If we have a specific type constraint, only include functions if it's a function type
+            if (targetTypeInfo != null && !"function".equals(targetTypeInfo.baseType)) {
+                shouldAdd = false;
+            }
+            
+            if (shouldAdd) {
                 result.addElement(LookupElementBuilder.create(funcName)
                     .withPresentableText(funcName)
                     .withTypeText("function")
                     .withIcon(AllIcons.Nodes.Function)
                     .withBoldness(true));
                 LOG.info("➕ [addScannedCompletions] Added function: " + funcName);
+            } else {
+                LOG.info("⏩ [addScannedCompletions] Skipped function " + funcName + 
+                        " - not applicable in the current context");
             }
         }
         
