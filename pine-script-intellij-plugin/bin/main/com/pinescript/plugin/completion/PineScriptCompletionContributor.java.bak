@@ -1227,9 +1227,45 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         return text.substring(0, offset).matches(".*(?:var|varip)\\s+(?:[a-zA-Z_]\\w*)\\s+$");
     }
 
+    private void addCompletionsForExpectedType(CompletionResultSet result, String expectedType, String version) {
+        LOG.info("💡 [addCompletionsForExpectedType] Adding completions for type: " + expectedType);
+        
+        // Don't filter by type if we're not sure about the expected type
+        if (expectedType == null || expectedType.equals("any")) {
+            addAllCompletionItems(result, version);
+            return;
+        }
+        
+        // Add items that match the expected type
+        Map<String, String> functionReturnTypes = FUNCTION_RETURN_TYPES.getOrDefault(version, new HashMap<>());
+        Map<String, String> variableTypes = VARIABLE_TYPES.getOrDefault(version, new HashMap<>());
+        Map<String, String> constantTypes = CONSTANT_TYPES.getOrDefault(version, new HashMap<>());
+        
+        for (Map.Entry<String, String> entry : functionReturnTypes.entrySet()) {
+            if (entry.getValue().equals(expectedType)) {
+                result.addElement(LookupElementBuilder.create(entry.getKey())
+                    .withTypeText(entry.getValue())
+                    .withIcon(AllIcons.Nodes.Function));
+            }
+        }
+        
+        for (Map.Entry<String, String> entry : variableTypes.entrySet()) {
+            if (entry.getValue().equals(expectedType)) {
+                result.addElement(LookupElementBuilder.create(entry.getKey())
+                    .withTypeText(entry.getValue())
+                    .withIcon(AllIcons.Nodes.Variable));
+            }
+        }
+        
+        for (Map.Entry<String, String> entry : constantTypes.entrySet()) {
+            if (entry.getValue().equals(expectedType)) {
+                result.addElement(LookupElementBuilder.create(entry.getKey())
+                    .withTypeText(entry.getValue())
+                    .withIcon(AllIcons.Nodes.Constant));
+            }
+        }
+    }
     
-    // Implementation of addCompletionsForExpectedType was removed from here to resolve duplicate method error
-    // The implementation can be found around line ~1413
     /**
      * Infers the expected type from the left-hand side of an assignment
      * @param textBeforeCursor The text before the cursor position
