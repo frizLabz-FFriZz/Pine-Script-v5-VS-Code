@@ -788,8 +788,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         
         // Add local variables and functions from the document
         String expectedType = null;
-        // Check if we're in a variable assignment context
-        if (textBeforeCursor.contains("=")) {
+        // Check if we're in a variable assignment context with either = or :=
+        if (textBeforeCursor.contains("=") || textBeforeCursor.contains(":=")) {
             expectedType = inferExpectedType(textBeforeCursor);
             LOG.warn("🔍 [fillCompletionVariants] Expected type for standard completions: '" + expectedType + "'");
         }
@@ -1040,7 +1040,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     private static boolean isInsideFunctionCall(String text, int offset) {
         // Skip this check if we're in a variable declaration with type
         String textToCheck = text.substring(0, offset);
-        
+             
         // Check if we're just typing a new identifier at the beginning of a line
         int lastNewlinePos = textToCheck.lastIndexOf('\n');
         if (lastNewlinePos != -1) {
@@ -1209,7 +1209,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         
         // Match pattern: <qualifier> <type> <varName> =
         Pattern typedVarPattern = Pattern.compile(
-            "(?:(var|varip|series|simple|const)\\s+)?([a-zA-Z_]\\w*)\\s+([a-zA-Z_]\\w*)\\s*="
+            "(?:(var|varip|series|simple|const)\\s+)?([a-zA-Z_]\\w*)\\s+([a-zA-Z_]\\w*)\\s*(?:=|:=)"
         );
         Matcher typedVarMatcher = typedVarPattern.matcher(textBeforeCursor);
         
@@ -1233,15 +1233,25 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         // If no explicit type declaration is found, proceed with analyzing the context
         // Trim to get the text right before the equals sign
         String trimmedText = textBeforeCursor.trim();
+        
+        // Check for either standard = or := assignment operator
         if (trimmedText.endsWith("=")) {
             trimmedText = trimmedText.substring(0, trimmedText.length() - 1).trim();
         } else if (trimmedText.endsWith(":=")) {
             trimmedText = trimmedText.substring(0, trimmedText.length() - 2).trim();
+            LOG.warn("🔍 [inferExpectedType] Found := assignment operator");
         } else {
-            // This handles cases where there's text after the equals sign
+            // Look for the last = or := in the text
             int equalsIndex = trimmedText.lastIndexOf("=");
-            if (equalsIndex > 0) {
+            int colonEqualsIndex = trimmedText.lastIndexOf(":=");
+            
+            // If := appears after =, use that
+            if (colonEqualsIndex > 0 && (colonEqualsIndex > equalsIndex - 1)) {
+                trimmedText = trimmedText.substring(0, colonEqualsIndex).trim();
+                LOG.warn("🔍 [inferExpectedType] Found := in the middle of text");
+            } else if (equalsIndex > 0) {
                 trimmedText = trimmedText.substring(0, equalsIndex).trim();
+                LOG.warn("🔍 [inferExpectedType] Found = in the middle of text");
             }
         }
         
@@ -1324,6 +1334,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         // - "var bool varName = " 
         // - "series float varName = "
         // - "varName = "
+        // - "varName := " (Pine Script's := assignment)
         Pattern pattern = Pattern.compile(
             "(?:(var|varip|series|simple|const)\\s+)?([a-zA-Z_]\\w*)\\s+(" + 
             Pattern.quote(variableName) + ")\\s*(?:=|:=)"
@@ -1355,6 +1366,39 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             } else {
                 LOG.warn("🚨 [DEBUG] Found Previous Declaration but type not known - Variable: '" + variableName + 
                         "', Potential Type: '" + potentialType + "', Match #" + matchCount);
+            }
+        }
+        
+        // Also check for inferred types from simple assignments without explicit type declarations
+        if (type == null) {
+            // Look for patterns like "varName = 123" or "varName := 123" to infer numeric type
+            Pattern simpleAssignmentPattern = Pattern.compile(
+                "\\b" + Pattern.quote(variableName) + "\\s*(?:=|:=)\\s*([^\\s;]+)"
+            );
+            Matcher valueTypeMatcher = simpleAssignmentPattern.matcher(text);
+            
+            while (valueTypeMatcher.find()) {
+                String value = valueTypeMatcher.group(1).trim();
+                // Try to infer type from the value
+                if (value.matches("\\d+")) {
+                    // Integer assignment
+                    type = "int";
+                    LOG.warn("🔍 [findTypeFromPreviousDeclarations] Inferred int type from value: " + value);
+                } else if (value.matches("\\d*\\.\\d+")) {
+                    // Float assignment
+                    type = "float";
+                    LOG.warn("🔍 [findTypeFromPreviousDeclarations] Inferred float type from value: " + value);
+                } else if (value.equals("true") || value.equals("false")) {
+                    // Boolean assignment
+                    type = "bool";
+                    LOG.warn("🔍 [findTypeFromPreviousDeclarations] Inferred bool type from value: " + value);
+                } else if (value.startsWith("\"") && value.endsWith("\"")) {
+                    // String assignment
+                    type = "string";
+                    LOG.warn("🔍 [findTypeFromPreviousDeclarations] Inferred string type from value: " + value);
+                }
+                // If we found a type, break out of the loop
+                if (type != null) break;
             }
         }
         
