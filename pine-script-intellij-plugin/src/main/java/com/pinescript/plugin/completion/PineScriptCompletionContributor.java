@@ -1038,80 +1038,26 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      * Determines if the cursor is within a function call.
      */
     private static boolean isInsideFunctionCall(String text, int offset) {
-        // Skip this check if we're in a variable declaration with type
-        String textToCheck = text.substring(0, offset);
-             
-        // Check if we're just typing a new identifier at the beginning of a line
-        int lastNewlinePos = textToCheck.lastIndexOf('\n');
-        if (lastNewlinePos != -1) {
-            String afterNewline = textToCheck.substring(lastNewlinePos + 1).trim();
-            // If there's only alphanumeric/underscore characters after the last newline, it's likely a variable/function name
-            if (afterNewline.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
-                LOG.warn(">>>>>> NOT A FUNCTION CALL: Just typing identifier at beginning of line");
-                return false;
-            }
-        }
-        
-        // Check for variable declaration patterns that should NOT trigger function detection
-        Pattern varDeclarationPattern = Pattern.compile("(?:var|varip)\\s+(?:[a-zA-Z_]\\w*)\\s+(?:[a-zA-Z_]\\w*)\\s*=");
-        Matcher varDeclMatcher = varDeclarationPattern.matcher(textToCheck);
-        boolean isVarDeclaration = false;
-        while (varDeclMatcher.find()) {
-            // If the last match is close to the cursor, we're likely in a variable declaration
-            if (varDeclMatcher.end() > offset - 20) {
-                isVarDeclaration = true;
-                LOG.warn(">>>>>> NOT A FUNCTION CALL: Detected variable declaration with type");
-            }
-        }
-        
-        if (isVarDeclaration) {
+        if (isInsideString(text, offset) || isInsideComment(text, offset)) {
             return false;
         }
-        
-        // Simple check: look for an open parenthesis that's not closed
-        int openCount = 0;
-        int closeCount = 0;
-        
-        // Track the position of the most recent relevant opening parenthesis
-        int lastOpenParenPos = -1;
-        
-        for (int i = 0; i < text.length() && i < offset; i++) {
-            char c = text.charAt(i);
-            if (c == '(') {
-                openCount++;
-                lastOpenParenPos = i;
-            }
-            else if (c == ')') {
-                closeCount++;
-            }
+        // Get the current line.
+        int lineStart = text.lastIndexOf('\n', offset - 1);
+        lineStart = (lineStart == -1) ? 0 : lineStart + 1;
+        int lineEnd = text.indexOf('\n', offset);
+        lineEnd = (lineEnd == -1) ? text.length() : lineEnd;
+        String currentLine = text.substring(lineStart, lineEnd);
+        int relativeOffset = offset - lineStart;
+        int lastParen = currentLine.lastIndexOf('(', relativeOffset);
+        if (lastParen == -1) {
+            return false;
         }
-        
-        // We're in a function call if there are unclosed parentheses
-        boolean inFunction = openCount > closeCount;
-        
-        // If it looks like we're in a function, do additional verification
-        if (inFunction && lastOpenParenPos > 0) {
-            // Check if there's an identifier before the parenthesis
-            for (int i = lastOpenParenPos - 1; i >= 0; i--) {
-                char c = text.charAt(i);
-                
-                // Skip whitespace
-                if (Character.isWhitespace(c)) {
-                    continue;
-                }
-                
-                // If we found an identifier character (or dot for method calls)
-                if (Character.isJavaIdentifierPart(c) || c == '.') {
-                    LOG.warn(">>>>>> DETECTED FUNCTION CALL: Cursor is inside a function call");
-                    return true;
-                } else {
-                    // Not a valid function call character - might be a conditional or something else
-                    break;
-                }
-            }
+        // Check for a closing ')' after the last '(' but before the current offset.
+        String between = currentLine.substring(lastParen, relativeOffset);
+        if (between.contains(")")) {
+            return false;
         }
-        
-        return inFunction;
+        return true;
     }
     
     /**
