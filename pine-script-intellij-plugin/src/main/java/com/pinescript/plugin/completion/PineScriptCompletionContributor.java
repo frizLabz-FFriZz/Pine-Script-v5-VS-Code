@@ -45,6 +45,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.stream.Collectors;
 
 public class PineScriptCompletionContributor extends CompletionContributor {
     private static final Logger LOG = Logger.getInstance(PineScriptCompletionContributor.class);
@@ -78,160 +79,35 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      */
     private static boolean isInsideString(String text, int offset) {
         LOG.info("Checking if cursor at offset " + offset + " is inside string");
-        
-        if (offset <= 0 || offset > text.length()) {
-            return false;
-        }
-        
-        // Look at a reasonable number of characters before the cursor
-        int startPos = Math.max(0, offset - 200);
-        String textToCheck = text.substring(startPos, offset);
-        
-        // Log the text we're checking
-        LOG.info("Text to check for string: '" + (textToCheck.length() > 50 ? 
-                 textToCheck.substring(textToCheck.length() - 50) : textToCheck) + "'");
-        
-        // ========== FAST REJECTION OF STRING DETECTION ==========
-        
-        // 1. Check for known code contexts that can't be inside strings
-        
-        // If we're at the beginning of a function call like "alert("
-        if (textToCheck.matches(".*\\b(?:alert|strategy|label|line|box|table|array|matrix)\\s*\\(?\\s*$")) {
-            LOG.info("isInsideString detected function call context, not a string");
-            return false;
-        }
-        
-        // If we're typing a variable/function name or namespace (including after newline)
-        if (textToCheck.matches(".*(?:\\b|^|\\n)(?:[a-zA-Z_][a-zA-Z0-9_]*)?$")) {
-            LOG.info("isInsideString detected identifier context, not a string");
-            return false;
-        }
-        
-        // If we're typing a known namespace identifier
-        if (textToCheck.matches(".*(?:\\b|^|\\n)(?:ta|math|array|matrix|map|str|color|chart|strategy|syminfo|request|ticker)(?:\\.)?$")) {
-            LOG.info("isInsideString detected namespace identifier, not a string");
-            return false;
-        }
-        
-        // If we're in a variable declaration context
-        if (textToCheck.matches(".*(?:var|varip)\\s+(?:[a-zA-Z_]\\w*)(?:\\s+[a-zA-Z_]\\w*)?\\s*=?\\s*$")) {
-            LOG.info("isInsideString detected variable declaration context, not a string");
-            return false;
-        }
-        
-        // If we're after a namespace access (any namespace, not just request)
-        if (textToCheck.matches(".*\\b(?:ta|math|array|matrix|map|str|color|chart|strategy|syminfo|request|ticker)\\.$")) {
-            LOG.info("isInsideString detected namespace access context, not a string");
-            return false;
-        }
-        
-        // If we're in a parameter name or parameter value context
-        if (textToCheck.matches(".*\\([^()]*(?:[a-zA-Z_]\\w*\\s*=\\s*)?$")) {
-            LOG.info("isInsideString detected parameter context, not a string");
-            return false;
-        }
-        
-        // If we're in an assignment context (right after equals sign)
-        if (textToCheck.matches(".*=\\s*$")) {
-            LOG.info("isInsideString detected assignment context, not a string");
-            return false;
-        }
-        
-        // If we're in a comparison or logical operator context
-        if (textToCheck.matches(".*(?:==|!=|<=|>=|<|>|\\+|-|\\*|/|%|and|or|not)\\s*$")) {
-            LOG.info("isInsideString detected operator context, not a string");
-            return false;
-        }
-        
-        // Special case for completion after a line of code or at the beginning of a new line
-        if (textToCheck.endsWith("\n") || textToCheck.matches(".*\\n\\s*$")) {
-            LOG.info("isInsideString detected new line context, not a string");
-            return false;
-        }
-        
-        // Special case for detecting the start of a new line of code after whitespace
-        int lastNewlinePos = textToCheck.lastIndexOf('\n');
-        if (lastNewlinePos != -1) {
-            String afterNewline = textToCheck.substring(lastNewlinePos + 1).trim();
-            // If there's only alphanumeric/underscore characters after the last newline, it's likely a variable/function name
-            if (afterNewline.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
-                LOG.info("isInsideString detected identifier at start of new line, not a string");
-                return false;
-            }
-        }
-        
-        // ========== COMPREHENSIVE STRING DETECTION ==========
-        
-        // If none of the fast rejection contexts matched, do a thorough check
-        int lineStartPos = textToCheck.lastIndexOf('\n');
-        if (lineStartPos == -1) {
-            lineStartPos = 0;
-        } else {
-            lineStartPos++; // Move past the newline
-        }
-        
-        // Check just the current line for string context
-        String currentLine = textToCheck.substring(lineStartPos);
-        
-        // If the current line starts with a comment, we're not in a string
-        if (currentLine.trim().startsWith("//")) {
-            LOG.info("isInsideString detected comment line, not a string");
-            return false;
-        }
-        
-        boolean inSingleQuoteString = false;
-        boolean inDoubleQuoteString = false;
-        boolean inComment = false;
-        
-        for (int i = 0; i < textToCheck.length(); i++) {
-            char c = textToCheck.charAt(i);
-            
-            // Skip processing if inside a comment
-            if (inComment) {
-                if (c == '\n') {
-                    inComment = false;
+        // Get the current line.
+        int lineStart = text.lastIndexOf('\n', offset - 1);
+        lineStart = (lineStart == -1) ? 0 : lineStart + 1;
+        int lineEnd = text.indexOf('\n', offset);
+        lineEnd = (lineEnd == -1) ? text.length() : lineEnd;
+        String currentLine = text.substring(lineStart, lineEnd);
+
+        // Count unescaped quotes in the current line up to the offset.
+        int relativeOffset = offset - lineStart;
+        int quoteCount = 0;
+        char currentQuote = '\0';
+        for (int i = 0; i < relativeOffset; i++) {
+            char c = currentLine.charAt(i);
+            if (c == '"' || c == '\'') {
+                // Check if not escaped.
+                if (i == 0 || currentLine.charAt(i - 1) != '\\') {
+                    // Toggle in-string state if matching the same quote.
+                    if (! (currentQuote == c)) {
+                        currentQuote = c;
+                        quoteCount++;
+                    } else {
+                        currentQuote = '\0';
+                        quoteCount++;
+                    }
                 }
-                continue;
-            }
-            
-            // Check for comment start
-            if (c == '/' && i + 1 < textToCheck.length() && textToCheck.charAt(i + 1) == '/') {
-                inComment = true;
-                i++; // Skip the second '/'
-                continue;
-            }
-            
-            // Handle escape sequences - skip the next character if inside a string
-            if ((c == '\\') && (i + 1 < textToCheck.length()) && (inSingleQuoteString || inDoubleQuoteString)) {
-                i++;
-                continue;
-            }
-            
-            // Toggle string state based on quotes
-            if (c == '"' && !inSingleQuoteString) {
-                inDoubleQuoteString = !inDoubleQuoteString;
-            } else if (c == '\'' && !inDoubleQuoteString) {
-                inSingleQuoteString = !inSingleQuoteString;
             }
         }
-        
-        boolean result = inSingleQuoteString || inDoubleQuoteString;
-        
-        // Add one more check - if the line has a string opener but we're at the end of the line with a trailing space, we're not in a string
-        if (result && textToCheck.endsWith(" ")) {
-            int lastNonSpace = textToCheck.length() - 1;
-            while (lastNonSpace >= 0 && Character.isWhitespace(textToCheck.charAt(lastNonSpace))) {
-                lastNonSpace--;
-            }
-            
-            if (lastNonSpace >= 0 && (textToCheck.charAt(lastNonSpace) == '"' || textToCheck.charAt(lastNonSpace) == '\'')) {
-                LOG.info("isInsideString detected space after string delimiter, not a string");
-                return false;
-            }
-        }
-        
-        LOG.info("isInsideString result: " + result);
-        return result;
+        // If there's an odd number of unescaped quotes, we're inside a string.
+        return (quoteCount % 2 == 1);
     }
 
     // Static initialization to load definitions for default version on startup
@@ -407,64 +283,85 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                            }
                            
                            // Special handling for function parameters - detect if inside parentheses
-                           if (isInFunctionCall(textBeforeCursor)) {
-                               String functionName = extractFunctionName(textBeforeCursor);
-                               LOG.info("Detected inside function call: " + functionName);
+                           checkFunctionCallContext(documentText, offset);
+                           
+                           if (isInsideFunctionCall && currentFunctionName != null) {
+                               LOG.warn("🔍 [addCompletions] Inside function call: " + currentFunctionName + ", parameter index: " + currentParamIndex);
                                
-                               if (functionName != null) {
-                                   // Check function call context to determine current parameter
-                                   checkFunctionCallContext(documentText, offset);
+                               // Check if we're after a parameter name with equals sign (named parameter assignment)
+                               boolean isInNamedParameterValue = false;
+                               String parameterName = null;
+                               
+                               // Extract the text for the current parameter
+                               int lastOpenParenPos = documentText.lastIndexOf('(');
+                               int lastCommaPos = documentText.lastIndexOf(',');
+                               int startPos = Math.max(lastOpenParenPos, lastCommaPos);
+                               
+                               if (startPos >= 0 && startPos < documentText.length()) {
+                                   String parameterText = documentText.substring(startPos + 1).trim();
+                                   LOG.warn("🔍 [addCompletions] Parameter text: '" + parameterText + "'");
                                    
-                                   if (isInsideFunctionCall && currentFunctionName != null) {
-                                       LOG.info("Suggesting parameters and full completions for: " + currentFunctionName + ", param index: " + currentParamIndex);
-                                       
-                                       // Check if we're after an equals sign in a parameter
-                                       boolean isAfterEquals = false;
-                                       int lastOpenParenPos = textBeforeCursor.lastIndexOf('(');
-                                       int lastCommaPos = textBeforeCursor.lastIndexOf(',');
-                                       
-                                       // Start position to check for equals sign should be after the last comma or open paren
-                                       int startPos = Math.max(lastOpenParenPos, lastCommaPos);
-                                       
-                                       if (startPos != -1 && startPos < textBeforeCursor.length()) {
-                                           String currentParameterSegment = textBeforeCursor.substring(startPos + 1);
-                                           if (currentParameterSegment.contains("=")) {
-                                               isAfterEquals = true;
+                                   // Check if this is a named parameter (contains equals sign)
+                                   int equalsPos = parameterText.indexOf('=');
+                                   if (equalsPos >= 0) {
+                                       isInNamedParameterValue = true;
+                                       parameterName = parameterText.substring(0, equalsPos).trim();
+                                       LOG.warn("🔍 [addCompletions] Named parameter detected: '" + parameterName + "'");
+                                   }
+                               }
+                               
+                               // Get function parameter information
+                               String fullFunctionName = currentFunctionName;
+                               
+                               if (isInNamedParameterValue && parameterName != null) {
+                                   // Get the type of the named parameter
+                                   String paramType = null;
+                                   
+                                   // Get parameter list for this function
+                                   Map<String, List<Map<String, String>>> functionArgs = FUNCTION_ARGUMENTS_CACHE.getOrDefault(version, new HashMap<>());
+                                   List<Map<String, String>> args = functionArgs.get(fullFunctionName);
+                                   
+                                   if (args != null) {
+                                       for (Map<String, String> arg : args) {
+                                           if (parameterName.equals(arg.get("name"))) {
+                                               paramType = arg.get("type");
+                                               break;
                                            }
                                        }
-                                       
-                                       if (isAfterEquals) {
-                                           // After equals in parameter, prioritize standard completions
-                                           LOG.info("After equals in parameter, showing standard completions first");
-                                           // First add standard completions with higher priority
-                                           addStandardCompletions(parameters, result, documentText, offset, version);
-                                           // Also add local variables with highest priority
-                                           addScannedCompletions(parameters, result);
-                                           // Then add parameter completions with lower priority
-                                           addParameterCompletions(result, currentFunctionName, currentParamIndex, version);
-                                       } else {
-                                           // In function call and not after equals, parameters first
-                                           LOG.info("In function call, prioritizing parameters");
-                                           // First add parameter completions with highest priority
-                                           addParameterCompletions(result, currentFunctionName, currentParamIndex, version);
-                                           // Then add standard completions with lower priority
-                                           addStandardCompletions(parameters, result, documentText, offset, version);
-                                           // Also add local variables
-                                           addScannedCompletions(parameters, result);
-                                       }
-                                   } else {
-                                       // Fallback to function parameters and standard completions if context check failed
-                                       addFunctionParameterCompletions(result, functionName, version);
-                                       addStandardCompletions(parameters, result, documentText, offset, version);
-                                       addScannedCompletions(parameters, result);
                                    }
-                                   return; // Stop processing after handling function parameters
+                                   
+                                   if (paramType != null) {
+                                       LOG.warn("🔍 [addCompletions] Found parameter type for named parameter: " + paramType);
+                                       addCompletionsForExpectedType(result, paramType, version);
+                                   } else {
+                                       LOG.warn("🔍 [addCompletions] Could not determine type for named parameter: " + parameterName);
+                                       addAllCompletionItems(result, version);
+                                   }
+                               } else {
+                                   // Add parameter name suggestions
+                                   LOG.warn("🔍 [addCompletions] Adding parameter suggestions for function: " + fullFunctionName);
+                                   addParameterCompletions(result, fullFunctionName, currentParamIndex, version);
                                }
+                               
+                               // After adding parameter suggestions, return to prevent adding other items
+                               return;
                            }
+                           
+                           // Detect assignment statement and infer expected type
+                           String expectedType = inferExpectedType(documentText.substring(0, offset));
+                           
+                           if (expectedType != null) {
+                               LOG.info("Inferred expected type in assignment: " + expectedType);
+                               addCompletionsForExpectedType(result, expectedType, version);
+                           } else {
+                               // Fall back to processing standard completions
+                               LOG.info("No expected type inferred, adding standard completions");
+                               processStandardCompletions(parameters, result, version);
+                           }
+                       } else {
+                           // At beginning of document, add standard completions
+                           processStandardCompletions(parameters, result, version);
                        }
-                       
-                       // Continue with standard completions
-                       processStandardCompletions(parameters, result, version);
                    }
                });
     }
@@ -815,14 +712,41 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             
             // Modify prefixMatcher based on text after last comma
             String textAfterComma = "";
-            int lastCommaPos = textBeforeCursor.lastIndexOf(',');
-            if (lastCommaPos >= 0) {
-                textAfterComma = textBeforeCursor.substring(lastCommaPos + 1).trim();
-            } else {
-                // If no comma, find the opening parenthesis
-                int lastParenPos = textBeforeCursor.lastIndexOf('(');
-                if (lastParenPos >= 0) {
-                    textAfterComma = textBeforeCursor.substring(lastParenPos + 1).trim();
+            
+            // Find the opening parenthesis of the current function call
+            int openParenCount = 0;
+            int closeParenCount = 0;
+            int currentFunctionOpenPos = -1;
+            
+            // Scan backward to find the opening parenthesis of the current function
+            for (int i = textBeforeCursor.length() - 1; i >= 0; i--) {
+                char c = textBeforeCursor.charAt(i);
+                if (c == ')') {
+                    closeParenCount++;
+                } else if (c == '(') {
+                    openParenCount++;
+                    if (openParenCount > closeParenCount) {
+                        // We've found the opening parenthesis of our current function call
+                        currentFunctionOpenPos = i;
+                        break;
+                    }
+                }
+            }
+            
+            if (currentFunctionOpenPos >= 0) {
+                // Now look for the last comma, but only after the opening parenthesis of current function
+                int lastCommaPos = textBeforeCursor.lastIndexOf(',', textBeforeCursor.length() - 1);
+                
+                if (lastCommaPos > currentFunctionOpenPos) {
+                    // If we found a comma after the opening parenthesis, get text after it
+                    textAfterComma = textBeforeCursor.substring(lastCommaPos + 1).trim();
+                    LOG.debug("Found comma in current function at position " + lastCommaPos + 
+                             ", text after: '" + textAfterComma + "'");
+                } else {
+                    // No comma found in this function call, use everything after the opening parenthesis
+                    textAfterComma = textBeforeCursor.substring(currentFunctionOpenPos + 1).trim();
+                    LOG.debug("No comma in current function, using text after opening parenthesis: '" + 
+                             textAfterComma + "'");
                 }
             }
             
@@ -1113,9 +1037,9 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     /**
      * Determines if the cursor is within a function call.
      */
-    private boolean isInFunctionCall(String text) {
+    private static boolean isInsideFunctionCall(String text, int offset) {
         // Skip this check if we're in a variable declaration with type
-        String textToCheck = text.substring(0, text.length());
+        String textToCheck = text.substring(0, offset);
         
         // Check if we're just typing a new identifier at the beginning of a line
         int lastNewlinePos = textToCheck.lastIndexOf('\n');
@@ -1134,7 +1058,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         boolean isVarDeclaration = false;
         while (varDeclMatcher.find()) {
             // If the last match is close to the cursor, we're likely in a variable declaration
-            if (varDeclMatcher.end() > text.length() - 20) {
+            if (varDeclMatcher.end() > offset - 20) {
                 isVarDeclaration = true;
                 LOG.warn(">>>>>> NOT A FUNCTION CALL: Detected variable declaration with type");
             }
@@ -1151,7 +1075,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         // Track the position of the most recent relevant opening parenthesis
         int lastOpenParenPos = -1;
         
-        for (int i = 0; i < text.length() && i < text.length(); i++) {
+        for (int i = 0; i < text.length() && i < offset; i++) {
             char c = text.charAt(i);
             if (c == '(') {
                 openCount++;
@@ -1222,20 +1146,34 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     private void processStandardCompletions(@NotNull CompletionParameters parameters,
                                            @NotNull CompletionResultSet result,
                                            String version) {
-        String documentText = parameters.getOriginalFile().getText();
+        Document document = parameters.getEditor().getDocument();
         int offset = parameters.getOffset();
+        String documentText = document.getText();
+        
+        // Initialize with empty values
+        isInsideFunctionCall = false;
+        currentFunctionName = null;
+        currentParamIndex = 0;
+
+        // Then add context-specific completions
+        if (isInsideFunctionCall(documentText, offset)) {
+            LOG.info("🔍 [processStandardCompletions] In function call context");
+            currentFunctionName = extractFunctionName(documentText.substring(0, offset));
+            
+            if (currentFunctionName != null) {
+                currentParamIndex = getParamIndexFromText(documentText.substring(0, offset));
+                LOG.info("🔍 [processStandardCompletions] Found function: " + currentFunctionName + ", param index: " + currentParamIndex);
+                
+                // Add parameter-specific completions
+                addParameterCompletions(result, currentFunctionName, currentParamIndex, version);
+                return; // Early return for function parameters
+            }
+        }
         
         // Always add all completions first
         addAllCompletionItems(result, version);
         
-        // Then add context-specific completions
-        if (isInFunctionCall(documentText.substring(0, offset))) {
-            LOG.info("🔍 [processStandardCompletions] In function call context");
-            currentFunctionName = extractFunctionName(documentText.substring(0, offset));
-            if (currentFunctionName != null) {
-                addFunctionParameterCompletions(result, currentFunctionName, version);
-            }
-        } else if (isInVariableDeclaration(documentText, offset)) {
+        if (isInVariableDeclaration(documentText, offset)) {
             LOG.info("🔍 [processStandardCompletions] In variable declaration context");
             String expectedType = inferExpectedType(documentText.substring(0, offset));
             if (expectedType != null) {
@@ -2116,235 +2054,122 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      * Adds function parameter completions to the result.
      */
     private void addFunctionParameterCompletions(CompletionResultSet result, String functionName, String version) {
-        LOG.warn("🔍 Adding parameter completions for function: " + functionName + ", version: " + version);
-        
-        Map<String, Map<String, String>> functionParams = FUNCTION_PARAMETERS_CACHE.getOrDefault(version, 
-                                                          initFunctionParametersForVersion(version));
-        
-        if (functionParams.containsKey(functionName)) {
-            Map<String, String> params = functionParams.get(functionName);
-            LOG.warn("🔍 Found " + params.size() + " parameters for function " + functionName);
-            
-            for (Map.Entry<String, String> entry : params.entrySet()) {
-                String paramName = entry.getKey();
-                String paramType = entry.getValue();
-                
-                LookupElementBuilder element = LookupElementBuilder.create(paramName + "=")
-                        .withIcon(AllIcons.Nodes.Parameter)
-                        .withTypeText(paramType)
-                        .withBoldness(true)
-                        .withInsertHandler((ctx, item) -> {
-                            // Move caret after equals sign to let user input the value
-                            Editor editor = ctx.getEditor();
-                            editor.getCaretModel().moveToOffset(ctx.getTailOffset());
-                            
-                            // Trigger autocompletion for the parameter value
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                AutoPopupController.getInstance(ctx.getProject()).scheduleAutoPopup(editor);
-                            });
-                        });
-                result.addElement(PrioritizedLookupElement.withPriority(element, 3000)); // Highest priority
-            }
-        } else {
-            LOG.warn("🔍 No parameters found for function " + functionName);
-            
-            // Check function arguments cache as a fallback
-            Map<String, List<Map<String, String>>> functionArgs = FUNCTION_ARGUMENTS_CACHE.getOrDefault(version, new HashMap<>());
-            if (functionArgs.containsKey(functionName)) {
-                List<Map<String, String>> args = functionArgs.get(functionName);
-                LOG.warn("🔍 Found " + args.size() + " arguments from arguments cache for function " + functionName);
-                
-                for (Map<String, String> arg : args) {
-                    if (arg.containsKey("name")) {
-                        String paramName = arg.get("name");
-                        String paramType = arg.getOrDefault("type", "any");
-                        
-                        LookupElementBuilder element = LookupElementBuilder.create(paramName + "=")
-                                .withIcon(AllIcons.Nodes.Parameter)
-                                .withTypeText(paramType)
-                                .withBoldness(true)
-                                .withInsertHandler((ctx, item) -> {
-                                    // Move caret after equals sign to let user input the value
-                                    Editor editor = ctx.getEditor();
-                                    editor.getCaretModel().moveToOffset(ctx.getTailOffset());
-                                    
-                                    // Trigger autocompletion for the parameter value
-                                    ApplicationManager.getApplication().invokeLater(() -> {
-                                        AutoPopupController.getInstance(ctx.getProject()).scheduleAutoPopup(editor);
-                                    });
-                                });
-                        result.addElement(PrioritizedLookupElement.withPriority(element, 3000)); // Highest priority
-                    }
-                }
-            }
+        if (functionName == null) {
+            LOG.warn(">>>>>> Cannot add parameter completions for null function name");
+            return;
         }
         
-        // Also add these parameters to any other similar functions
-        if (functionName.contains(".")) {
-            // For functions like "strategy.entry", try checking just "entry" parameters too
-            String baseFunctionName = functionName.substring(functionName.lastIndexOf('.') + 1);
-            if (!baseFunctionName.equals(functionName) && functionParams.containsKey(baseFunctionName)) {
-                LOG.warn("🔍 Also checking base function name: " + baseFunctionName);
-                addFunctionParameterCompletions(result, baseFunctionName, version);
+        LOG.warn(">>>>>> Adding parameter completions for function: " + functionName + ", version: " + version);
+        
+        // Check if we have parameter information for this function
+        Map<String, List<Map<String, String>>> functionArgs = FUNCTION_ARGUMENTS_CACHE.getOrDefault(version, new HashMap<>());
+        
+        if (functionArgs.containsKey(functionName)) {
+            List<Map<String, String>> args = functionArgs.get(functionName);
+            LOG.warn(">>>>>> Found " + args.size() + " parameters for function: " + functionName);
+            
+            // Log the parameter names and types
+            for (int i = 0; i < args.size(); i++) {
+                Map<String, String> param = args.get(i);
+                String paramName = param.getOrDefault("name", "unnamed");
+                String paramType = param.getOrDefault("type", "unknown");
+                LOG.warn(">>>>>> Parameter " + i + ": " + paramName + " (" + paramType + ")");
+            }
+            
+            // If we know which parameter index the user is typing at, add specific completions for that parameter
+            if (currentParamIndex >= 0) {
+                LOG.warn(">>>>>> Adding specific completions for parameter index: " + currentParamIndex);
+                addParameterCompletions(result, functionName, currentParamIndex, version);
+            }
+        } else {
+            LOG.warn(">>>>>> No parameter information found for function: " + functionName);
+            
+            // Try to get parameter info from function parameters cache
+            Map<String, Map<String, String>> functionParameters = FUNCTION_PARAMETERS_CACHE.getOrDefault(version, new HashMap<>());
+            Map<String, String> parameterMap = functionParameters.get(functionName);
+            
+            if (parameterMap != null && !parameterMap.isEmpty()) {
+                LOG.warn(">>>>>> Found parameter information in FUNCTION_PARAMETERS_CACHE: " + parameterMap.size() + " parameters");
+                
+                // Log the parameter names and types
+                for (Map.Entry<String, String> entry : parameterMap.entrySet()) {
+                    LOG.warn(">>>>>> Parameter: " + entry.getKey() + " (" + entry.getValue() + ")");
+                }
+                
+                if (currentParamIndex >= 0) {
+                    LOG.warn(">>>>>> Adding specific completions for parameter index: " + currentParamIndex);
+                    addParameterCompletions(result, functionName, currentParamIndex, version);
+                }
+            } else {
+                LOG.warn(">>>>>> No parameter information found in FUNCTION_PARAMETERS_CACHE either");
+                
+                // Check if this function has namespace
+                if (functionName.contains(".")) {
+                    String[] parts = functionName.split("\\.", 2);
+                    String namespace = parts[0];
+                    String methodName = parts[1];
+                    
+                    LOG.warn(">>>>>> Function is namespaced: " + namespace + "." + methodName);
+                    
+                    // Get namespace methods from cache
+                    Map<String, String[]> namespaceMethods = NAMESPACE_METHODS_CACHE.getOrDefault(version, new HashMap<>());
+                    String[] methods = namespaceMethods.get(namespace);
+                    
+                    if (methods != null) {
+                        LOG.warn(">>>>>> Found " + methods.length + " methods for namespace: " + namespace);
+                        boolean methodFound = false;
+                        
+                        for (String method : methods) {
+                            if (method.equals(methodName)) {
+                                methodFound = true;
+                                LOG.warn(">>>>>> Method found in namespace methods list");
+                                break;
+                            }
+                        }
+                        
+                        if (!methodFound) {
+                            LOG.warn(">>>>>> Method not found in namespace methods list");
+                        }
+                    } else {
+                        LOG.warn(">>>>>> No methods found for namespace: " + namespace);
+                    }
+                }
+                
+                // Try to add generic parameter completions based on function name
+                if (currentParamIndex >= 0) {
+                    Map<String, String> suggestions = getParameterSuggestions(functionName, currentParamIndex);
+                    if (!suggestions.isEmpty()) {
+                        LOG.warn(">>>>>> Adding generic suggestions based on function name and index: " + suggestions.size() + " suggestions");
+                    } else {
+                        LOG.warn(">>>>>> No generic suggestions available for this function and index");
+                    }
+                }
             }
         }
     }
     
     /**
-     * Check if we're inside a function call and determine the current parameter index.
+     * Analyzes text to determine function call context
+     * This sets the isInsideFunctionCall, currentFunctionName, and currentParamIndex fields
      */
     private void checkFunctionCallContext(String documentText, int offset) {
-        // First check if we're inside a variable declaration with type
-        Pattern varDeclPattern = Pattern.compile("(?:var|varip)\\s+([a-zA-Z_]\\w*)\\s+([a-zA-Z_]\\w*)\\s*=");
-        Matcher varDeclMatcher = varDeclPattern.matcher(documentText.substring(0, offset));
-        
-        boolean isVarDeclaration = false;
-        while (varDeclMatcher.find()) {
-            // If the declaration is near the cursor, we're likely in a variable declaration
-            if (varDeclMatcher.end() > offset - 20) {
-                isVarDeclaration = true;
-                LOG.warn("🔍 [checkFunctionCallContext] Detected variable declaration with type - not a function call");
+        try {
+            // Check if we're inside a function call
+            if (isInsideFunctionCall(documentText, offset)) {
+                isInsideFunctionCall = true;
                 
-                // Log the detected type and variable
-                String type = varDeclMatcher.group(1);
-                String varName = varDeclMatcher.group(2);
-                LOG.warn("🔍 [checkFunctionCallContext] Type: " + type + ", Variable: " + varName);
+                // Extract the current function name and parameter index
+                currentFunctionName = extractFunctionName(documentText.substring(0, offset));
+                currentParamIndex = getParamIndexFromText(documentText.substring(0, offset));
                 
-                // Reset function detection flags
+                LOG.info("🔎 [checkFunctionCallContext] In function: " + currentFunctionName + ", param index: " + currentParamIndex);
+            } else {
                 isInsideFunctionCall = false;
                 currentFunctionName = null;
                 currentParamIndex = 0;
-                return;
             }
-        }
-        
-        // Check if we're at the beginning of a new line or only typing an identifier
-        String textBeforeCursor = documentText.substring(0, offset);
-        int lastNewlinePos = textBeforeCursor.lastIndexOf('\n');
-        if (lastNewlinePos != -1) {
-            String afterNewline = textBeforeCursor.substring(lastNewlinePos + 1).trim();
-            // If there's only alphanumeric/underscore characters after the last newline, it's likely a variable/function name
-            if (afterNewline.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
-                LOG.warn("🔍 [checkFunctionCallContext] Just typing identifier at beginning of line - not a function call");
-                // Reset function detection flags
-                isInsideFunctionCall = false;
-                currentFunctionName = null;
-                currentParamIndex = 0;
-                return;
-            }
-        }
-        
-        // If not in a variable declaration, proceed with regular function detection
-        isInsideFunctionCall = false;
-        currentFunctionName = null;
-        currentParamIndex = 0;
-        
-        // For nested function calls, we need to track parenthesis depths and function starts
-        int openParenCount = 0;
-        int commaCount = 0;
-        boolean insideString = false;
-        boolean insideParamValue = false;
-        
-        // Stores start positions of potential function names at each parenthesis depth
-        // The last entry is the innermost function (closest to cursor)
-        List<Integer> functionStartPositions = new ArrayList<>();
-        
-        for (int i = 0; i < offset; i++) {
-            char c = documentText.charAt(i);
-            
-            // Handle string literals
-            if (c == '"' && (i == 0 || documentText.charAt(i - 1) != '\\')) {
-                insideString = !insideString;
-                continue;
-            }
-            
-            // Skip processing if inside a string
-            if (insideString) {
-                continue;
-            }
-            
-            // Track parentheses and parameter state
-            if (c == '(') {
-                // If we're starting a new nesting level, find the function name
-                int functionNameStart = i - 1;
-                while (functionNameStart >= 0 && 
-                       (Character.isJavaIdentifierPart(documentText.charAt(functionNameStart)) || 
-                        documentText.charAt(functionNameStart) == '.')) {
-                    functionNameStart--;
-                }
-                functionNameStart++; // Adjust to the actual start
-                
-                // Only add if we actually found a function name
-                if (functionNameStart < i && functionNameStart >= 0) {
-                    // Store the start position of this function name
-                    functionStartPositions.add(functionNameStart);
-                }
-                
-                openParenCount++;
-                
-                // Reset comma count when entering a new function
-                if (openParenCount == functionStartPositions.size()) {
-                    commaCount = 0;
-                }
-                
-                insideParamValue = false;
-            } else if (c == ')') {
-                openParenCount--;
-                
-                // If we're closing a function call, remove its entry
-                if (openParenCount < functionStartPositions.size() && !functionStartPositions.isEmpty()) {
-                    functionStartPositions.remove(functionStartPositions.size() - 1);
-                }
-                
-                insideParamValue = false;
-            } else if (c == ',' && openParenCount > 0) {
-                // Only count commas at the current function nesting level
-                if (openParenCount == functionStartPositions.size()) {
-                    commaCount++;
-                }
-                insideParamValue = false;
-            } else if (c == '=' && openParenCount > 0) {
-                // We're now inside parameter value after equals sign
-                insideParamValue = true;
-            }
-        }
-        
-        // If we're inside a function call and have a valid function start position
-        if (openParenCount > 0 && !functionStartPositions.isEmpty()) {
-            // One more check: verify we're not in a variable declaration with an incomplete condition
-            // Reuse the existing textBeforeCursor variable instead of redeclaring it
-            Pattern varWithConditionPattern = Pattern.compile("(?:var|varip)\\s+(?:bool|int|float|string|color)\\s+[a-zA-Z_]\\w*\\s*=\\s*");
-            Matcher conditionMatcher = varWithConditionPattern.matcher(textBeforeCursor);
-            
-            if (conditionMatcher.find() && conditionMatcher.end() > offset - 20) {
-                // We're likely inside a condition for a variable assignment, not a function call
-                LOG.warn("🔍 [checkFunctionCallContext] Inside variable assignment condition - not treating as function call");
-                return;
-            }
-            
-            isInsideFunctionCall = true;
-            currentParamIndex = commaCount;
-            
-            // Get the innermost function name (last in the list)
-            int functionNameStart = functionStartPositions.get(functionStartPositions.size() - 1);
-            
-            // Find the end of the function name (the open parenthesis)
-            int functionNameEnd = -1;
-            int tempOpenCount = 0;
-            for (int i = functionNameStart; i < documentText.length() && i < offset; i++) {
-                if (documentText.charAt(i) == '(') {
-                    if (tempOpenCount == 0) {
-                        functionNameEnd = i;
-                        break;
-                    }
-                    tempOpenCount++;
-                }
-            }
-            
-            if (functionNameEnd > functionNameStart) {
-                currentFunctionName = documentText.substring(functionNameStart, functionNameEnd);
-                LOG.info("Inside innermost function call: " + currentFunctionName + ", parameter index: " + currentParamIndex);
-            }
+        } catch (Exception e) {
+            LOG.error("Error in checkFunctionCallContext", e);
         }
     }
     
@@ -2355,9 +2180,12 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         // Get function arguments from cache for this version
         Map<String, List<Map<String, String>>> functionArgs = FUNCTION_ARGUMENTS_CACHE.getOrDefault(version, new HashMap<>());
         
+        LOG.warn(">>>>>> addParameterCompletions for " + functionName + ", param index: " + paramIndex + ", version: " + version);
+        
         // If we have argument definitions for this function
         if (functionArgs.containsKey(functionName)) {
             List<Map<String, String>> args = functionArgs.get(functionName);
+            LOG.warn(">>>>>> Found " + args.size() + " arguments for function: " + functionName);
             
             // If there are arguments defined and the current parameter index is valid
             if (!args.isEmpty() && paramIndex < args.size()) {
@@ -2365,6 +2193,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 Map<String, String> param = args.get(paramIndex);
                 String paramName = param.getOrDefault("name", "");
                 String paramType = param.getOrDefault("type", "");
+                
+                LOG.warn(">>>>>> Current parameter: " + paramName + " of type: " + paramType);
                 
                 if (!paramName.isEmpty()) {
                     // Add named parameter option with super high priority (3000)
@@ -2378,16 +2208,24 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                 editor.getCaretModel().moveToOffset(ctx.getTailOffset());
                             });
                     result.addElement(PrioritizedLookupElement.withPriority(namedElement, 3000)); // Highest priority for current parameter
+                    LOG.warn(">>>>>> Added named parameter option: " + paramName + "=");
                     
                     // Also suggest possible values based on parameter type
                     Map<String, String> valueSuggestions = getValueSuggestionsForType(paramType, paramName, functionName, paramIndex);
+                    LOG.warn(">>>>>> Generated " + valueSuggestions.size() + " value suggestions for type: " + paramType);
+                    
                     for (Map.Entry<String, String> entry : valueSuggestions.entrySet()) {
                         LookupElementBuilder element = LookupElementBuilder.create(entry.getKey())
                                 .withTypeText(entry.getValue())
                                 .withIcon(AllIcons.Nodes.Parameter);
                         result.addElement(PrioritizedLookupElement.withPriority(element, 2950)); // Very high priority for parameter values
+                        LOG.warn(">>>>>> Added value suggestion: " + entry.getKey() + " (" + entry.getValue() + ")");
                     }
+                } else {
+                    LOG.warn(">>>>>> Parameter name is empty, cannot add named parameter suggestion");
                 }
+            } else {
+                LOG.warn(">>>>>> Parameter index " + paramIndex + " is out of bounds or no arguments defined");
             }
             
             // Suggest all other parameter names (for named parameters)
@@ -2408,20 +2246,27 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                     editor.getCaretModel().moveToOffset(ctx.getTailOffset());
                                 });
                         result.addElement(PrioritizedLookupElement.withPriority(element, 2900)); // High priority for other parameters
+                        LOG.warn(">>>>>> Added other parameter option: " + otherParamName + "= (index " + i + ")");
                     }
                 }
             }
+        } else {
+            LOG.warn(">>>>>> No argument definitions found for function: " + functionName);
         }
         
         // Check if we have special value completions for this parameter
         Map<String, String> specialSuggestions = getParameterSuggestions(functionName, paramIndex);
         if (!specialSuggestions.isEmpty()) {
+            LOG.warn(">>>>>> Found " + specialSuggestions.size() + " special suggestions for parameter index " + paramIndex);
             for (Map.Entry<String, String> entry : specialSuggestions.entrySet()) {
                 LookupElementBuilder element = LookupElementBuilder.create(entry.getKey())
                         .withTypeText(entry.getValue())
                         .withIcon(AllIcons.Nodes.Parameter);
                 result.addElement(PrioritizedLookupElement.withPriority(element, 2920)); // High priority for special parameter suggestions
+                LOG.warn(">>>>>> Added special suggestion: " + entry.getKey() + " (" + entry.getValue() + ")");
             }
+        } else {
+            LOG.warn(">>>>>> No special suggestions found for parameter index " + paramIndex);
         }
     }
     
@@ -2554,7 +2399,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                        String documentText, int offset,
                                        String version) {
         // Check if we're inside a function call to adjust keyword priorities
-        boolean insideFunctionCall = isInFunctionCall(documentText.substring(0, offset));
+        boolean insideFunctionCall = isInsideFunctionCall(documentText, offset);
         int keywordPriority = insideFunctionCall ? 400 : 1000;
         
         // Add keywords with appropriate priority (lower when inside function calls)
@@ -3490,8 +3335,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                     }
                     
                     // Trigger completion popup for space inside function call or comma in function call (not header)
-                    if ((c == ' ' && isInsideFunctionCall(documentText, offset)) || 
-                        (c == ',' && isInsideFunctionCall(documentText, offset) && !isInFunctionHeader(documentText, offset))) {
+                    if (isInsideFunctionCall(documentText, offset) && (c == ' ' || c == ',' || c == '(')) {
                         // Use the project we already have
                         if (project != null) {
                             LOG.warn(">>>>>> COMMA/SPACE IN FUNCTION: Triggering parameter info at offset " + offset);
@@ -3533,110 +3377,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         return;
                     }
                 }
-                
-                /**
-                 * Helper method to determine if the cursor is inside a function call
-                 * Improved to be more accurate at detecting being inside a function call
-                 */
-                private boolean isInsideFunctionCall(String text, int offset) {
-                    // Skip this check if we're in a variable declaration with type
-                    String textToCheck = text.substring(0, offset);
-                    
-                    // Check if we're just typing a new identifier at the beginning of a line
-                    int lastNewlinePos = textToCheck.lastIndexOf('\n');
-                    if (lastNewlinePos != -1) {
-                        String afterNewline = textToCheck.substring(lastNewlinePos + 1).trim();
-                        // If there's only alphanumeric/underscore characters after the last newline, it's likely a variable/function name
-                        if (afterNewline.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
-                            LOG.warn(">>>>>> NOT A FUNCTION CALL: Just typing identifier at beginning of line");
-                            return false;
-                        }
-                    }
-                    
-                    // Check for variable declaration patterns that should NOT trigger function detection
-                    Pattern varDeclarationPattern = Pattern.compile("(?:var|varip)\\s+(?:[a-zA-Z_]\\w*)\\s+(?:[a-zA-Z_]\\w*)\\s*=");
-                    Matcher varDeclMatcher = varDeclarationPattern.matcher(textToCheck);
-                    boolean isVarDeclaration = false;
-                    while (varDeclMatcher.find()) {
-                        // If the last match is close to the cursor, we're likely in a variable declaration
-                        if (varDeclMatcher.end() > offset - 20) {
-                            isVarDeclaration = true;
-                            LOG.warn(">>>>>> NOT A FUNCTION CALL: Detected variable declaration with type");
-                        }
-                    }
-                    
-                    if (isVarDeclaration) {
-                        return false;
-                    }
-                    
-                    // Simple check: look for an open parenthesis that's not closed
-                    int openCount = 0;
-                    int closeCount = 0;
-                    
-                    // Track the position of the most recent relevant opening parenthesis
-                    int lastOpenParenPos = -1;
-                    
-                    for (int i = 0; i < text.length() && i < offset; i++) {
-                        char c = text.charAt(i);
-                        if (c == '(') {
-                            openCount++;
-                            lastOpenParenPos = i;
-                        }
-                        else if (c == ')') {
-                            closeCount++;
-                        }
-                    }
-                    
-                    // We're in a function call if there are unclosed parentheses
-                    boolean inFunction = openCount > closeCount;
-                    
-                    // If it looks like we're in a function, do additional verification
-                    if (inFunction && lastOpenParenPos > 0) {
-                        // Check if there's an identifier before the parenthesis
-                        for (int i = lastOpenParenPos - 1; i >= 0; i--) {
-                            char c = text.charAt(i);
-                            
-                            // Skip whitespace
-                            if (Character.isWhitespace(c)) {
-                                continue;
-                            }
-                            
-                            // If we found an identifier character (or dot for method calls)
-                            if (Character.isJavaIdentifierPart(c) || c == '.') {
-                                LOG.warn(">>>>>> DETECTED FUNCTION CALL: Cursor is inside a function call");
-                                return true;
-                            } else {
-                                // Not a valid function call character - might be a conditional or something else
-                                break;
-                            }
-                        }
-                    }
-                    
-                    return inFunction;
-                }
+            
 
-                /**
-                 * Helper method to determine if the cursor is inside a function header/definition
-                 * rather than a function call
-                 */
-                private boolean isInFunctionHeader(String text, int offset) {
-                    // Look backward for "function" or "method" keyword before the opening parenthesis
-                    int startPos = Math.max(0, offset - 200); // Limit how far back we look
-                    String textToCheck = text.substring(startPos, offset);
-                    
-                    // Find the last open parenthesis
-                    int lastOpenParen = textToCheck.lastIndexOf('(');
-                    if (lastOpenParen == -1) return false;
-                    
-                    // Look backward from the open parenthesis for function or method keywords
-                    String beforeParen = textToCheck.substring(0, lastOpenParen).trim();
-                    
-                    // Use regex to find the last word before the parenthesis
-                    Pattern pattern = Pattern.compile("\\b(function|method)\\s+([a-zA-Z_]\\w*)\\s*$");
-                    Matcher matcher = pattern.matcher(beforeParen);
-                    
-                    return matcher.find();
-                }
             });
         }
     }
@@ -3699,9 +3441,9 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             // Check for block comment start /*
             if (pos > 0 && text.charAt(pos - 1) == '/' && text.charAt(pos) == '*') {
                 // Found block comment start, check if there's a block comment end between this and the position
-                int blockEndPos = text.indexOf("*/", pos);
-                if (blockEndPos == -1 || blockEndPos > position) {
-                    // No end marker found or end is after our position, so we're in a comment
+                int commentEnd = text.indexOf("*/", pos);
+                if (commentEnd == -1 || commentEnd + 1 > position) {
+                    // No comment end found or comment end is after our position, so we're in a comment
                     LOG.warn("🔍 [isInsideComment] Position " + position + " is inside a block comment starting at " + pos);
                     return true;
                 }
@@ -3932,53 +3674,100 @@ public class PineScriptCompletionContributor extends CompletionContributor {
 
     private static Map<String, String> loadTypesFromDefinitionFile(String version, String filename) {
         Map<String, String> types = new HashMap<>();
-        String resourcePath = "/definitions/v" + version + "/" + filename;
         
-        try (InputStream is = PineScriptCompletionContributor.class.getResourceAsStream(resourcePath)) {
+        try {
+            String resourcePath = "/definitions/" + version + "/" + filename;
+            LOG.info("📝 [loadTypesFromDefinitionFile] Loading types from " + resourcePath);
+            
+            InputStream is = PineScriptCompletionContributor.class.getResourceAsStream(resourcePath);
             if (is == null) {
-                LOG.warn("❌ Resource not found: " + resourcePath);
+                LOG.warn("⚠️ Resource not found: " + resourcePath);
                 return types;
             }
             
-            StringBuilder jsonContent = new StringBuilder();
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    jsonContent.append(line);
-                }
-            }
+            // Read the content as a string
+            String content = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
+                .lines().collect(Collectors.joining("\n"));
             
-            LOG.info("📖 [loadTypesFromDefinitionFile] Processing types from: " + resourcePath);
-            JSONArray jsonArray = new JSONArray(jsonContent.toString());
-            for (int i = 0; i < jsonArray.length(); i++) {
-                JSONObject item = jsonArray.getJSONObject(i);
-                if (item.has("name") && item.has("type")) {
-                    String name = item.getString("name");
-                    String type = item.getString("type");
-                    types.put(name, type);
-                    LOG.info("✅ [loadTypesFromDefinitionFile] Loaded type: " + name + " -> " + type);
+            try {
+                // Try to parse as JSON object
+                if (content.startsWith("{")) {
+                    JSONObject json = new JSONObject(content);
+                    JSONArray items = json.getJSONArray("items");
+                    LOG.info("✅ Found " + items.length() + " typed items");
+                    
+                    for (int i = 0; i < items.length(); i++) {
+                        JSONObject item = items.getJSONObject(i);
+                        if (item.has("name") && item.has("type")) {
+                            String name = item.getString("name");
+                            String type = item.getString("type");
+                            types.put(name, type);
+                        } else {
+                            LOG.warn("⚠️ Missing required fields in definition at index " + i);
+                        }
+                    }
+                } 
+                // Try to parse as JSON array
+                else if (content.startsWith("[")) {
+                    JSONArray jsonArray = new JSONArray(content);
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject item = jsonArray.getJSONObject(i);
+                        if (item.has("name") && item.has("type")) {
+                            String name = item.getString("name");
+                            String type = item.getString("type");
+                            types.put(name, type);
+                        } else {
+                            LOG.warn("⚠️ Missing required fields in definition at index " + i);
+                        }
+                    }
                 } else {
-                    LOG.warn("⚠️ [loadTypesFromDefinitionFile] Missing required fields in definition at index " + i);
+                    LOG.error("❌ Invalid JSON format in " + filename + ". Content starts with: " + 
+                             (content.length() > 20 ? content.substring(0, 20) + "..." : content));
+                    return types;
                 }
+            } catch (Exception e) {
+                LOG.error("❌ Error parsing JSON from " + filename, e);
+                return types;
             }
             
-            LOG.info("📊 [loadTypesFromDefinitionFile] Loaded types for " + types.size() + " items from " + filename);
-            // Log first few entries as sample
+            LOG.info("✅ Loaded " + types.size() + " types from " + filename);
+            
+            // Log some sample entries for debugging
             int count = 0;
             for (Map.Entry<String, String> entry : types.entrySet()) {
-                if (count++ < 5) {
-                    LOG.info("📝 Sample type: " + entry.getKey() + " -> " + entry.getValue());
+                if (count < 3) {
+                    LOG.info("   - " + entry.getKey() + ": " + entry.getValue());
+                    count++;
                 } else {
                     break;
                 }
             }
-        } catch (IOException e) {
-            LOG.error("❌ Error loading types from " + resourcePath, e);
+            
         } catch (Exception e) {
-            LOG.error("❌ Error processing types from " + resourcePath, e);
-            e.printStackTrace();
+            LOG.error("❌ Error loading types from " + filename, e);
         }
         
         return types;
     }
-} 
+
+    /**
+     * Calculate which parameter index we're typing based on comma positions
+     * @param text The text before the cursor position
+     * @return The index of the parameter (0-based)
+     */
+    private static int getParamIndexFromText(String text) {
+        // Find the last open parenthesis
+        int lastOpenParenPos = text.lastIndexOf('(');
+        if (lastOpenParenPos >= 0) {
+            String textInsideParams = text.substring(lastOpenParenPos + 1);
+            // Count commas to determine parameter index
+            int paramIndex = (int) textInsideParams.chars().filter(ch -> ch == ',').count();
+            
+            LOG.info("Parameter index: " + paramIndex + ", text inside params: '" + 
+                    (textInsideParams.length() > 20 ? "..." + textInsideParams.substring(textInsideParams.length() - 20) : textInsideParams) + "'");
+            
+            return paramIndex;
+        }
+        return 0;
+    }
+}
