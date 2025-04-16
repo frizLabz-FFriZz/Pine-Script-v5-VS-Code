@@ -58,7 +58,7 @@ export class PineTypify {
   private parseType(typeString: string): ParsedType {
     const match =
       /^(?:(array|matrix|map)<([\w\.]+)(?:,\s*([\w\.]+))?>|([\w\.]+(?=\[\]))|([\w\.]+))(\[\])?$/g.exec(
-        typeString
+        typeString,
       );
     if (!match) {
       return { baseType: 'unknown' };
@@ -104,9 +104,9 @@ export class PineTypify {
       variables.map((item: any) => [
         item.name,
         this.parseType(
-          item.type.replace(/(const|input|series|simple|literal)\s*/g, '').replace(/([\w.]+)\[\]/g, 'array<$1>')
+          item.type.replace(/(const|input|series|simple|literal)\s*/g, '').replace(/([\w.]+)\[\]/g, 'array<$1>'),
         ),
-      ])
+      ]),
     );
 
     // Fetch and parse UDT definitions (placeholder - requires actual UDT definitions)
@@ -155,7 +155,7 @@ export class PineTypify {
     this.typeMap.forEach((type, name) => {
       const regex = new RegExp(
         `(?<!['"(].*)\\b(var\\s+|varip\\s+)?(\\b${name}\\b)(\\[\\])?(?=[^\\S\\r\\n]*=(?!=|!|<|>|\\?))(?!.*,\\s*\\n)`,
-        'g'
+        'g',
       );
       let match;
       while ((match = regex.exec(text)) !== null) {
@@ -167,7 +167,7 @@ export class PineTypify {
         const lineEndIndex = text.indexOf('\n', match.index);
         const range = new vscode.Range(
           document.positionAt(lineStartIndex),
-          document.positionAt(lineEndIndex !== -1 ? lineEndIndex : text.length)
+          document.positionAt(lineEndIndex !== -1 ? lineEndIndex : text.length),
         );
 
         if (edits.some((edit) => range.intersection(edit.range))) {

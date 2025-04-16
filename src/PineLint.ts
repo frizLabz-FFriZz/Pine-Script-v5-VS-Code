@@ -109,39 +109,39 @@ export class PineLint {
     const diagnostics: vscode.Diagnostic[] = [];
 
     for (const group of dataGroups) {
-      if (!group || group.length === 0) {
-
-        for (const data of group) {
-          const { start, end, message } = data;
-          const range = new vscode.Range(
-            start.line - 1,
-            start.column - 1,
-            end.line - 1,
-            end.column,
-          );
-
-          let severity: vscode.DiagnosticSeverity;
-          if (message.includes('error')) {
-            severity = vscode.DiagnosticSeverity.Error;
-          } else if (message.includes('warning')) {
-            severity = vscode.DiagnosticSeverity.Warning;
-          } else if (message.includes('calculation')) {
-            severity = vscode.DiagnosticSeverity.Warning;
-          } else {
-            severity = vscode.DiagnosticSeverity.Information;
-          }
-
-          diagnostics.push(new vscode.Diagnostic(range, message, severity));
-        }
+      if (!group || group.length === 0) { // Corrected condition to skip EMPTY groups only
+        continue; // Skip to next group if current group is empty
       }
 
-      const uri = VSCode.Uri;
-      if (uri) {
-        PineLint.setDiagnostics(uri, diagnostics);
+      for (const data of group) { // Now, this loop WILL execute for non-empty groups
+        const { start, end, message } = data;
+        const range = new vscode.Range(
+          start.line - 1,
+          start.column - 1,
+          end.line - 1,
+          end.column,
+        );
+
+        let severity: vscode.DiagnosticSeverity;
+        if (message.includes('error')) {
+          severity = vscode.DiagnosticSeverity.Error;
+        } else if (message.includes('warning')) {
+          severity = vscode.DiagnosticSeverity.Warning;
+        } else if (message.includes('calculation')) {
+          severity = vscode.DiagnosticSeverity.Warning;
+        } else {
+          severity = vscode.DiagnosticSeverity.Information;
+        }
+
+        diagnostics.push(new vscode.Diagnostic(range, message, severity));
       }
     }
-  }
 
+    const uri = VSCode.Uri;
+    if (uri) {
+      PineLint.setDiagnostics(uri, diagnostics);
+    }
+  }
   /**
    * Handles the response from the linting process.
    * @param response - The response from the linting process.

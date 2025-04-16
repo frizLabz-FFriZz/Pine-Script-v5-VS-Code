@@ -5,7 +5,6 @@ import { VSCode } from './VSCode'
  * Class representing the PineResponseFlow for tracking changes in PineScript response.
  */
 export class PineResponseFlow {
-
   static docLength: number | null = null
   static docChange: boolean | null = null
 
@@ -40,7 +39,7 @@ export class PineFormatResponse {
 
   /**
    * Adds aliases to the pineDocsManager based on imports in the response.
-   * This function adds aliases to the pineDocsManager object based on imports in the response. 
+   * This function adds aliases to the pineDocsManager object based on imports in the response.
    */
   setAliases() {
     const aliases = this.response?.imports?.map((imp: any) => imp.alias)
@@ -53,7 +52,7 @@ export class PineFormatResponse {
    * Checks whether the code conversion should run based on changes in the response.
    * This function determines whether the code conversion should run based on changes in the response.
    *
-   * @returns A set of flags indicating which parts of the response have changed. 
+   * @returns A set of flags indicating which parts of the response have changed.
    */
   shouldRunConversion() {
     this.confirmed = []
@@ -91,9 +90,10 @@ export class PineFormatResponse {
     let funcs: any[] = [{ docs: [] }]
     let funcsCompletions: any[] = [{ docs: [] }]
 
-
-    for (const doc of functions) { // Iterate over each doc in functions
-      for (let func of doc.docs) {  // Iterate over each function in doc.docs
+    for (const doc of functions) {
+      // Iterate over each doc in functions
+      for (let func of doc.docs) {
+        // Iterate over each function in doc.docs
         // Match the function syntax to extract the returned type
         const match = /(?:\w+\.)?(\w+)\(.+\u2192\s*(.*)/g.exec(func.syntax)
         if (match) {
@@ -107,7 +107,8 @@ export class PineFormatResponse {
           funcCopy.kind = doc.title.substring(0, doc.title.length - 1) // Set the kind property of the function
           funcsCompletions[0].docs.push(funcCopy)
         } else {
-          if (match) { // If the function has a thisType property, it is a method
+          if (match) {
+            // If the function has a thisType property, it is a method
             func.methodName = match[1] // Set the methodName property of the function
           }
           func.isMethod = true // Set the isMethod and kind properties of the function
@@ -117,7 +118,7 @@ export class PineFormatResponse {
           continue
         }
         func.kind = doc.title.substring(0, doc.title.length - 1) // Set the kind property of the function
-        funcs[0].docs.push(func)// Add the function to the docs array of the first object in funcs
+        funcs[0].docs.push(func) // Add the function to the docs array of the first object in funcs
       }
     }
 
@@ -135,8 +136,10 @@ export class PineFormatResponse {
   setVariables() {
     // Get the variables from the response, or default to an empty array if no variables are present
     const variables = this.response?.variables2 ?? this.response?.variables ?? []
-    variables.forEach((docVars: any) => { // Iterate over each variable in variables
-      for (const variable of docVars.docs) { // Iterate over each doc in docVars.docs
+    variables.forEach((docVars: any) => {
+      // Iterate over each variable in variables
+      for (const variable of docVars.docs) {
+        // Iterate over each doc in docVars.docs
         variable.kind = docVars.title.substring(0, docVars.title.length - 1) // Set the kind property of the variable
       }
     })
@@ -155,10 +158,12 @@ export class PineFormatResponse {
     const types = this.response?.types ?? []
     // Initialize fields and UDT as arrays with one object that has an empty docs array
     const fields: Record<string, any>[] = [{ docs: [] }]
-    const UDT: Record<string, any> = [{ docs: [] }]
+    const UDT: Record<string, any>[] = [{ docs: [] }]
 
-    types.forEach((typeDocs: any) => { // Iterate over each type in types
-      for (const type of typeDocs.docs) { // Iterate over each doc in typeDocs.docs
+    types.forEach((typeDocs: any) => {
+      // Iterate over each type in types
+      for (const type of typeDocs.docs) {
+        // Iterate over each doc in typeDocs.docs
         let syntax = [`type ${type.name}`] // Initialize syntax array with the type name
         type.kind = typeDocs.title.substring(0, typeDocs.title.length - 1) // Set the kind property of the type
         const buildFields: Record<string, any>[] = [] // Initialize buildFields as an empty array
@@ -167,7 +172,9 @@ export class PineFormatResponse {
           type.fields.forEach((field: any) => {
             field.kind = `${type.name} Property` // Set the kind property of the field
             // Format the syntax of the field
-            const formattedSyntax = `${field.name}: ${field?.type?.replace(/(?:\w+\s+)?([^\s]+)/, '$1').replace(/([\w.]+)\[\]/, 'array<$1>') ?? ''}`
+            const formattedSyntax = `${field.name}: ${
+              field?.type?.replace(/(?:\w+\s+)?([^\s]+)/, '$1').replace(/([\w.]+)\[\]/, 'array<$1>') ?? ''
+            }`
             field.syntax = formattedSyntax // Set the syntax property of the field
             field.parent = type.name // Set the parent property of the field
             syntax.push(formattedSyntax) // Add the field's syntax to the syntax array
@@ -176,7 +183,7 @@ export class PineFormatResponse {
           })
 
           type.syntax = syntax.join('\n    ') // Join the syntax array into a string and set the syntax property of the type
-          type.fields = buildFields  // Set the fields property of the type to the buildFields array
+          type.fields = buildFields // Set the fields property of the type to the buildFields array
           UDT[0].docs.push(type) // Add the type to the docs array of the first object in UDT
         }
       }
@@ -194,7 +201,6 @@ export class PineFormatResponse {
    * @param {any} response - The linting response to format.
    */
   async format(response: any) {
-
     if (response) {
       if (response?.result.errors2 || response?.result.errors) {
         Class.PineParser.parseDoc()

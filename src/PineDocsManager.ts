@@ -359,7 +359,7 @@ export class PineDocsManager {
   }
 
   /**
-   * the setImportDocs function is used to sed the imports key of the response object
+   * the setImportDocs function is used to set the imports key of the response object
    * @param docs - The docs to set.
    * @returns The key.
    */
