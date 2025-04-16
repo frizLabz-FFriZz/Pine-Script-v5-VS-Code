@@ -17,8 +17,6 @@ export class PineSharedCompletionState {
   private static sigCompletions: Record<string | number, any> = []
   /** Holds the currently selected completion */
   private static selectedCompletion: string | undefined = undefined
-  /** Holds last comletion */
-  static lastCompletion: any
 
   /** Gets the currently selected completion.
    * @returns The currently selected completion.
@@ -126,9 +124,5 @@ export class PineSharedCompletionState {
    */
   static setArgumentCompletionsFlag(flag: boolean) {
     PineSharedCompletionState.sigCompletionsFlag = flag
-  }
-
-  static get getLastCompletion() {
-    return PineSharedCompletionState.lastCompletion
   }
 }
