@@ -126,7 +126,7 @@ export class PineHoverParam {
     try {
       this.displayType = this.argDocs?.displayType ?? this.argDocs?.type ?? ''
       this.def = this.argDocs?.default ? ` = ${this.argDocs?.default}` : ''
-      this.qm = this.argDocs?.required ?? true ? '' : '?'
+      this.qm = (this.argDocs?.required ?? true) ? '' : '?'
     } catch (error) {
       console.error(error)
     }
