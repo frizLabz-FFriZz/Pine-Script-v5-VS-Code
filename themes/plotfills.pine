@@ -1,0 +1,38 @@
+
+//@version=6
+indicator("Minimal Fill Examples", overlay=true)
+
+  // Example 1: Fill to Bottom - Minimal
+pricePlot = plot(close, color=color.blue)
+zeroLine  = hline(0, color=color.gray)
+fill(pricePlot, zeroLine, color=color.new(color.blue, 90), title="Fill Bottom")
+
+  // Example 2: Fill Between Two Plots - Minimal
+maFast   = ta.sma(close, 10)
+maSlow   = ta.sma(close, 20)
+fastPlot = plot(maFast, color=color.green)
+slowPlot = plot(maSlow, color=color.red)
+fill(fastPlot, slowPlot, color=color.new(color.yellow, 80), title="Fill Between")
+
+  // Example 3: Conditional Fill - Minimal
+maSlowCond    = ta.sma(close, 20)
+maPlotCond    = plot(maSlowCond, color=color.purple)
+pricePlotCond = plot(close, color=color.teal)
+fillColor     = close > maSlowCond ? color.new(color.green, 70) : color.new(color.red, 70)
+fill(pricePlotCond, maPlotCond, color=fillColor, title="Cond Fill")
+
+  // Example 4: Gradient Fill Between Hlines - Minimal
+topHlineVal    = input.int(100, "Top Value")
+bottomHlineVal = input.int(0, "Bottom Value")
+topColor       = input.color(color.red, "Top Color")
+bottomColor    = input.color(color.blue, "Bottom Color")
+topH           = hline(topHlineVal, color=topColor)
+bottomH        = hline(bottomHlineVal, color=bottomColor)
+fill(topH, bottomH, topHlineVal, bottomHlineVal, topColor, bottomColor, "Gradient Hline")
+
+  // Example 5: Fill Between Hlines - Minimal
+hline1Val = input.int(20, "Hline 1 Value")
+hline2Val = input.int(10, "Hline 2 Value")
+hLine1    = hline(hline1Val)
+hLine2    = hline(hline2Val)
+fill(hLine1, hLine2, color=color.new(color.blue, 90), title="Fill Hlines")

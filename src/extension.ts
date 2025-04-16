@@ -7,10 +7,8 @@ import { PineLint } from './PineLint'
 import { checkForNewVersionAndShowChangelog } from './newVersionPopUp'
 import * as vscode from 'vscode'
 
-export function deactivate(context: vscode.ExtensionContext) {
+export function deactivate() {
   PineLint.versionClear()
-  // Clean up all the subscriptions in
-  // the context.subscriptions array.
   PineLint.handleDocumentChange()
   return undefined
 }
@@ -20,14 +18,14 @@ let timerStart: number = 0
 function checkForChange() {
   if (timerStart !== 0) {
     let timerEnd: number = new Date().getTime()
-    if (timerEnd - timerStart > 5000) {
+    if (timerEnd - timerStart > 2000) {
       PineLint.handleDocumentChange()
       timerStart = 0
     }
   }
 }
 
-setInterval(checkForChange, 1000)
+setInterval(checkForChange, 2000)
 
 // Activate Function =============================================
 export async function activate(context: vscode.ExtensionContext) {
@@ -47,8 +45,8 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.window.onDidChangeActiveTextEditor(async () => {
       Class.PineDocsManager.cleanDocs()
       PineResponseFlow.resetDocChange()
-      if (!VSCode.ActivePineFile) {
-        deactivate(context)
+      if ((VSCode.LanguageId !== 'pine')  && (!VSCode.ActivePineFile)) {
+        deactivate()
       } else {
         if (PineLint.diagnostics.length > 0 && VSCode.Uri) {
           PineLint.DiagnosticCollection.set(VSCode.Uri, PineLint.diagnostics)
@@ -83,7 +81,7 @@ export async function activate(context: vscode.ExtensionContext) {
     VSCode.Lang.registerHoverProvider({ language: 'pine', scheme: 'file' }, Class.PineLibHoverProvider),
     VSCode.Lang.registerRenameProvider('pine', Class.PineRenameProvider),
     VSCode.Lang.registerInlineCompletionItemProvider('pine', Class.PineInlineCompletionContext),
-    VSCode.Lang.registerSignatureHelpProvider('pine', Class.PineSignatureHelpProvider, '(', ','),
+    VSCode.Lang.registerSignatureHelpProvider('pine', Class.PineSignatureHelpProvider, '(', ',', ' '),
     VSCode.Lang.registerCompletionItemProvider('pine', Class.PineLibCompletionProvider),
     VSCode.Lang.registerCompletionItemProvider('pine', Class.PineCompletionProvider, '.', ',', '('),
     // VSCode.RegisterCommand('pine.startProfiler', () => {console.profile('Start of Start Profiler (Command Triggered')}),
@@ -91,7 +89,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // VSCode.RegisterCommand('pine.getSavedList', async () => Class.PineScriptList.showMenu('saved')),
     // VSCode.RegisterCommand('pine.saveToTv', async () => { await Class.PineSaveToTradingView() } ),
     // VSCode.RegisterCommand('pine.compareWithOldVersion', async () => Class.PineScriptList.compareWithOldVersion()),
-    // VSCode.RegisterCommand('pine.setSessionId', async () => Class.PineUserInputs.setSessionId()),
+    // VSCode.RegisterCommand('pine.setSessionId', async () => Class.pineUserInputs.setSessionId()),
     // VSCode.RegisterCommand('pine.clearKEYS', async () => Class.PineUserInputs.clearAllInfo()),
 
     vscode.commands.registerCommand('extension.forceLint', async () => {

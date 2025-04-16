@@ -1,3 +1,5 @@
+// In PineDocsManager.ts
+
 import { path, fs } from './index'
 
 
@@ -285,16 +287,16 @@ export class PineDocsManager {
     }
   }
 
-  /** 
+  /**
    * Returns a Map where the key is the 'name' property from the docs and the value is the doc object
    * @param keys - The keys to get the map for.
    * @returns The map.
    */
-  getMap(...keys: string[]): Map<string, PineDocsManager> {
+  getMap(...keys: string[]): Map<string, any> { // Changed value type to any
     try {
       const docs = this.getDocs(...keys)
-      const outMap: Map<string, PineDocsManager> = this.makeMap(docs)
-      return outMap ?? []
+      const outMap: Map<string, any> = this.makeMap(docs) // Changed value type to any
+      return outMap ?? new Map() // Return new Map() in case of null or undefined
     } catch (error) {
       console.error(error)
       return new Map()
@@ -307,16 +309,16 @@ export class PineDocsManager {
    * @param docs - The docs to make the map for.
    * @returns The map.
    */
-  makeMap(docs: any[]): Map<string, PineDocsManager> {
+  makeMap(docs: any[]): Map<string, any> { // Changed value type to any
     try {
-      const entries: [string, PineDocsManager][] = docs.flatMap((doc: any) => {
+      const entries: [string, any][] = docs.flatMap((doc: any) => { // Changed value type to any
         if (doc?.name) {
-          return [[doc.name, doc] as [string, PineDocsManager]]
+          return [[doc.name, doc] as [string, any]] // Changed value type to any
         } else {
           return []
         }
       })
-      const outMap: Map<string, PineDocsManager> = new Map(entries)
+      const outMap: Map<string, any> = new Map(entries) // Changed value type to any
       return outMap
     } catch (error) {
       console.error(error)
@@ -356,11 +358,11 @@ export class PineDocsManager {
     }
   }
 
-  /** 
-   * the setImportsDocs function is used to sed the imports key of the response object
+  /**
+   * the setImportDocs function is used to set the imports key of the response object
    * @param docs - The docs to set.
    * @returns The key.
-  */
+   */
   setImportDocs(docs: any) {
     this.importsDocs = docs
   }
@@ -416,12 +418,12 @@ export class PineDocsManager {
   }
 
 
-  /** 
+  /**
    * the setDocs function is used to set the docs for a given key
    * @param newDocs - The new docs to set.
    * @param key - The key to set the docs for.
    * @returns The key.
-  */
+   */
   setDocs(newDocs: any, key: string) {
     try {
       const currentDocs: any[] = this.getSwitch(key)
@@ -433,12 +435,12 @@ export class PineDocsManager {
   }
 
 
-  /** 
+  /**
    * Helper function to merge new docs into current docs
    * @param currentDocs - The current docs.
    * @param newDocs - The new docs.
    * @returns The merged docs.
-  */
+   */
   // Helper function to merge new docs into current docs
   mergeDocs(currentDocs: any[], newDocs: any[]): any[] {
     try {
@@ -473,31 +475,53 @@ export class PineDocsManager {
     }
   }
 
-  /**  
+  /**
    * the setImportAliases function is used to set the imported namespace aliases
    * @param aliases - The aliases to set.
-  */
+   */
   set setImportAliases(aliases: string[]) {
     this.importAliases = aliases
   }
 
-  /** 
+  /**
    * the getAliases function is used to get the aliases for the current document
    * @returns The aliases.
-  */
+   */
   get getAliases() {
     return [...this.docAliases, ...this.importAliases]
   }
 
 
-  /** 
+  /**
    * the cleanDocs function is used to clean the docs
    * @returns The cleaned docs.
-  */
+   */
   cleanDocs() {
     const docs = ['methods2', 'variables2', 'completionFunctions', 'functions2', 'UDT', 'fields2']
     for (const doc of docs) {
       this.setSwitch(doc, [])
     }
+  }
+
+  /**
+ * Retrieves function documentation by name from 'completionFunctions' map.
+ * @param functionName - The name of the function to retrieve documentation for.
+ * @returns The function documentation if found, otherwise undefined.
+ */
+  getFunctionDocs(functionName: string): any | undefined {
+    const functionMap = this.getMap('completionFunctions'); // Access the completionFunctions map
+
+    if (!functionMap) {
+      return undefined; // Handle case where map is not yet initialized or empty
+    }
+
+    const lowerFunctionName = functionName.toLowerCase();
+
+    for (const [name, doc] of functionMap.entries()) {
+      if (name.toLowerCase() === lowerFunctionName) {
+        return doc; // Return the documentation object if function name matches
+      }
+    }
+    return undefined; // Return undefined if function is not found
   }
 }
