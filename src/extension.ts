@@ -18,14 +18,14 @@ let timerStart: number = 0
 function checkForChange() {
   if (timerStart !== 0) {
     let timerEnd: number = new Date().getTime()
-    if (timerEnd - timerStart > 2000) {
+    if (timerEnd - timerStart > 5000) {
       PineLint.handleDocumentChange()
       timerStart = 0
     }
   }
 }
 
-setInterval(checkForChange, 2000)
+setInterval(checkForChange, 5000)
 
 // Activate Function =============================================
 export async function activate(context: vscode.ExtensionContext) {
@@ -45,7 +45,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.window.onDidChangeActiveTextEditor(async () => {
       Class.PineDocsManager.cleanDocs()
       PineResponseFlow.resetDocChange()
-      if ((VSCode.LanguageId !== 'pine')  && (!VSCode.ActivePineFile)) {
+      if (VSCode.LanguageId !== 'pine' && !VSCode.ActivePineFile) {
         deactivate()
       } else {
         if (PineLint.diagnostics.length > 0 && VSCode.Uri) {
@@ -93,9 +93,9 @@ export async function activate(context: vscode.ExtensionContext) {
     // VSCode.RegisterCommand('pine.clearKEYS', async () => Class.PineUserInputs.clearAllInfo()),
 
     vscode.commands.registerCommand('extension.forceLint', async () => {
-      const response = await Class.PineRequest.lint();
+      const response = await Class.PineRequest.lint()
       if (response) {
-        console.log(response);
+        console.log(response)
       }
     }),
   )

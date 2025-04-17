@@ -40,7 +40,6 @@ export class Class {
   public static pineRenameProvider: PineRenameProvider
   public static pineParser: PineParser
 
-
   static setContext(context: vscode.ExtensionContext) {
     Class.context = context
   }
@@ -126,14 +125,14 @@ export class Class {
     }
     return Class.pineCompletionProvider
   }
-
   /**
    * Lazy loads and returns an instance of PineInlineCompletionContext.
    * @returns {PineInlineCompletionContext} The PineInlineCompletionContext instance.
    */
   static get PineInlineCompletionContext(): PineInlineCompletionContext {
     if (!Class.pineInlineCompletionContext) {
-      Class.PineCompletionSignatureInitOrder()
+      // PineInlineCompletionContext is a class, not a named export, so use the correct reference
+      Class.pineInlineCompletionContext = new PineInlineCompletionContext()
     }
     return Class.pineInlineCompletionContext
   }
@@ -148,8 +147,10 @@ export class Class {
     }
     if (!Class.pineCompletionProvider) {
       // console.log('PineCompletionProvider initializing')
-      Class.pineInlineCompletionContext = new PineInlineCompletionContext()
       Class.pineCompletionProvider = new PineCompletionProvider()
+    }
+    if (!Class.pineInlineCompletionContext) {
+      Class.pineInlineCompletionContext = new PineInlineCompletionContext()
     }
   }
 

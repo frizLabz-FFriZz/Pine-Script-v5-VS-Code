@@ -2,7 +2,6 @@ import { VSCode, Helpers } from './index'
 import { Class } from './PineClass'
 import * as vscode from 'vscode'
 
-
 export class PineDocString {
   // Regex pattern to match function signatures
   functionPattern = /(?:export\s+)?(?:method\s+)?([\w.]+)\s*\(.*\)\s*=>/g
@@ -36,7 +35,8 @@ export class PineDocString {
     const docStringBuild = [`// @function ${isMethod ? '(**method**) - ' : ''}${desc}`]
 
     docsMatch.args.forEach((arg: any) => {
-      let docStringParamBuild = `// @param ${arg.name} ${arg?.info ? arg.info : '*' + Helpers.replaceType(arg?.type || '').trim() + '* ...'
+      let docStringParamBuild = `// @param ${arg.name} ${
+        arg?.info ? arg.info : '*' + Helpers.replaceType(arg?.type || '').trim() + '* ...'
       } ${arg?.default ? '(' + arg.default + ')' : ''}`
 
       docStringBuild.push(docStringParamBuild)
@@ -63,8 +63,9 @@ export class PineDocString {
 
     docsMatch.fields.forEach((field: any) => {
       docStringBuild.push(
-        `// @field ${field.name} *${Helpers.replaceType(field?.type || '')}* - ${field?.desc || field?.info || '...'
-        } ${field.default ? ' (' + field.default + ')' : ''}`,
+        `// @field ${field.name} *${Helpers.replaceType(field?.type || '')}* - ${field?.desc || field?.info || '...'} ${
+          field.default ? ' (' + field.default + ')' : ''
+        }`,
       )
     })
 
@@ -91,22 +92,22 @@ export class PineDocString {
     const patterns = [
       { pattern: this.functionPattern, method: this.generateDocstring },
       { pattern: this.typePattern, method: this.generateTypeDocstring },
-    ];
+    ]
 
     for (let i = 0; i < patterns.length; i++) {
-      let match = patterns[i].pattern.exec(code);
+      let match = patterns[i].pattern.exec(code)
       if (match?.[1]) {
-        finishedDocstring = await patterns[i].method(match[1].trim());
+        finishedDocstring = await patterns[i].method(match[1].trim())
         if (!finishedDocstring) {
-          finishedDocstring = '// Invalid function match';
+          finishedDocstring = '// Invalid function match'
         }
-        break; // Exit the loop once a match is found
+        break // Exit the loop once a match is found
       }
     }
 
     // If no match was found, return
     if (!finishedDocstring) {
-      return;
+      return
     }
 
     // Replace the selected text with the new docstring followed by the original code

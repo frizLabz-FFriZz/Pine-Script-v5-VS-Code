@@ -1,17 +1,17 @@
-import { debounce } from 'lodash';
-import * as vscode from 'vscode';
-import { VSCode } from './VSCode';
-import { Class } from './PineClass';
+import { debounce } from 'lodash'
+import * as vscode from 'vscode'
+import { VSCode } from './VSCode'
+import { Class } from './PineClass'
 
 /**
  * PineLint class is responsible for linting Pine Script code.
  */
 export class PineLint {
-  static diagnostics: vscode.Diagnostic[] = [];
-  static initialFlag: boolean = true;
-  static version: string | null = null;
-  static fileName: string | null = null;
-  static diagnosticCollection: vscode.DiagnosticCollection;
+  static diagnostics: vscode.Diagnostic[] = []
+  static initialFlag: boolean = true
+  static version: string | null = null
+  static fileName: string | null = null
+  static diagnosticCollection: vscode.DiagnosticCollection
 
   /**
    * Getter for DiagnosticCollection.
@@ -19,9 +19,9 @@ export class PineLint {
    */
   static get DiagnosticCollection(): vscode.DiagnosticCollection {
     if (!PineLint.diagnosticCollection) {
-      PineLint.diagnosticCollection = vscode.languages.createDiagnosticCollection('pine');
+      PineLint.diagnosticCollection = vscode.languages.createDiagnosticCollection('pine')
     }
-    return PineLint.diagnosticCollection;
+    return PineLint.diagnosticCollection
   }
 
   /**
@@ -29,7 +29,7 @@ export class PineLint {
    * @param fileName - The name of the file.
    */
   static setFileName(fileName: string): void {
-    PineLint.fileName = fileName;
+    PineLint.fileName = fileName
   }
 
   /**
@@ -37,8 +37,8 @@ export class PineLint {
    * @returns The file name.
    */
   static async getFileName(): Promise<string | null> {
-    await PineLint.checkVersion();
-    return PineLint.fileName;
+    await PineLint.checkVersion()
+    return PineLint.fileName
   }
 
   /**
@@ -46,7 +46,7 @@ export class PineLint {
    * @param incoming - The incoming PineRequest to be formatted.
    */
   static format(incoming: typeof Class.PineRequest): void {
-    Class.PineFormatResponse.format(incoming);
+    Class.PineFormatResponse.format(incoming)
   }
 
   /**
@@ -55,8 +55,8 @@ export class PineLint {
    * @param diagnostics - The diagnostics to set.
    */
   static setDiagnostics(uri: vscode.Uri, diagnostics: vscode.Diagnostic[]): void {
-    PineLint.DiagnosticCollection.set(uri, diagnostics);
-    PineLint.diagnostics = diagnostics;
+    PineLint.DiagnosticCollection.set(uri, diagnostics)
+    PineLint.diagnostics = diagnostics
   }
 
   /**
@@ -64,7 +64,7 @@ export class PineLint {
    * @returns The diagnostics if they exist.
    */
   static getDiagnostics(): vscode.Diagnostic[] | undefined {
-    return PineLint.diagnostics.length > 0 ? PineLint.diagnostics : undefined;
+    return PineLint.diagnostics.length > 0 ? PineLint.diagnostics : undefined
   }
 
   /**
@@ -72,8 +72,8 @@ export class PineLint {
    */
   static async initialLint(): Promise<void> {
     if (PineLint.initialFlag) {
-      PineLint.initialFlag = false;
-      PineLint.lint();
+      PineLint.initialFlag = false
+      PineLint.lint()
     }
   }
 
@@ -81,11 +81,11 @@ export class PineLint {
    * Lints the active document if it exists and the version is correct.
    */
   static async lintDocument(): Promise<void> {
-    if (VSCode.ActivePineFile && !PineLint.initialFlag && await PineLint.checkVersion()) {
-      const response = await Class.PineRequest.lint();
+    if (VSCode.ActivePineFile && !PineLint.initialFlag && (await PineLint.checkVersion())) {
+      const response = await Class.PineRequest.lint()
       if (response) {
-        PineLint.handleResponse(response);
-        PineLint.format(response);
+        PineLint.handleResponse(response)
+        PineLint.format(response)
       }
     }
   }
@@ -95,51 +95,50 @@ export class PineLint {
    */
   static lint = debounce(
     async () => {
-      PineLint.lintDocument();
+      PineLint.lintDocument()
     },
     500,
     { leading: false, trailing: true },
-  );
+  )
 
   /**
    * Updates the diagnostics for the active document.
    * @param dataGroups - The groups of data to update the diagnostics with.
    */
   static async updateDiagnostics(...dataGroups: any[][]): Promise<void> {
-    const diagnostics: vscode.Diagnostic[] = [];
-
+    const diagnostics: vscode.Diagnostic[] = []
+    let i = 0
     for (const group of dataGroups) {
-      if (!group || group.length === 0) { // Corrected condition to skip EMPTY groups only
-        continue; // Skip to next group if current group is empty
+      i += 1
+      if (!group || group.length === 0) {
+        // Corrected condition to skip EMPTY groups only
+        continue // Skip to next group if current group is empty
       }
 
-      for (const data of group) { // Now, this loop WILL execute for non-empty groups
-        const { start, end, message } = data;
-        const range = new vscode.Range(
-          start.line - 1,
-          start.column - 1,
-          end.line - 1,
-          end.column,
-        );
+      for (const data of group) {
+        // Now, this loop WILL execute for non-empty groups
+        const { end, message, start } = data
+        const range = new vscode.Range(start.line - 1, start.column - 1, end.line - 1, end.column)
 
-        let severity: vscode.DiagnosticSeverity;
-        if (message.includes('error')) {
-          severity = vscode.DiagnosticSeverity.Error;
-        } else if (message.includes('warning')) {
-          severity = vscode.DiagnosticSeverity.Warning;
-        } else if (message.includes('calculation')) {
-          severity = vscode.DiagnosticSeverity.Warning;
+        let severity: vscode.DiagnosticSeverity
+        if (i == 1 || i == 3) {
+          severity = vscode.DiagnosticSeverity.Error
+        } else if (i == 2 || i == 4) {
+          severity = vscode.DiagnosticSeverity.Warning
         } else {
-          severity = vscode.DiagnosticSeverity.Information;
+          severity = vscode.DiagnosticSeverity.Information
+        }
+        if (message.includes('calculation')) {
+          severity = vscode.DiagnosticSeverity.Warning
         }
 
-        diagnostics.push(new vscode.Diagnostic(range, message, severity));
+        diagnostics.push(new vscode.Diagnostic(range, message, severity))
       }
     }
 
-    const uri = VSCode.Uri;
+    const uri = VSCode.Uri
     if (uri) {
-      PineLint.setDiagnostics(uri, diagnostics);
+      PineLint.setDiagnostics(uri, diagnostics)
     }
   }
   /**
@@ -147,13 +146,13 @@ export class PineLint {
    * @param response - The response from the linting process.
    */
   static async handleResponse(response: any): Promise<void> {
-    if (VSCode.ActivePineFile) {
+    if (VSCode.ActivePineEditor) {
       PineLint.updateDiagnostics(
         response.result?.errors2 || response.reason2?.errors || [],
         response.result?.warnings2 || response.reason2?.warnings || [],
         response.result?.errors || [],
         response.result?.warnings || [],
-      );
+      )
     }
   }
 
@@ -161,7 +160,7 @@ export class PineLint {
    * Handles changes to the active document.
    */
   static async handleDocumentChange(): Promise<void> {
-    await PineLint.lint();
+    await PineLint.lint()
   }
 
   /**
@@ -170,38 +169,39 @@ export class PineLint {
    */
   static async checkVersion(): Promise<boolean> {
     if (PineLint.version === '5' || PineLint.version === '6') {
-      return true;
+      return true
     }
 
     const version_statement = /\/\/@version=(\d+)/
-    const script_statement = /(?:indicator|strategy|library|study)\s*\((?:(?<!['\"].*)\btitle\s*=)?\s*('[^\']*'|"[^\"]*")/
+    const script_statement =
+      /(?:indicator|strategy|library|study)\s*\((?:(?<!['\"].*)\btitle\s*=)?\s*('[^\']*'|"[^\"]*")/
 
-    const document = VSCode?._Document();
-    const replaced = document?.getText().replace(/\r\n/g, '\n');
+    const document = VSCode?._Document()
+    const replaced = document?.getText().replace(/\r\n/g, '\n')
 
     if (!replaced) {
-      return false;
+      return false
     }
 
-    const match = version_statement.exec(replaced);
-    const namematch = script_statement.exec(replaced);
+    const match = version_statement.exec(replaced)
+    const namematch = script_statement.exec(replaced)
     if (!match || !match[1]) {
-      return false;
+      return false
     }
 
     if (namematch) {
       if (namematch[1]) {
-        PineLint.setFileName(namematch[1]);
+        PineLint.setFileName(namematch[1])
       }
-      PineLint.version = match[1];
+      PineLint.version = match[1]
 
       if (match[1] === '5' || match[1] === '6') {
-        PineLint.initialLint();
-        return true;
+        PineLint.initialLint()
+        return true
       } else if (match.index) {
-        const matchPosition = document?.positionAt(match.index);
-        const matchEndPosition = document?.positionAt(match.index + 12);
-        const versionMsg = `Must be v5 or v6 for linting with this extension. Can convert v${match[1]} to v5 with the Pine Script Editor on ![TV](www.tradingview.com/pine)`;
+        const matchPosition = document?.positionAt(match.index)
+        const matchEndPosition = document?.positionAt(match.index + 12)
+        const versionMsg = `Must be v5 or v6 for linting with this extension. Can convert v${match[1]} to v5 with the Pine Script Editor on ![TV](www.tradingview.com/pine)`
 
         if (matchPosition && matchEndPosition) {
           const errorObj = {
@@ -214,19 +214,19 @@ export class PineLint {
                 },
               ],
             },
-          };
-          PineLint.handleResponse(errorObj);
+          }
+          PineLint.handleResponse(errorObj)
         }
-        return false;
+        return false
       }
     }
-    return false;
+    return false
   }
 
   /**
    * Clears the script version for PineLint.
    */
   static versionClear(): void {
-    PineLint.version = null;
+    PineLint.version = null
   }
 }

@@ -1,6 +1,5 @@
-import * as vscode from 'vscode';
-import { VSCode } from './VSCode';
-
+import * as vscode from 'vscode'
+import { VSCode } from './VSCode'
 
 export class PineUserInputs {
   // private readonly SESSION_ID_KEY = 'session_id'
@@ -58,7 +57,6 @@ export class PineUserInputs {
     }
   }
 }
-
 
 // async setSessionId(sessionId: string | undefined = undefined) {
 //   if (!sessionId) {

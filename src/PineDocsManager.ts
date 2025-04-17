@@ -2,7 +2,6 @@
 
 import { path, fs } from './index'
 
-
 /**
  * PineDocsManager handles the management of Pine documentation.
  * It loads, retrieves, and sets various types of documentation-related data.
@@ -50,7 +49,9 @@ export class PineDocsManager {
    */
   constructor() {
     // Reading the pineDocs.json file to initialize the documentation object.
-    this.Docs = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'Pine_Script_Documentation', 'pineDocs.json'), 'utf-8'))
+    this.Docs = JSON.parse(
+      fs.readFileSync(path.join(__dirname, '..', 'Pine_Script_Documentation', 'pineDocs.json'), 'utf-8'),
+    )
     this.UDTDocs = []
     this.importsDocs = []
     this.fields2Docs = []
@@ -73,7 +74,7 @@ export class PineDocsManager {
    * @returns The types documentation.
    */
   getTypes(): Record<string, any>[] {
-    return this.typesDocs;
+    return this.typesDocs
   }
 
   /**
@@ -81,7 +82,7 @@ export class PineDocsManager {
    * @returns The imports documentation.
    */
   getImports(): Record<string, any>[] {
-    return this.importsDocs;
+    return this.importsDocs
   }
 
   /**
@@ -89,7 +90,7 @@ export class PineDocsManager {
    * @returns The methods documentation.
    */
   getMethods(): Record<string, any>[] {
-    return this.methodsDocs;
+    return this.methodsDocs
   }
 
   /**
@@ -97,7 +98,7 @@ export class PineDocsManager {
    * @returns The second set of methods documentation.
    */
   getMethods2(): Record<string, any>[] {
-    return this.methods2Docs;
+    return this.methods2Docs
   }
 
   /**
@@ -105,7 +106,7 @@ export class PineDocsManager {
    * @returns The controls documentation.
    */
   getControls(): Record<string, any>[] {
-    return this.controlsDocs;
+    return this.controlsDocs
   }
 
   /**
@@ -113,7 +114,7 @@ export class PineDocsManager {
    * @returns The variables documentation.
    */
   getVariables(): Record<string, any>[] {
-    return this.variablesDocs;
+    return this.variablesDocs
   }
 
   /**
@@ -121,7 +122,7 @@ export class PineDocsManager {
    * @returns The second set of variables documentation.
    */
   getVariables2(): Record<string, any>[] {
-    return this.variables2Docs;
+    return this.variables2Docs
   }
 
   /**
@@ -129,7 +130,7 @@ export class PineDocsManager {
    * @returns The constants documentation.
    */
   getConstants(): Record<string, any>[] {
-    return this.constantsDocs;
+    return this.constantsDocs
   }
 
   /**
@@ -137,7 +138,7 @@ export class PineDocsManager {
    * @returns The functions documentation.
    */
   getFunctions(): Record<string, any>[] {
-    return this.functionsDocs;
+    return this.functionsDocs
   }
 
   /**
@@ -145,7 +146,7 @@ export class PineDocsManager {
    * @returns The second set of functions documentation.
    */
   getFunctions2(): Record<string, any>[] {
-    return this.functions2Docs;
+    return this.functions2Docs
   }
 
   /**
@@ -153,7 +154,7 @@ export class PineDocsManager {
    * @returns The completion functions documentation.
    */
   getCompletionFunctions(): Record<string, any>[] {
-    return this.completionFunctionsDocs;
+    return this.completionFunctionsDocs
   }
 
   /**
@@ -161,7 +162,7 @@ export class PineDocsManager {
    * @returns The annotations documentation.
    */
   getAnnotations(): Record<string, any>[] {
-    return this.annotationsDocs;
+    return this.annotationsDocs
   }
 
   /**
@@ -169,7 +170,7 @@ export class PineDocsManager {
    * @returns The UDT documentation.
    */
   getUDT(): Record<string, any>[] {
-    return this.UDTDocs;
+    return this.UDTDocs
   }
 
   /**
@@ -177,7 +178,7 @@ export class PineDocsManager {
    * @returns The fields documentation.
    */
   getFields(): Record<string, any>[] {
-    return this.fieldsDocs;
+    return this.fieldsDocs
   }
 
   /**
@@ -185,9 +186,8 @@ export class PineDocsManager {
    * @returns The second set of fields documentation.
    */
   getFields2(): Record<string, any>[] {
-    return this.fields2Docs;
+    return this.fields2Docs
   }
-
 
   /**
    * Retrieves the typedocs for the getSwitch function.
@@ -292,7 +292,8 @@ export class PineDocsManager {
    * @param keys - The keys to get the map for.
    * @returns The map.
    */
-  getMap(...keys: string[]): Map<string, any> { // Changed value type to any
+  getMap(...keys: string[]): Map<string, any> {
+    // Changed value type to any
     try {
       const docs = this.getDocs(...keys)
       const outMap: Map<string, any> = this.makeMap(docs) // Changed value type to any
@@ -303,15 +304,16 @@ export class PineDocsManager {
     }
   }
 
-
   /**
    * the makeMap function is used to make a map for a given key
    * @param docs - The docs to make the map for.
    * @returns The map.
    */
-  makeMap(docs: any[]): Map<string, any> { // Changed value type to any
+  makeMap(docs: any[]): Map<string, any> {
+    // Changed value type to any
     try {
-      const entries: [string, any][] = docs.flatMap((doc: any) => { // Changed value type to any
+      const entries: [string, any][] = docs.flatMap((doc: any) => {
+        // Changed value type to any
         if (doc?.name) {
           return [[doc.name, doc] as [string, any]] // Changed value type to any
         } else {
@@ -337,7 +339,6 @@ export class PineDocsManager {
       for (let key of keys) {
         const docsForKey = this.getSwitch(key)
         if (Array.isArray(docsForKey)) {
-
           if (/unctions/.test(key)) {
             docsForKey.filter((doc: any) => !doc?.isMethod)
           } else if (/methods/.test(key)) {
@@ -367,7 +368,6 @@ export class PineDocsManager {
     this.importsDocs = docs
   }
 
-
   /**
    * the setParsed function is used to set the parsed docs for a given key
    * @param docs - The docs to set.
@@ -375,48 +375,47 @@ export class PineDocsManager {
    */
   setParsed(docs: any[], keyType: string) {
     try {
-      const key = keyType === 'args' ? ['functions2', 'methods2', 'completionFunctions'] : ['UDT'];
+      const key = keyType === 'args' ? ['functions2', 'methods2', 'completionFunctions'] : ['UDT']
 
       for (const k of key) {
-        const currentMap = this.getMap(k);
+        const currentMap = this.getMap(k)
 
         for (const doc of docs) {
-          const { name } = doc;
-          let currentDocs = currentMap.get(name);
+          const { name } = doc
+          let currentDocs = currentMap.get(name)
 
           if (currentDocs && doc[keyType] && doc[keyType].length > 0) {
             // Ensure the currentDocs[keyType] exists and is an array.
             if (!Array.isArray(currentDocs[keyType])) {
-              currentDocs[keyType] = [];
+              currentDocs[keyType] = []
             }
 
             for (let arg of doc[keyType]) {
-              const argName = arg.name;
-              let currentArg = currentDocs[keyType].find((a: any) => a.name === argName);
+              const argName = arg.name
+              let currentArg = currentDocs[keyType].find((a: any) => a.name === argName)
 
               if (currentArg) {
                 // Update properties of the existing argument.
-                currentArg.required = arg.required;
+                currentArg.required = arg.required
                 if (arg.default) {
-                  currentArg.default = arg.default;
+                  currentArg.default = arg.default
                 }
                 if (currentArg.type === 'undefined type') {
-                  currentArg.type = arg.type;
+                  currentArg.type = arg.type
                 }
               }
             }
             // Update the map with the modified document.
-            currentMap.set(name, currentDocs);
+            currentMap.set(name, currentDocs)
           }
         }
         // Save the updated map.
-        this.setDocs([{ docs: Array.from(currentMap.values()) }], k);
+        this.setDocs([{ docs: Array.from(currentMap.values()) }], k)
       }
     } catch (error) {
       console.error(error)
     }
   }
-
 
   /**
    * the setDocs function is used to set the docs for a given key
@@ -434,7 +433,6 @@ export class PineDocsManager {
     }
   }
 
-
   /**
    * Helper function to merge new docs into current docs
    * @param currentDocs - The current docs.
@@ -446,29 +444,29 @@ export class PineDocsManager {
     try {
       if (!newDocs || newDocs.length === 0) {
         //console.log('No new docs to merge')
-        return currentDocs;
+        return currentDocs
       }
 
-      let mergedDocs: any[] = [];
+      let mergedDocs: any[] = []
       for (const doc of newDocs) {
         if (Array.isArray(doc.docs)) {
           //console.log('doc.docs true')
           for (const newDoc of doc.docs) {
-            const oldDoc = currentDocs.find(currentDoc => currentDoc.name === newDoc.name);
+            const oldDoc = currentDocs.find((currentDoc) => currentDoc.name === newDoc.name)
             if (oldDoc) {
               //console.log('old Docs')
-              const mergedDict = { ...oldDoc, ...newDoc };
-              mergedDocs.push(mergedDict);
+              const mergedDict = { ...oldDoc, ...newDoc }
+              mergedDocs.push(mergedDict)
             } else {
               //console.log('old Docs else')
-              mergedDocs.push(newDoc);
+              mergedDocs.push(newDoc)
             }
           }
         } else {
-          console.warn(`Expected an array for doc.docs, but received: ${typeof doc.docs}`, 'mergeDocs');
+          console.warn(`Expected an array for doc.docs, but received: ${typeof doc.docs}`, 'mergeDocs')
         }
       }
-      return [...new Set(mergedDocs)];
+      return [...new Set(mergedDocs)]
     } catch (error) {
       console.error(error)
       return []
@@ -491,7 +489,6 @@ export class PineDocsManager {
     return [...this.docAliases, ...this.importAliases]
   }
 
-
   /**
    * the cleanDocs function is used to clean the docs
    * @returns The cleaned docs.
@@ -504,24 +501,24 @@ export class PineDocsManager {
   }
 
   /**
- * Retrieves function documentation by name from 'completionFunctions' map.
- * @param functionName - The name of the function to retrieve documentation for.
- * @returns The function documentation if found, otherwise undefined.
- */
+   * Retrieves function documentation by name from 'completionFunctions' map.
+   * @param functionName - The name of the function to retrieve documentation for.
+   * @returns The function documentation if found, otherwise undefined.
+   */
   getFunctionDocs(functionName: string): any | undefined {
-    const functionMap = this.getMap('completionFunctions'); // Access the completionFunctions map
+    const functionMap = this.getMap('completionFunctions') // Access the completionFunctions map
 
     if (!functionMap) {
-      return undefined; // Handle case where map is not yet initialized or empty
+      return undefined // Handle case where map is not yet initialized or empty
     }
 
-    const lowerFunctionName = functionName.toLowerCase();
+    const lowerFunctionName = functionName.toLowerCase()
 
     for (const [name, doc] of functionMap.entries()) {
       if (name.toLowerCase() === lowerFunctionName) {
-        return doc; // Return the documentation object if function name matches
+        return doc // Return the documentation object if function name matches
       }
     }
-    return undefined; // Return undefined if function is not found
+    return undefined // Return undefined if function is not found
   }
 }

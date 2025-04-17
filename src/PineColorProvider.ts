@@ -5,10 +5,13 @@ import * as vscode from 'vscode'
  * It implements the vscode.DocumentColorProvider interface.
  */
 export class PineColorProvider implements vscode.DocumentColorProvider {
-  private regexLiteral: RegExp = /(?<!color\.(?:new|[rgbt]+)\s*\(\s*)\bcolor\s*\.\s*(?:aqua|black|blue|fuchsia|gray|green|lime|maroon|navy|olive|orange|purple|red|silver|teal|white|yellow)\b/g
+  private regexLiteral: RegExp =
+    /(?<!color\.(?:new|[rgbt]+)\s*\(\s*)\bcolor\s*\.\s*(?:aqua|black|blue|fuchsia|gray|green|lime|maroon|navy|olive|orange|purple|red|silver|teal|white|yellow)\b/g
   private regexHex: RegExp = /(?<!color\.(?:new|[rgbt]+)\s*\(\s*)#[\da-fA-F]{6,8}\b/g
-  private regexColorNew: RegExp = /(?<!color\.(?:[rgbt]+)\s*\(\s*)color\s*\.\s*new\s*?\(\s*?(color\s*?\.\s*?\w+|#[\da-fA-F]{6,8})\s*?,\s*?(\d{1,3})\s*?\)\B/g
-  private regexColorRgb: RegExp = /(?<!color\.(?:[rgbt]+)\s*\(\s*)color\s*\.\s*rgb\s*?\(\s*?(\d{1,3})\s*?,\s*?(\d{1,3})\s*?,\s*?(\d{1,3}\s*?)(?:\s*?,\s*?(\d{1,3})\s*?)?\s*?\)\B/g
+  private regexColorNew: RegExp =
+    /(?<!color\.(?:[rgbt]+)\s*\(\s*)color\s*\.\s*new\s*?\(\s*?(color\s*?\.\s*?\w+|#[\da-fA-F]{6,8})\s*?,\s*?(\d{1,3})\s*?\)\B/g
+  private regexColorRgb: RegExp =
+    /(?<!color\.(?:[rgbt]+)\s*\(\s*)color\s*\.\s*rgb\s*?\(\s*?(\d{1,3})\s*?,\s*?(\d{1,3})\s*?,\s*?(\d{1,3}\s*?)(?:\s*?,\s*?(\d{1,3})\s*?)?\s*?\)\B/g
   private literalColors: Record<string, string> = {
     'color.aqua': '#00ffff',
     'color.black': '#363A45',
@@ -81,7 +84,7 @@ export class PineColorProvider implements vscode.DocumentColorProvider {
   /**
    * Provides color information for a given document.
    * @param document - The document to provide color information for.
-   * @returns An array of vscode.ColorInformation objects. 
+   * @returns An array of vscode.ColorInformation objects.
    * */
   public provideDocumentColors(document: vscode.TextDocument): vscode.ColorInformation[] {
     const colorInfos: vscode.ColorInformation[] = []
@@ -109,7 +112,7 @@ export class PineColorProvider implements vscode.DocumentColorProvider {
    * @param text - The text to find colors in.
    * @param document - The document the text is from.
    * @param regex - The regex pattern to use for finding colors.
-   * @returns An array of vscode.ColorInformation objects. 
+   * @returns An array of vscode.ColorInformation objects.
    */
   private findColors(text: string, document: vscode.TextDocument, regex: RegExp): vscode.ColorInformation[] {
     const colorInfos: vscode.ColorInformation[] = []
@@ -121,11 +124,15 @@ export class PineColorProvider implements vscode.DocumentColorProvider {
       const range = this.extractRange(document, match.index, colorString)
 
       // Skip if the color is within a comment
-      if (this.isWithinComment(document, range.start)) { continue }
+      if (this.isWithinComment(document, range.start)) {
+        continue
+      }
 
       // Parse the color string and add it to the colorInfos array
       const color = this.parseColorString(colorString)
-      if (!color) { continue }
+      if (!color) {
+        continue
+      }
       colorInfos.push(new vscode.ColorInformation(range, color))
     }
     return colorInfos
@@ -196,9 +203,9 @@ export class PineColorProvider implements vscode.DocumentColorProvider {
    */
   private hexFromNumber(color: number) {
     // Multiply by 255, round, and convert to hex
-    const t = Math.round(255 * color).toString(16);
+    const t = Math.round(255 * color).toString(16)
     // Add leading zero if necessary
-    return t.length === 1 ? `0${t}` : t;
+    return t.length === 1 ? `0${t}` : t
   }
 
   /**
@@ -209,29 +216,29 @@ export class PineColorProvider implements vscode.DocumentColorProvider {
    */
   private colorHexPresentation(color: vscode.Color, includeAlphaOrLiteral: string = 'alpha') {
     // Convert the color channels to hex
-    const r = this.hexFromNumber(color.red);
-    const g = this.hexFromNumber(color.green);
-    const b = this.hexFromNumber(color.blue);
-    const alphaHex = this.hexFromNumber(color.alpha); // Convert alpha for standard RGBA format
+    const r = this.hexFromNumber(color.red)
+    const g = this.hexFromNumber(color.green)
+    const b = this.hexFromNumber(color.blue)
+    const alphaHex = this.hexFromNumber(color.alpha) // Convert alpha for standard RGBA format
 
-    let hexColor = `#${r}${g}${b}`;
+    let hexColor = `#${r}${g}${b}`
 
     if (includeAlphaOrLiteral === 'alpha' && color.alpha !== 1) {
-      return `${hexColor}${alphaHex}`; // Append alpha in hex if not fully visible
+      return `${hexColor}${alphaHex}` // Append alpha in hex if not fully visible
     } else if (includeAlphaOrLiteral === 'literal') {
-      const literalColor = this.getLiteralColor(hexColor);
+      const literalColor = this.getLiteralColor(hexColor)
       if (literalColor) {
-        return literalColor;
+        return literalColor
       }
     }
-    return hexColor;
+    return hexColor
   }
 
   /**
-     * Gets the literal color name for a given hex color.
-     * @param hexColor - The hex color to get the literal color name for.
-     * @returns The literal color name, or null if not found.
-     */
+   * Gets the literal color name for a given hex color.
+   * @param hexColor - The hex color to get the literal color name for.
+   * @returns The literal color name, or null if not found.
+   */
   private getLiteralColor(hexColor: string) {
     for (const [key, value] of Object.entries(this.literalColors)) {
       if (value === hexColor) {
@@ -242,10 +249,10 @@ export class PineColorProvider implements vscode.DocumentColorProvider {
   }
 
   /**
-     * Converts a vscode.Color object to an RGB color string.
-     * @param color - The vscode.Color object to convert.
-     * @returns An RGB color string.
-     */
+   * Converts a vscode.Color object to an RGB color string.
+   * @param color - The vscode.Color object to convert.
+   * @returns An RGB color string.
+   */
   private colorRgbPresentation(color: vscode.Color): string {
     const r = this.denormalize(color.red)
     const g = this.denormalize(color.green)
@@ -258,20 +265,20 @@ export class PineColorProvider implements vscode.DocumentColorProvider {
   }
 
   /**
-     * Converts a vscode.Color object to a new color string.
-     * @param color - The vscode.Color object to convert.
-     * @returns A new color string.
-     */
+   * Converts a vscode.Color object to a new color string.
+   * @param color - The vscode.Color object to convert.
+   * @returns A new color string.
+   */
   private colorNewPresentation(color: vscode.Color) {
     const hexColor = this.colorHexPresentation(color, 'noAlpha')
     return `color.new(${hexColor}, ${this.denormalizeAlpha(color.alpha)})`
   }
 
   /**
-     * Converts a hex color string to a vscode.Color object.
-     * @param hex - The hex color string to convert.
-     * @returns A vscode.Color object.
-     */
+   * Converts a hex color string to a vscode.Color object.
+   * @param hex - The hex color string to convert.
+   * @returns A vscode.Color object.
+   */
   private handleHex(hex: string): vscode.Color {
     if (!hex || typeof hex !== 'string') {
       console.error('Invalid hex color:', hex)
