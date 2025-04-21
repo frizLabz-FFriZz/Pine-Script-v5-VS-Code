@@ -78,36 +78,100 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      * @return true if the cursor is inside a string literal, false otherwise
      */
     private static boolean isInsideString(String text, int offset) {
+        // unit test for text="string assignment = 'some open string", offset=text.length()-1 => true
+        // unit test for text="stringFunctionParameter("some open string", offset=text.length()-1 => true
+        // unit test for text="string assignment = 'some closed string'", offset=text.length()-1 => false
+        // unit test for text="stringFunctionParameter("some closed string"", offset=text.length()-1  => false
+        // unit test for text="string assignment = 'some string'", offset=text.lastIndexOf("string") => true
+        // unit test for text="stringFunctionParameter("some closed string"", offset=text.lastIndexOf("string")  => true
+        // unit test for text="stringFunctionParameter("some closed string", "then another closed string"", offset=text.length()-1 => false
+        // unit test for text="stringFunctionParameter('some closed string', 'then another closed string'", offset=text.length()-1 => false
+        // unit test for text="stringFunctionParameter("some closed string", "then another closed string"", offset=text.lastIndexOf("string") => true
+        // unit test for text="stringFunctionParameter('some closed string', 'then another closed string'", offset=text.lastIndexOf("string") => true
+        // unit test for text="stringFunctionParameter("some closed string", thenParameter, "then open string", offset=text.lastIndexOf("Parameter") => false
+        // unit test for text="stringFunctionParameter('some closed string', thenParameter, 'then open string", offset=text.lastIndexOf("Parameter") => false
+        // unit test for text="stringFunctionParameter('some closed string with one open " (quote)', offset=text.length()-1 => false
+        // unit test for text="stringFunctionParameter("some closed string with one open ' (quote)"", offset=text.length()-1 => false
+        // unit test for text="stringFunctionParameter('some closed string with one open " (quote)', offset=text.lastIndexOf("quote") => true
+        // unit test for text="stringFunctionParameter("some closed string with one open ' (quote)"", offset=text.lastIndexOf("quote") => true
+        // unit test for text="stringFunctionParameter("some open string with escaped \" (quote)", offset=text.length()-1 => true
+        // unit test for text="stringFunctionParameter('some open string with escaped \'' (quote)", offset=text.length()-1 => true
+        /*unit test for text="string assignment = "some open string
+        which continues on next line", offset=text.length()-1 => false
+        */
+        /*unit test for text="string assignment = "some open string
+        which continues on next line", offset=text.lastIndexOf("open") => true
+        */
+
         LOG.info("Checking if cursor at offset " + offset + " is inside string");
-        // Get the current line.
         int lineStart = text.lastIndexOf('\n', offset - 1);
         lineStart = (lineStart == -1) ? 0 : lineStart + 1;
         int lineEnd = text.indexOf('\n', offset);
         lineEnd = (lineEnd == -1) ? text.length() : lineEnd;
         String currentLine = text.substring(lineStart, lineEnd);
-
-        // Count unescaped quotes in the current line up to the offset.
+        
+        boolean insideString = false;
+        char openingQuote = '\0';
         int relativeOffset = offset - lineStart;
-        int quoteCount = 0;
-        char currentQuote = '\0';
+        
         for (int i = 0; i < relativeOffset; i++) {
             char c = currentLine.charAt(i);
             if (c == '"' || c == '\'') {
-                // Check if not escaped.
-                if (i == 0 || currentLine.charAt(i - 1) != '\\') {
-                    // Toggle in-string state if matching the same quote.
-                    if (! (currentQuote == c)) {
-                        currentQuote = c;
-                        quoteCount++;
-                    } else {
-                        currentQuote = '\0';
-                        quoteCount++;
+                // Check if the quote is escaped.
+                int backslashCount = 0;
+                int j = i - 1;
+                while (j >= 0 && currentLine.charAt(j) == '\\') {
+                    backslashCount++;
+                    j--;
+                }
+                boolean escaped = (backslashCount % 2 == 1);
+                
+                if (!escaped) {
+                    if (!insideString) {
+                        // Start of string literal.
+                        insideString = true;
+                        openingQuote = c;
+                    } else if (c == openingQuote) {
+                        // End of string literal.
+                        insideString = false;
+                        openingQuote = '\0';
                     }
+                    // If inside a string and the quote doesn't match, ignore it.
                 }
             }
         }
-        // If there's an odd number of unescaped quotes, we're inside a string.
-        return (quoteCount % 2 == 1);
+        
+        return insideString;
+    }
+
+    /**
+     * Checks if the context indicates an assignment operation.
+     * Conditions: not inside a string/comment and text immediately before the cursor contains "=" or ":=",
+     * optionally followed by whitespace and identifier characters.
+     * Uses Character.isJavaIdentifierPart to validate identifier characters.
+     */
+    private static boolean isAssignmentStatement(String text, int offset) {
+        if (isInsideString(text, offset) || isInsideComment(text, offset)) return false;
+        String before = text.substring(0, offset);
+    
+        int colonPos = before.lastIndexOf(":=");
+        int eqPos    = before.lastIndexOf("=");
+        // skip "=" that's part of ==, >=, <=, !=
+        if (eqPos > 0 && "=<>!".indexOf(before.charAt(eqPos - 1)) >= 0) {
+            eqPos = -1;
+        }
+    
+        int opPos = Math.max(colonPos, eqPos);
+        if (opPos < 0) return false;
+        int opLen = (colonPos > eqPos) ? 2 : 1;
+    
+        String afterOp = before.substring(opPos + opLen).trim();
+        for (char c : afterOp.toCharArray()) {
+            if (!Character.isJavaIdentifierPart(c)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // Static initialization to load definitions for default version on startup
@@ -115,7 +179,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         try {
             LOG.info("PineScriptCompletionContributor static initialization starting...");
             if (DEFAULT_VERSION != null) {
-                loadDefinitionsForVersion(DEFAULT_VERSION);
+        loadDefinitionsForVersion(DEFAULT_VERSION);
                 LOG.info("Successfully loaded definitions for default version: " + DEFAULT_VERSION);
             } else {
                 LOG.warn("DEFAULT_VERSION is null in static initializer, skipping definition loading");
@@ -169,201 +233,110 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                     protected void addCompletions(@NotNull CompletionParameters parameters,
                                                  @NotNull ProcessingContext context,
                                                  @NotNull CompletionResultSet result) {
-                       Document document = parameters.getEditor().getDocument();
+                        Document document = parameters.getEditor().getDocument();
                         int offset = parameters.getOffset();
-                       String documentText = document.getText();
+                        String documentText = document.getText();
                        
-                       // Explicitly write to IDE logs for diagnostics
-                       LOG.warn("PineScriptCompletionContributor running at offset " + offset);
-                       
-                       // Skip autocompletion if inside a string
-                       if (isInsideString(documentText, offset)) {
-                           LOG.info("Cursor is inside a string, skipping autocompletion");
-                           return;
-                       }
-                       
-                       // Detect Pine Script version from the document
-                       String version = detectPineScriptVersion(documentText);
-                       // Ensure definitions for this version are loaded
-                       if (!CACHED_DEFINITIONS.containsKey(version)) {
-                           loadDefinitionsForVersion(version);
-                       }
-                       
-                       if (offset > 0) {
-                           // Get text up to cursor position
-                           String textBeforeCursor = documentText.substring(0, offset);
-                           LOG.info("Text before cursor for namespace check: '" + textBeforeCursor + "'");
-                           
-                           // Special handling for namespace methods (after dot)
-                           if (textBeforeCursor.endsWith(".")) {
-                               LOG.warn("🔍 [addCompletions] DOT DETECTED at end of text before cursor");
-                               String namespace = findNamespaceBeforeDot(textBeforeCursor);
-                               LOG.warn("🔍 [addCompletions] Namespace detected before dot: '" + namespace + "'");
-                               
-                               if (namespace != null) {
-                                   // Check if this is a known built-in namespace or a custom namespace
-                                   boolean isBuiltInNamespace = Arrays.asList(NAMESPACES).contains(namespace);
-                                   
-                                   // Get the sets for this version
-                                   Set<String> functions = FUNCTIONS_MAP.getOrDefault(version, new HashSet<>());
-                                   Set<String> variables = VARIABLES_MAP.getOrDefault(version, new HashSet<>());
-                                   Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
-                                   
-                                   // Detailed logging of available definitions for debugging
-                                   LOG.warn("🔍 [addCompletions] Checking namespace '" + namespace + "': " +
-                                            "is built-in=" + isBuiltInNamespace + 
-                                            ", functions=" + functions.size() + 
-                                            ", variables=" + variables.size() + 
-                                            ", constants=" + constants.size());
-                                   
-                                   // Check if this is a custom namespace
-                                   boolean isCustomNamespace = false;
-                                   
-                                   // Check if any definitions start with namespace + "."
-                                   List<String> matchingDefs = new ArrayList<>();
-                                   for (String definition : CACHED_DEFINITIONS.getOrDefault(version, new ArrayList<>())) {
-                                       if (definition.startsWith(namespace + ".")) {
-                                           isCustomNamespace = true;
-                                           matchingDefs.add(definition);
-                                       }
-                                   }
-                                   
-                                   LOG.warn("🔍 [addCompletions] Namespace '" + namespace + "' status: " + 
-                                            "built-in=" + isBuiltInNamespace + 
-                                            ", custom=" + isCustomNamespace + 
-                                            ", matching definitions=" + matchingDefs.size());
-                                   
-                                   if (matchingDefs.size() < 20 && matchingDefs.size() > 0) {
-                                       LOG.warn("🔍 [addCompletions] Matching definitions: " + matchingDefs);
-                                   }
-                                   
-                                   if (isBuiltInNamespace || isCustomNamespace) {
-                                       LOG.warn("🔍 [addCompletions] VALID NAMESPACE! Calling addNamespaceMethodCompletions for: " + namespace);
-                                       addNamespaceMethodCompletions(result, namespace, version);
-                                       
-                                       // Count how many items were added
-                                       try {
-                                           java.lang.reflect.Field field = result.getClass().getDeclaredField("myItems");
-                                           field.setAccessible(true);
-                                           Object itemsObj = field.get(result);
-                                           if (itemsObj instanceof Collection) {
-                                               int itemCount = ((Collection<?>) itemsObj).size();
-                                               LOG.warn("🔍 [addCompletions] Result now contains " + itemCount + " items after adding namespace methods");
-                                               
-                                               // If no items, try to add some debugging suggestions
-                                               if (itemCount == 0) {
-                                                   LOG.warn("🔍 [addCompletions] NO ITEMS FOUND! Adding debugging suggestions");
-                                                   LookupElementBuilder element = LookupElementBuilder.create("debug_item")
-                                                           .withIcon(AllIcons.Nodes.Method)
-                                                           .withTypeText("debug item");
-                                                   result.addElement(PrioritizedLookupElement.withPriority(element, 1000));
-                                                   
-                                                   // Check if we still have zero items - if so, the result might be broken
-                                                   field = result.getClass().getDeclaredField("myItems");
-                                                   field.setAccessible(true);
-                                                   itemsObj = field.get(result);
-                                                   if (itemsObj instanceof Collection) {
-                                                       itemCount = ((Collection<?>) itemsObj).size();
-                                                       LOG.warn("🔍 [addCompletions] After adding debug item, result now contains " + itemCount + " items");
-                                                   }
-                                               }
-                                           }
-                                       } catch (Exception e) {
-                                           LOG.warn("🔍 [addCompletions] Error checking result size: " + e.getMessage());
-                                       }
-                                       
-                                       LOG.warn("🔍 [addCompletions] RETURNING after handling namespace methods");
-                                       return; // Stop processing after handling namespace methods
-                                   } else {
-                                       LOG.warn("🔍 [addCompletions] Namespace '" + namespace + "' is not recognized as built-in or custom");
-                                   }
-                               } else {
-                                   LOG.warn("🔍 [addCompletions] No namespace detected before dot");
-                               }
-                           }
-                           
-                           // Special handling for function parameters - detect if inside parentheses
-                           checkFunctionCallContext(documentText, offset);
-                           
-                           if (isInsideFunctionCall && currentFunctionName != null) {
-                               LOG.warn("🔍 [addCompletions] Inside function call: " + currentFunctionName + ", parameter index: " + currentParamIndex);
-                               
-                               // Check if we're after a parameter name with equals sign (named parameter assignment)
-                               boolean isInNamedParameterValue = false;
-                               String parameterName = null;
-                               
-                               // Extract the text for the current parameter
-                               int lastOpenParenPos = documentText.lastIndexOf('(');
-                               int lastCommaPos = documentText.lastIndexOf(',');
-                               int startPos = Math.max(lastOpenParenPos, lastCommaPos);
-                               
-                               if (startPos >= 0 && startPos < documentText.length()) {
-                                   String parameterText = documentText.substring(startPos + 1).trim();
-                                   LOG.warn("🔍 [addCompletions] Parameter text: '" + parameterText + "'");
-                                   
-                                   // Check if this is a named parameter (contains equals sign)
-                                   int equalsPos = parameterText.indexOf('=');
-                                   if (equalsPos >= 0) {
-                                       isInNamedParameterValue = true;
-                                       parameterName = parameterText.substring(0, equalsPos).trim();
-                                       LOG.warn("🔍 [addCompletions] Named parameter detected: '" + parameterName + "'");
-                                   }
-                               }
-                               
-                               // Get function parameter information
-                               String fullFunctionName = currentFunctionName;
-                               
-                               if (isInNamedParameterValue && parameterName != null) {
-                                   // Get the type of the named parameter
-                                   String paramType = null;
-                                   
-                                   // Get parameter list for this function
-                                   Map<String, List<Map<String, String>>> functionArgs = FUNCTION_ARGUMENTS_CACHE.getOrDefault(version, new HashMap<>());
-                                   List<Map<String, String>> args = functionArgs.get(fullFunctionName);
-                                   
-                                   if (args != null) {
-                                       for (Map<String, String> arg : args) {
-                                           if (parameterName.equals(arg.get("name"))) {
-                                               paramType = arg.get("type");
-                                               break;
-                                           }
-                                       }
-                                   }
-                                   
-                                   if (paramType != null) {
-                                       LOG.warn("🔍 [addCompletions] Found parameter type for named parameter: " + paramType);
-                                       addCompletionsForExpectedType(result, paramType, version);
-                                   } else {
-                                       LOG.warn("🔍 [addCompletions] Could not determine type for named parameter: " + parameterName);
-                                       addAllCompletionItems(result, version);
-                                   }
-                               } else {
-                                   // Add parameter name suggestions
-                                   LOG.warn("🔍 [addCompletions] Adding parameter suggestions for function: " + fullFunctionName);
-                                   addParameterCompletions(result, fullFunctionName, currentParamIndex, version);
-                               }
-                               
-                               // After adding parameter suggestions, return to prevent adding other items
-                               return;
-                           }
-                           
-                           // Detect assignment statement and infer expected type
-                           String expectedType = inferExpectedType(documentText.substring(0, offset));
-                           
-                           if (expectedType != null) {
-                               LOG.info("Inferred expected type in assignment: " + expectedType);
-                               addCompletionsForExpectedType(result, expectedType, version);
-                           } else {
-                               // Fall back to processing standard completions
-                               LOG.info("No expected type inferred, adding standard completions");
-                               processStandardCompletions(parameters, result, version);
-                           }
-                       } else {
-                           // At beginning of document, add standard completions
-                           processStandardCompletions(parameters, result, version);
-                       }
+                        // Explicitly write to IDE logs for diagnostics
+                        LOG.warn("PineScriptCompletionContributor running at offset " + offset);
+
+                        // Get text from line start up to cursor position
+                        int lineStart = document.getLineStartOffset(document.getLineNumber(offset));
+                        String textBeforeCursor = documentText.substring(lineStart, offset);
+                        LOG.info("[addCompletions] Text before cursor: '" + textBeforeCursor + "'");
+                        LOG.info("[addCompletions] If you see this reached from the logs, then should be implemented similarly to fillCompletionVariants - currently no actual completion logic here"); 
                    }
                });
+    }
+    /**
+     * Checks if the current context is within a namespace.
+     * Conditions: not inside a string/comment and after a dot (.) immediately followed by valid identifier characters.
+     * Uses Character.isJavaIdentifierPart to validate characters.
+     */
+    private static String getTypedNamespace(String text, int offset) {
+        // unit test for text=null => null
+        // unit test for text="" => null
+        if (text == null || text.isEmpty()) {
+            return null;
+        }
+
+        // unit test for text="namespace.variable namespace.variable2" => "namespace"
+        // unit test for text="namespace1.variable namespace2.variable2" => "namespace2"
+        // unit test for text="namespace1.variable namespace2." => "namespace2"
+        String beforeCursor = text.substring(0, offset);
+        int lastDotPos = beforeCursor.lastIndexOf('.');
+        // unit test for text="namespaceWithoutDot" => null
+        if (lastDotPos == -1) {
+            return null;
+        }
+        // Get the text after the dot.
+        String afterDot = beforeCursor.substring(lastDotPos + 1);
+        LOG.warn("🔍 [getTypedNamespace] Text after dot: " + afterDot);
+   
+        // unit test for text="namespace." => "namespace"
+        if (!afterDot.isEmpty()) {
+            // unit test for text="namespace.function(), somethingElse" => null
+            // unit test for text="namespace.variable+4" => null
+            // unit test for text="namespace.variable somethingElse" => null
+            // unit test for text="namespace.variable " => null
+            for (int i = 0; i < afterDot.length(); i++) {
+                if (!Character.isJavaIdentifierPart(afterDot.charAt(i))) {
+                    LOG.warn("🔍 [getTypedNamespace] Namespace used, but cursor is not there; 1st character after namespace name: " + afterDot.charAt(i));
+                    return null;
+                }
+            }
+            // Validate that it has correct identifier starting character, so that float values would not show autocompletion
+            // unit test for text="namespace.123" => null
+            // unit test for text="namespace.2good" => null
+            if (!Character.isJavaIdentifierStart(afterDot.charAt(0))) {
+                LOG.warn("🔍 [getTypedNamespace] Invalid namespace: \"" + afterDot + "\"");
+                return null;
+            }
+        }
+        LOG.warn("🔍 [getTypedNamespace] After dot is valid");
+        
+        // Get the text before the dot.
+        String beforeDot = text.substring(0, lastDotPos);
+        
+        // Find the last non-identifier character before the dot
+        int lastNonWordChar = -1;
+        
+        // Iterate backwards from just before the dot
+        for (int i = lastDotPos - 1; i >= 0; i--) {
+            if (!Character.isJavaIdentifierPart(beforeDot.charAt(i))) {
+                lastNonWordChar = i;
+                break;
+            }
+        }
+        
+        // unit test for text="34+namespace.st" => "namespace"
+        // unit test for text="34 + namespace.st" => "namespace"
+        // unit test for text="34 namespace.st" => "namespace"
+        // unit test for text="function(parameter, namespace.st" => "namespace"
+        // unit test for text="string assignment = namespace.st" => "namespace"
+        // unit test for text="reAssignment := namespace.st" => "namespace"
+        // Extract the word between the last non-word character and the dot
+        String namespaceName = text.substring(lastNonWordChar + 1, lastDotPos);
+        LOG.warn("🔍 [getTypedNamespace] Found namespace before dot: \"" + namespaceName + "\"");
+        
+        //Validate that it is not empty
+        // unit test for text=".st" => null
+        // unit test for text="123.st" => null
+        // unit test for text="name123.st" => "name123"
+        if (namespaceName.isEmpty()) {
+            LOG.warn("🔍 [getTypedNamespace] Invalid namespace (empty): \"" + namespaceName + "\"");
+            return null;
+        }
+
+        // Validate that is starts with a letter
+        // test for text="2good.st" => null
+        if (!Character.isJavaIdentifierStart(namespaceName.charAt(0))) {
+            LOG.warn("🔍 [findNamespaceBeforeDot] Invalid namespace (starts with non-letter): \"" + namespaceName + "\"");
+            return null;
+        }
+
+        // unit test for text="myNamespace.st" => "myNamespace"
+        return namespaceName;
     }
     
     /**
@@ -371,429 +344,94 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      */
     @Override
     public void fillCompletionVariants(@NotNull CompletionParameters parameters, @NotNull CompletionResultSet result) {
-        // Log when completion is triggered
-        LOG.warn("🔍 [fillCompletionVariants] CALLED - type: " + parameters.getCompletionType() + 
-                 ", invocation count: " + parameters.getInvocationCount());
-        
         Document document = parameters.getEditor().getDocument();
         int offset = parameters.getOffset();
-        
-        // Get document text
-        String text = document.getText();
-        
-        // Define textBeforeCursor once for use throughout the method
-        String textBeforeCursor = text.substring(0, offset);
-        
-        // Check if we're typing at the beginning of a line
-        int lastNewlinePos = textBeforeCursor.lastIndexOf('\n');
-        if (lastNewlinePos != -1) {
-            String afterNewline = textBeforeCursor.substring(lastNewlinePos + 1).trim();
-            // If there's only alphanumeric/underscore characters after the last newline, it's likely a variable/function name
-            if (afterNewline.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
-                LOG.warn("🔍 [fillCompletionVariants] Detected typing at beginning of line: '" + afterNewline + "'");
-                
-                // For identifiers at the beginning of a line, prioritize namespaces
-                String version = detectPineScriptVersion(text);
-                
-                // Create a prefixed completion result
-                CompletionResultSet prefixResult = result.withPrefixMatcher(afterNewline);
-                
-                // First add namespaces for better prioritization - they should appear at the top
-                        for (String namespace : NAMESPACES) {
-                    LookupElementBuilder element = LookupElementBuilder.create(namespace)
-                                .withTypeText("namespace")
-                            .withIcon(AllIcons.Nodes.Package)
-                            .withInsertHandler((ctx, item) -> {
-                                Editor editor = ctx.getEditor();
-                                editor.getDocument().insertString(ctx.getTailOffset(), ".");
-                                editor.getCaretModel().moveToOffset(ctx.getTailOffset());
-                                
-                                // Schedule popup for namespace members
-                                ApplicationManager.getApplication().invokeLater(() -> {
-                                    if (editor.isDisposed()) return;
-                                    AutoPopupController.getInstance(ctx.getProject()).autoPopupMemberLookup(editor, null);
-                                });
-                            });
-                    
-                    // Add with high priority
-                    prefixResult.addElement(PrioritizedLookupElement.withPriority(element, 1000));
-                }
-                
-                // Add scanned completions (local variables) - pass expected type
-                String expectedType = null;
-                // Check if we're in a variable assignment context
-                if (textBeforeCursor.contains("=")) {
-                    expectedType = inferExpectedType(textBeforeCursor);
-                    LOG.warn("🔍 [fillCompletionVariants] Expected type for variable assignment: '" + expectedType + "'");
-                }
-                addScannedCompletions(parameters, prefixResult, expectedType);
-                
-                // Add all standard completions
-                addAllCompletionItems(prefixResult, version);
-                
-                return;
-            }
-        }
-        
-        // Log specifically for dot completion
-        if (offset > 0) {
-            char prevChar = text.charAt(offset - 1);
-            
-            // Case 1: Text ends with a dot - standard dot completion
-            if (prevChar == '.') {
-                // Reuse the already defined textBeforeCursor variable
-                String namespace = findNamespaceBeforeDot(textBeforeCursor);
-                LOG.warn("🔍 [fillCompletionVariants] DOT DETECTED! Namespace before dot: '" + namespace + "'");
-                
-                // Check if this is a valid namespace
-                if (namespace != null) {
-                    boolean isBuiltInNamespace = Arrays.asList(NAMESPACES).contains(namespace);
-                    LOG.warn("🔍 [fillCompletionVariants] Is built-in namespace: " + isBuiltInNamespace);
-                    
-                    // Check for custom namespace
-                    String version = detectPineScriptVersion(text);
-                    Set<String> functions = FUNCTIONS_MAP.getOrDefault(version, new HashSet<>());
-                    Set<String> variables = VARIABLES_MAP.getOrDefault(version, new HashSet<>());
-                    Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
-                    
-                    boolean hasMatchingDefinition = false;
-                    for (String def : functions) {
-                        if (def.startsWith(namespace + ".")) {
-                            hasMatchingDefinition = true;
-                            LOG.warn("🔍 [fillCompletionVariants] Found matching function definition: " + def);
-                            break;
-                        }
-                    }
-                    
-                    if (!hasMatchingDefinition) {
-                        for (String def : variables) {
-                            if (def.startsWith(namespace + ".")) {
-                                hasMatchingDefinition = true;
-                                LOG.warn("🔍 [fillCompletionVariants] Found matching variable definition: " + def);
-                                break;
-                            }
-                        }
-                    }
-                    
-                    if (!hasMatchingDefinition) {
-                        for (String def : constants) {
-                            if (def.startsWith(namespace + ".")) {
-                                hasMatchingDefinition = true;
-                                LOG.warn("🔍 [fillCompletionVariants] Found matching constant definition: " + def);
-                                break;
-                            }
-                        }
-                    }
-                    
-                    LOG.warn("🔍 [fillCompletionVariants] Has matching definitions for namespace: " + hasMatchingDefinition);
-                    
-                    // If we have a valid namespace with members, add them directly
-                    if (isBuiltInNamespace || hasMatchingDefinition) {
-                        LOG.warn("🔍 [fillCompletionVariants] Adding namespace method completions");
-                        addNamespaceMethodCompletions(result, namespace, version);
-                        return; // Skip standard completion
-                    }
-                }
-            }
-            // Case 2: We're after a dot with some text already (e.g., "request.sec")
-            else {
-                // Reuse existing textBeforeCursor variable
-                int lastDotPos = textBeforeCursor.lastIndexOf('.');
-                
-                // Check if we have a dot in the text and there's text after it
-                if (lastDotPos >= 0 && lastDotPos < textBeforeCursor.length() - 1) {
-                    // Rather than using a hacky distance check, validate the context properly:
-                    // 1. Check if we're still in an identifier context after the dot
-                    // 2. If we encounter any delimiter or non-identifier character after the dot,
-                    //    we're no longer in a namespace completion context
-                    
-                    // Get the text after the last dot
-                    String textAfterDot = textBeforeCursor.substring(lastDotPos + 1);
-                    
-                    // Check if we've moved beyond the identifier context by looking for delimiters/operators
-                    boolean isStillInMemberContext = true;
-                    
-                    // Rather than listing characters that break the context, check if all characters
-                    // after the dot match valid identifier characters (letters, digits, underscore)
-                    Pattern validIdentifierPattern = Pattern.compile("^[a-zA-Z0-9_]+$");
-                    if (!validIdentifierPattern.matcher(textAfterDot).matches()) {
-                        isStillInMemberContext = false;
-                        LOG.warn("🔍 [fillCompletionVariants] Not in member context anymore, found non-identifier character in: '" + textAfterDot + "'");
-                    }
-                    
-                    // Only process namespace completion if we're still in a member access context
-                    if (isStillInMemberContext) {
-                        // Check if we're inside a comment
-                        boolean insideComment = isInsideComment(textBeforeCursor, lastDotPos);
-                        if (insideComment) {
-                            LOG.warn("🔍 [fillCompletionVariants] Dot is inside a comment, skipping namespace completion");
-                        } else {
-                            String potentialNamespace = findNamespaceAtPosition(textBeforeCursor, lastDotPos);
-                            String partialText = textBeforeCursor.substring(lastDotPos + 1);
-                            
-                            LOG.warn("🔍 [fillCompletionVariants] Found dot with text after it. " +
-                                   "Potential namespace: '" + potentialNamespace + "', " +
-                                   "Partial text: '" + partialText + "'");
-                            
-                            if (potentialNamespace != null) {
-                                boolean isBuiltInNamespace = Arrays.asList(NAMESPACES).contains(potentialNamespace);
-                                String version = detectPineScriptVersion(text);
-                                
-                                // Check if this is a valid namespace with members
-                                boolean hasMatchingDefinition = false;
-                                Set<String> functions = FUNCTIONS_MAP.getOrDefault(version, new HashSet<>());
-                                Set<String> variables = VARIABLES_MAP.getOrDefault(version, new HashSet<>());
-                                Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
-                                
-                                for (String def : functions) {
-                                    if (def.startsWith(potentialNamespace + ".")) {
-                                        hasMatchingDefinition = true;
-                                        break;
-                                    }
-                                }
-                                
-                                if (!hasMatchingDefinition) {
-                                    for (String def : variables) {
-                                        if (def.startsWith(potentialNamespace + ".")) {
-                                            hasMatchingDefinition = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                                
-                                if (!hasMatchingDefinition) {
-                                    for (String def : constants) {
-                                        if (def.startsWith(potentialNamespace + ".")) {
-                                            hasMatchingDefinition = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                                
-                                // For valid namespaces, add members with a custom prefix matcher
-                                if (isBuiltInNamespace || hasMatchingDefinition) {
-                                    LOG.warn("🔍 [fillCompletionVariants] Creating filtered result set with prefix: '" + partialText + "'");
-                                    
-                                    // Create a filtered result set with the prefix to match
-                                    CompletionResultSet filteredResult = result.withPrefixMatcher(partialText);
-                                    LOG.warn("🔍 [fillCompletionVariants] Created filtered result set for: '" + partialText + "'");
-                                    
-                                    // Add namespace method completions with this prefix matcher
-                                    addNamespaceMethodCompletions(filteredResult, potentialNamespace, version);
-                                    return; // Skip standard completion
-                                }
-                            }
-                        }
-                    } else {
-                        LOG.warn("🔍 [fillCompletionVariants] Cursor is no longer in a namespace member completion context");
-                    }
-                }
-            }
+        String documentText = document.getText();
+       
+        // Explicitly write to IDE logs for diagnostics
+        LOG.warn("PineScriptCompletionContributor running at offset " + offset);
 
-            // Case 3: Check for variable assignment with = operator
-            int equalsPos = textBeforeCursor.lastIndexOf("=");
-            if (equalsPos >= 0 && equalsPos < textBeforeCursor.length() - 1) {
-                try {
-                    // Check that this is a standalone equals, not part of ==, >=, etc.
-                    if (equalsPos == 0 || (equalsPos > 0 && 
-                        textBeforeCursor.charAt(equalsPos - 1) != ':' && 
-                        textBeforeCursor.charAt(equalsPos - 1) != '=' && 
-                        textBeforeCursor.charAt(equalsPos - 1) != '<' && 
-                        textBeforeCursor.charAt(equalsPos - 1) != '>' && 
-                        textBeforeCursor.charAt(equalsPos - 1) != '!')) {
-                        
-                        // Extract text between start of line/statement and the = operator
-                        String lineText = textBeforeCursor;
-                        int lineStart = Math.max(lineText.lastIndexOf('\n'), lineText.lastIndexOf(';'));
-                        
-                        // Ensure lineStart is valid (it might be -1 if not found)
-                        lineStart = Math.max(lineStart, -1); // If both \n and ; are not found, use -1
-                        
-                        // Check that lineStart is less than equalsPos to avoid invalid range
-                        if (lineStart < equalsPos) {
-                            if (lineStart >= 0) {
-                                lineText = lineText.substring(lineStart + 1, equalsPos).trim();
-                            } else {
-                                lineText = lineText.substring(0, equalsPos).trim();
-                            }
-                            
-                            LOG.warn("🔍 [fillCompletionVariants] Found variable assignment: '" + lineText + " ='");
-                            
-                            // Try to infer the expected type
-                            String expectedType = inferExpectedType(textBeforeCursor);
-                            String version = detectPineScriptVersion(text);
-                            
-                            if (expectedType != null) {
-                                LOG.warn("🔍 [fillCompletionVariants] Expected type for '" + lineText + "' is '" + expectedType + "'");
-                                
-                                // Get text after = for prefix matching
-                                String textAfterEquals = textBeforeCursor.substring(equalsPos + 1).trim();
-                                LOG.warn("🔍 [fillCompletionVariants] Text after = is: '" + textAfterEquals + "'");
-                                
-                                // Check if the user is typing a namespace
-                                int lastDotInEquals = textAfterEquals.lastIndexOf('.');
-                                if (lastDotInEquals > 0) {
-                                    String potentialNamespace = textAfterEquals.substring(0, lastDotInEquals);
-                                    String textAfterDot = textAfterEquals.substring(lastDotInEquals + 1);
-                                    
-                                    LOG.warn("🔍 [fillCompletionVariants] Potential namespace in equals: '" + potentialNamespace + "', after dot: '" + textAfterDot + "'");
-                                    
-                                    // Check if this is a valid namespace
-                                    boolean isBuiltInNamespace = Arrays.asList(NAMESPACES).contains(potentialNamespace);
-                                    boolean hasMatchingDefinition = false;
-                                    
-                                    Set<String> functions = FUNCTIONS_MAP.getOrDefault(version, new HashSet<>());
-                                    Set<String> variables = VARIABLES_MAP.getOrDefault(version, new HashSet<>());
-                                    Set<String> constants = CONSTANTS_MAP.getOrDefault(version, new HashSet<>());
-                                    
-                                    for (String def : functions) {
-                                        if (def.startsWith(potentialNamespace + ".")) {
-                                            hasMatchingDefinition = true;
-                                            break;
-                                        }
-                                    }
-                                    
-                                    if (!hasMatchingDefinition) {
-                                        for (String def : variables) {
-                                            if (def.startsWith(potentialNamespace + ".")) {
-                                                hasMatchingDefinition = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    
-                                    if (!hasMatchingDefinition) {
-                                        for (String def : constants) {
-                                            if (def.startsWith(potentialNamespace + ".")) {
-                                                hasMatchingDefinition = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    
-                                    if (isBuiltInNamespace || hasMatchingDefinition) {
-                                        // Create a filtered result set with the prefix to match
-                                        CompletionResultSet filteredResult = result.withPrefixMatcher(textAfterDot);
-                                        
-                                        // Add namespace method completions
-                                        addNamespaceMethodCompletions(filteredResult, potentialNamespace, version);
-                                        return; // Skip standard completion
-                                    }
-                                }
-                                
-                                // Create a filtered result set with the prefix to match
-                                CompletionResultSet filteredResult = result.withPrefixMatcher(textAfterEquals);
-                                
-                                // First add local variables from the current document
-                                // Pass the expected type to the scanned completions
-                                addScannedCompletions(parameters, filteredResult, expectedType);
-                                
-                                // Add type-specific completions from standard libraries
-                                addCompletionsForExpectedType(filteredResult, expectedType, version);
-                                return; // Skip standard completion
-                            }
-                        }
-                    }
-                } catch (StringIndexOutOfBoundsException e) {
-                    LOG.warn("🔍 [fillCompletionVariants] StringIndexOutOfBoundsException in variable assignment: " + e.getMessage());
-                    // Continue with standard completion
-                }
-            }
+        // Get text from line start up to cursor position
+        int lineStart = document.getLineStartOffset(document.getLineNumber(offset));
+        String textBeforeCursor = documentText.substring(lineStart, offset);
+        LOG.info("[fillCompletionVariants] Text before cursor: '" + textBeforeCursor + "'");
+        
+        // Skip autocompletion if inside a comment
+        if (isInsideComment(documentText, offset)) {
+        LOG.info("[fillCompletionVariants] Cursor is inside a comment, skipping autocompletion");
+            return; // no autocomplete
+        }
+
+        // Skip autocompletion if inside a string
+        if (isInsideString(documentText, offset)) {
+            LOG.info("[fillCompletionVariants] Cursor is inside a string, skipping autocompletion");
+            return; // no autocomplete
         }
         
-        // Check if we're inside a function call - this should be checked before falling back to standard completions
-        checkFunctionCallContext(text, offset);
+        // Detect Pine Script version from the document
+        String version = detectPineScriptVersion(documentText);
+        // Ensure definitions for this version are loaded
+        if (!CACHED_DEFINITIONS.containsKey(version)) {
+            loadDefinitionsForVersion(version);
+        }
         
-        if (isInsideFunctionCall && currentFunctionName != null) {
-            LOG.warn("🔍 [fillCompletionVariants] Inside function call: " + currentFunctionName + ", param index: " + currentParamIndex);
+        // Check if we're in a namespace context after a dot
+        String typedNamespacePart = getTypedNamespace(textBeforeCursor, offset);
+        if (typedNamespacePart != null) {
+            LOG.warn("🔍 [fillCompletionVariants] Namespace typing detected before dot: '" + typedNamespacePart + "'");
+            // Add namespace elements to the result
+            addNamespaceMethodCompletions(result, typedNamespacePart, version);
+            return; // only add namespace methods
+        } else {
+            LOG.warn("🔍 [fillCompletionVariants] No namespace detected before dot");
+        }
+       
+        // Check if we're in a variable assignment context with either = or :=
+        if (isAssignmentStatement(textBeforeCursor, offset)) {
+            LOG.warn("🔍 [fillCompletionVariants] Assignment statement detected");
+            // Try to infer the expected type
+            String expectedType = inferExpectedType(textBeforeCursor);
+            
+            if (expectedType != null) {
+                LOG.warn("🔍 [fillCompletionVariants] Expected type for '" + textBeforeCursor + "' is '" + expectedType + "'");
+                
+                // Get text after = for prefix matching
+                String textAfterEquals = getTextAfterAssignment(textBeforeCursor, offset);
+                LOG.warn("🔍 [fillCompletionVariants] Text after = is: '" + textAfterEquals + "'");
+                
+                // Create a filtered result set with the prefix to match
+                CompletionResultSet filteredResult = result.withPrefixMatcher(textAfterEquals);
+                
+                // First add local variables from the current document
+                // Pass the expected type to the scanned completions
+                addScannedCompletions(parameters, filteredResult, expectedType);
+                
+                // Add type-specific completions from standard libraries
+                addCompletionsForExpectedType(filteredResult, expectedType, version);
+                return; // Skip standard completion
+            }
+        }
+
+        if(isInsideFunctionCall(textBeforeCursor, offset)   ) {
+            currentFunctionName = extractFunctionName(textBeforeCursor);
+            LOG.warn("🔍 [fillCompletionVariants] Inside function call: " + currentFunctionName + ", parameter index: " + currentParamIndex);
+            String typedFunctionParameter = getTypedFunctionParameter(textBeforeCursor);
+            // Prepare a filtered result set based on the text after comma or bracket
+            CompletionResultSet filteredResult = result.withPrefixMatcher(typedFunctionParameter);
             
             // Add parameter completions
-            String version = detectPineScriptVersion(text);
-            
-            // Modify prefixMatcher based on text after last comma
-            String textAfterComma = "";
-            
-            // Find the opening parenthesis of the current function call
-            int openParenCount = 0;
-            int closeParenCount = 0;
-            int currentFunctionOpenPos = -1;
-            
-            // Scan backward to find the opening parenthesis of the current function
-            for (int i = textBeforeCursor.length() - 1; i >= 0; i--) {
-                char c = textBeforeCursor.charAt(i);
-                if (c == ')') {
-                    closeParenCount++;
-                } else if (c == '(') {
-                    openParenCount++;
-                    if (openParenCount > closeParenCount) {
-                        // We've found the opening parenthesis of our current function call
-                        currentFunctionOpenPos = i;
-                        break;
-                    }
-                }
+            if (currentFunctionName != null) {
+                currentParamIndex = getParamIndexFromText(documentText.substring(0, offset));
+                addParameterCompletions(filteredResult, currentFunctionName, currentParamIndex, version);
             }
-            
-            if (currentFunctionOpenPos >= 0) {
-                // Now look for the last comma, but only after the opening parenthesis of current function
-                int lastCommaPos = textBeforeCursor.lastIndexOf(',', textBeforeCursor.length() - 1);
-                
-                if (lastCommaPos > currentFunctionOpenPos) {
-                    // If we found a comma after the opening parenthesis, get text after it
-                    textAfterComma = textBeforeCursor.substring(lastCommaPos + 1).trim();
-                    LOG.debug("Found comma in current function at position " + lastCommaPos + 
-                             ", text after: '" + textAfterComma + "'");
-                } else {
-                    // No comma found in this function call, use everything after the opening parenthesis
-                    textAfterComma = textBeforeCursor.substring(currentFunctionOpenPos + 1).trim();
-                    LOG.debug("No comma in current function, using text after opening parenthesis: '" + 
-                             textAfterComma + "'");
-                }
-            }
-            
-            LOG.warn("🔍 [fillCompletionVariants] Text after comma/paren: '" + textAfterComma + "'");
-            
-            // Check if there's a dot after the comma, which might indicate namespace access
-            int dotAfterComma = textAfterComma.lastIndexOf('.');
-            if (dotAfterComma >= 0) {
-                String namespaceInParam = textAfterComma.substring(0, dotAfterComma).trim();
-                String afterDot = textAfterComma.substring(dotAfterComma + 1).trim();
-                
-                LOG.warn("🔍 [fillCompletionVariants] Potential namespace in parameter: '" + namespaceInParam + "', after dot: '" + afterDot + "'");
-                
-                boolean isBuiltInNamespace = Arrays.asList(NAMESPACES).contains(namespaceInParam);
-                if (isBuiltInNamespace) {
-                    CompletionResultSet filteredResult = result.withPrefixMatcher(afterDot);
-                    addNamespaceMethodCompletions(filteredResult, namespaceInParam, version);
-                    return;
-                }
-            }
-            
-            // Prepare a filtered result set based on the text after comma
-            CompletionResultSet filteredResult = result.withPrefixMatcher(textAfterComma);
-            
-            // Add parameter completions
-            addParameterCompletions(filteredResult, currentFunctionName, currentParamIndex, version);
-            
-            // For function parameters, also look for local variables that might match
-            // Pass null as expectedType since we handle type filtering separately for function params
-            addScannedCompletions(parameters, filteredResult, null);
-            
             return; // Skip standard completion
         }
-        
+
         // Call the parent implementation to handle the standard completion
         LOG.warn("🔍 [fillCompletionVariants] Calling super.fillCompletionVariants");
         super.fillCompletionVariants(parameters, result);
         LOG.warn("🔍 [fillCompletionVariants] Returned from super.fillCompletionVariants");
-        
-        // Add local variables and functions from the document
-        String expectedType = null;
-        // Check if we're in a variable assignment context with either = or :=
-        if (textBeforeCursor.contains("=") || textBeforeCursor.contains(":=")) {
-            expectedType = inferExpectedType(textBeforeCursor);
-            LOG.warn("🔍 [fillCompletionVariants] Expected type for standard completions: '" + expectedType + "'");
-        }
-        addScannedCompletions(parameters, result, expectedType);
+        addScannedCompletions(parameters, result, null);
     }
     
     /**
@@ -821,22 +459,16 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             if (version == null) {
                 LOG.warn("Attempted to load definitions for null version, using DEFAULT_VERSION");
                 version = DEFAULT_VERSION;
-                
-                // If default version is also null, use a fallback
-                if (version == null) {
-                    LOG.warn("DEFAULT_VERSION is also null, using fallback version '5'");
-                    version = "5";
-                }
             }
             
             LOG.info("Loading definitions for Pine Script version " + version);
             
             // If already loaded, skip
-            if (CACHED_DEFINITIONS.containsKey(version)) {
-                LOG.info("Definitions for version " + version + " already loaded");
-                return;
-            }
-            
+        if (CACHED_DEFINITIONS.containsKey(version)) {
+            LOG.info("Definitions for version " + version + " already loaded");
+            return;
+        }
+        
             List<String> functions = loadNamesFromDefinitionFile(version, "functions.json");
             List<String> variables = loadNamesFromDefinitionFile(version, "variables.json");
             List<String> constants = loadNamesFromDefinitionFile(version, "constants.json");
@@ -871,7 +503,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             
             // Initialize function parameters
             FUNCTION_PARAMETERS_CACHE.put(version, initFunctionParametersForVersion(version));
-            
+        
             LOG.info("Successfully loaded definitions for Pine Script version " + version);
         } catch (Exception e) {
             LOG.error("Error loading definitions for version " + version, e);
@@ -1004,15 +636,21 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      * For example, in "request.", this function would return "request"
      */
     private static String findNamespaceBeforeDot(String text) {
-        if (text == null || text.isEmpty() || !text.endsWith(".")) {
+        if (text == null || text.isEmpty()) {
             return null;
         }
         
-        // Find the last non-identifier character before the final dot
+        // Find the last dot in the text
+        int lastDotPos = text.lastIndexOf('.');
+        if (lastDotPos == -1) {
+            return null;
+        }
+        
+        // Find the last non-identifier character before the dot
         int lastNonWordChar = -1;
         
         // Iterate backwards from just before the dot
-        for (int i = text.length() - 2; i >= 0; i--) {
+        for (int i = lastDotPos - 1; i >= 0; i--) {
             char c = text.charAt(i);
             // If we find a character that's not a letter, digit, or underscore
             if (!Character.isJavaIdentifierPart(c)) {
@@ -1022,7 +660,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         }
         
         // Extract the word between the last non-word character and the dot
-        String word = text.substring(lastNonWordChar + 1, text.length() - 1);
+        String word = text.substring(lastNonWordChar + 1, lastDotPos);
         LOG.warn("🔍 [findNamespaceBeforeDot] Found namespace before dot: \"" + word + "\"");
         
         // Validate that this is a proper identifier
@@ -1038,9 +676,19 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      * Determines if the cursor is within a function call.
      */
     private static boolean isInsideFunctionCall(String text, int offset) {
+        // unit test for text="// someVar = someOpenFunctionInComment(firstParam=someValue, ", offset=text.length()-1 => false
+        // unit test for text="someVar = someOpenFunction(firstParam='someOpenStringValue", offset=text.length()-1 => false
+        // unit test for text="someVar = someOpenFunction(firstParam='someOpenStringValue", offset=text.lastIndexOf("firstParam") => true
+        // unit test for text="someVar = someOpenFunction(firstParam='someClosedStringValue', secondParam=", offset=offset=text.length()-1 => true
         if (isInsideString(text, offset) || isInsideComment(text, offset)) {
-            return false;
-        }
+                return false;
+            }
+        // unit test for text="someVar = someOpenFunctionOnMultipleLines(firstParam=someValue, 
+        // secondParam=someOtherValue, thirdParam=someThirdValue, ", offset=text.length()-1 => false
+
+        // unit test for text="someVar = someOpenFunctionOnMultipleLines(firstParam=someValue, 
+        // secondParam=someOtherValue, thirdParam=someThirdValue, ", offset=text.lastIndexOf("firstParam") => true
+
         // Get the current line.
         int lineStart = text.lastIndexOf('\n', offset - 1);
         lineStart = (lineStart == -1) ? 0 : lineStart + 1;
@@ -1048,10 +696,22 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         lineEnd = (lineEnd == -1) ? text.length() : lineEnd;
         String currentLine = text.substring(lineStart, lineEnd);
         int relativeOffset = offset - lineStart;
+
+        // unit test for text="someVar = someOpenFunction(firstParam=someValue, ", offset=text.length()-1 => true
+        // unit test for text="someVar = someOpenFunction(firstParam=someValue, ", offset=lastIndexOf("someOpenFunction") => false
+        // unit test for text="someVar = someOpenFunction(firstParam=someValue, secondParam=someClosedFunction(someOtherValue), ", offset=lastIndexOf("someClosedFunction") => true
+        // unit test for text="someVar = someOpenFunction(firstParam=someValue, secondParam=someClosedFunction(someOtherValue), ", offset=lastIndexOf("someOtherValue") => true
+        // unit test for text="someVar = someOpenFunction(firstParam=someValue, secondParam=someClosedFunction(someOtherValue), ", offset=text.length()-1 => true
         int lastParen = currentLine.lastIndexOf('(', relativeOffset);
         if (lastParen == -1) {
             return false;
         }
+
+        // unit test for text="someVar = someOpenFunction(someValue)", offset=text.length()-1 => false
+        // unit test for text="someVar = someOpenFunction(someValue)", offset=lastIndexOf("someValue") => true
+        // unit test for text="someVar = someOpenFunction(firstParam=someValue, secondParam=someClosedFunction(someOtherValue), thirdParam=someThirdValue)", offset=text.length()-1 => false
+        // unit test for text="someVar = someOpenFunction(firstParam=someValue, secondParam=someClosedFunction(someOtherValue), thirdParam=someThirdValue)", offset=lastIndexOf("someValue") => false
+        // unit test for text="someVar = someOpenFunction(firstParam=someValue, secondParam=someClosedFunction(someOtherValue), thirdParam=someThirdValue)", offset=lastIndexOf("someOtherValue") => true
         // Check for a closing ')' after the last '(' but before the current offset.
         String between = currentLine.substring(lastParen, relativeOffset);
         if (between.contains(")")) {
@@ -1082,6 +742,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         if (nameStart < lastOpenParen) {
             return text.substring(nameStart, lastOpenParen);
         }
+
+
         
         return null;
     }
@@ -1093,7 +755,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                                            @NotNull CompletionResultSet result,
                                            String version) {
         Document document = parameters.getEditor().getDocument();
-        int offset = parameters.getOffset();
+                        int offset = parameters.getOffset();
         String documentText = document.getText();
         
         // Initialize with empty values
@@ -1307,11 +969,11 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         "', Type: '" + potentialType + 
                         (qualifier != null ? "', Qualifier: '" + qualifier : "") + 
                         "', Match #" + matchCount + 
-                        ", Text: '" + text.substring(Math.max(0, matcher.start() - 10), 
-                                                     Math.min(text.length(), matcher.end() + 10)) + "'");
+                         ", Text: '" + text.substring(Math.max(0, matcher.start() - 10), 
+                                                      Math.min(text.length(), matcher.end() + 10)) + "'");
             } else {
                 LOG.warn("🚨 [DEBUG] Found Previous Declaration but type not known - Variable: '" + variableName + 
-                        "', Potential Type: '" + potentialType + "', Match #" + matchCount);
+                         "', Potential Type: '" + potentialType + "', Match #" + matchCount);
             }
         }
         
@@ -1532,8 +1194,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     private void addTypeSpecificCompletionsWithCompatibility(
             CompletionResultSet result, 
             TypeInfo targetTypeInfo,
-            Map<String, Set<String>> typedFunctions,
-            Map<String, Set<String>> typedVariables,
+                                           Map<String, Set<String>> typedFunctions,
+                                           Map<String, Set<String>> typedVariables,
             Map<String, Set<String>> typedConstants,
             String version) {
         
@@ -1559,11 +1221,11 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 TypeInfo sourceTypeInfo = parseTypeString(returnTypeStr);
                 
                 if (isValidAssignment(targetTypeInfo, sourceTypeInfo)) {
-                    result.addElement(LookupElementBuilder.create(function)
-                        .withPresentableText(function)
+                result.addElement(LookupElementBuilder.create(function)
+                    .withPresentableText(function)
                         .withTypeText(returnTypeStr)
-                        .withIcon(AllIcons.Nodes.Function)
-                        .withBoldness(true));
+                    .withIcon(AllIcons.Nodes.Function)
+                    .withBoldness(true));
                     LOG.info("➕ [addTypeSpecificCompletionsWithCompatibility] Added compatible function: " + 
                              function + " (returns: " + returnTypeStr + ")");
                 } else {
@@ -1614,9 +1276,9 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     private void addUntypedCompletionsWithCompatibility(
             CompletionResultSet result,
             TypeInfo targetTypeInfo,
-            Map<String, Set<String>> typedFunctions,
-            Map<String, Set<String>> typedVariables,
-            Map<String, Set<String>> typedConstants) {
+                                      Map<String, Set<String>> typedFunctions,
+                                      Map<String, Set<String>> typedVariables,
+                                      Map<String, Set<String>> typedConstants) {
         
         LOG.info("💡 [addUntypedCompletionsWithCompatibility] Adding completions with unknown types");
         
@@ -1846,7 +1508,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 }
                 
                 int addedCount = 0;
-                for (String method : methods) {
+                                    for (String method : methods) {
                     // Skip if already added
                     if (addedMembers.contains(method)) {
                         continue;
@@ -2052,10 +1714,10 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         LOG.warn(">>>>>> Adding parameter completions for function: " + functionName + ", version: " + version);
         
         // Check if we have parameter information for this function
-        Map<String, List<Map<String, String>>> functionArgs = FUNCTION_ARGUMENTS_CACHE.getOrDefault(version, new HashMap<>());
+            Map<String, List<Map<String, String>>> functionArgs = FUNCTION_ARGUMENTS_CACHE.getOrDefault(version, new HashMap<>());
         
-        if (functionArgs.containsKey(functionName)) {
-            List<Map<String, String>> args = functionArgs.get(functionName);
+            if (functionArgs.containsKey(functionName)) {
+                List<Map<String, String>> args = functionArgs.get(functionName);
             LOG.warn(">>>>>> Found " + args.size() + " parameters for function: " + functionName);
             
             // Log the parameter names and types
@@ -2146,7 +1808,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         try {
             // Check if we're inside a function call
             if (isInsideFunctionCall(documentText, offset)) {
-                isInsideFunctionCall = true;
+            isInsideFunctionCall = true;
                 
                 // Extract the current function name and parameter index
                 currentFunctionName = extractFunctionName(documentText.substring(0, offset));
@@ -2653,12 +2315,12 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                 }
                 
                 if (shouldAdd && !foundVars.contains(varName)) {
-                    result.addElement(LookupElementBuilder.create(varName)
-                        .withPresentableText(varName)
+                        result.addElement(LookupElementBuilder.create(varName)
+                            .withPresentableText(varName)
                         .withTypeText(typeStr)
-                        .withIcon(AllIcons.Nodes.Variable)
-                        .withBoldness(true));
-                    foundVars.add(varName);
+                            .withIcon(AllIcons.Nodes.Variable)
+                            .withBoldness(true));
+                        foundVars.add(varName);
                     LOG.info("➕ [addScannedCompletions] Added typed variable to completions: " + varName + " (type: " + typeStr + ")");
                     LOG.warn("🚨 [DEBUG] Suggestion Added - Variable: '" + varName + "', Type: '" + typeStr + "'");
                 } else if (!shouldAdd) {
@@ -3063,10 +2725,10 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         // Safely process the function names (could be null in some cases)
         if (functionNames != null) {
             // Process the function names from JSON to extract namespace methods
-            for (String functionName : functionNames) {
+        for (String functionName : functionNames) {
                 if (functionName != null && functionName.contains(".")) {
-                    String[] parts = functionName.split("\\.", 2);
-                    if (parts.length == 2 && namespaceMethodsMap.containsKey(parts[0])) {
+                String[] parts = functionName.split("\\.", 2);
+                if (parts.length == 2 && namespaceMethodsMap.containsKey(parts[0])) {
                         String namespace = parts[0];
                         String method = parts[1];
                         
@@ -3367,7 +3029,7 @@ public class PineScriptCompletionContributor extends CompletionContributor {
                         return;
                     }
                 }
-            
+                
 
             });
         }
@@ -3408,41 +3070,15 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     }
 
     /**
-     * Checks if a position in the text is inside a comment.
-     * @param text The text to check
-     * @param position The position to check
-     * @return true if the position is inside a comment, false otherwise
+     * Checks if the given position in the text is inside a comment.
+     * Pine Script supports only single-line comments starting with "//".
      */
     private static boolean isInsideComment(String text, int position) {
-        // Look for // or /* comment markers before the position
-        int pos = position;
-        while (pos >= 0) {
-            // Check for line comment //
-            if (pos > 0 && text.charAt(pos - 1) == '/' && text.charAt(pos) == '/') {
-                // Found a line comment, now check if there's a newline between this and the position
-                int newlinePos = text.indexOf('\n', pos);
-                if (newlinePos == -1 || newlinePos > position) {
-                    // No newline found or newline is after our position, so we're in a comment
-                    LOG.warn("🔍 [isInsideComment] Position " + position + " is inside a line comment starting at " + pos);
-                    return true;
-                }
-            }
-            
-            // Check for block comment start /*
-            if (pos > 0 && text.charAt(pos - 1) == '/' && text.charAt(pos) == '*') {
-                // Found block comment start, check if there's a block comment end between this and the position
-                int commentEnd = text.indexOf("*/", pos);
-                if (commentEnd == -1 || commentEnd + 1 > position) {
-                    // No comment end found or comment end is after our position, so we're in a comment
-                    LOG.warn("🔍 [isInsideComment] Position " + position + " is inside a block comment starting at " + pos);
-                    return true;
-                }
-            }
-            
-            pos--;
-        }
-        
-        return false;
+        // Get the current line.
+        int lineStart = text.lastIndexOf('\n', position - 1);
+        lineStart = (lineStart == -1) ? 0 : lineStart + 1;
+        String line = text.substring(lineStart, position);
+        return line.trim().startsWith("//");
     }
 
     /**
@@ -3759,5 +3395,47 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             return paramIndex;
         }
         return 0;
+    }
+
+    /**
+     * Gets the text after the last comma in the current function call.
+     * If no comma is found, returns text after the opening parenthesis.
+     * 
+     * @param textBeforeCursor The text up to the cursor position
+     * @return The trimmed text after the last comma or opening parenthesis
+     */
+    private String getTypedFunctionParameter(String textBeforeCursor) {
+        int currentFunctionOpenPos = textBeforeCursor.lastIndexOf('(', textBeforeCursor.length() - 1);
+        String textAfterComma = "";
+
+        // Look for the last comma, but only after the opening parenthesis of current function
+        int lastCommaPos = textBeforeCursor.lastIndexOf(',', textBeforeCursor.length() - 1);
+        
+        if (lastCommaPos > currentFunctionOpenPos) {
+            // If we found a comma after the opening parenthesis, get text after it
+            textAfterComma = textBeforeCursor.substring(lastCommaPos + 1).trim();
+            LOG.debug("Found comma in current function at position " + lastCommaPos + 
+                        ", text after: '" + textAfterComma + "'");
+        } else {
+            // No comma found in this function call, use everything after the opening parenthesis
+            textAfterComma = textBeforeCursor.substring(currentFunctionOpenPos + 1).trim();
+            LOG.debug("No comma in current function, using text after opening parenthesis: '" + 
+                        textAfterComma + "'");
+        }
+        
+        LOG.warn("🔍 [getTypedFunctionParameter] Text after comma/paren: '" + textAfterComma + "'");
+        return textAfterComma;
+    }
+        /**
+     * Gets the text after the last assignment
+     * 
+     * @param textBeforeCursor The text up to the cursor position
+     * @return The trimmed text after the last assignment
+     */
+    private String getTextAfterAssignment(String textBeforeCursor, int offset) {
+        assert isAssignmentStatement(textBeforeCursor, offset)
+        : "Must call only when an assignment operator (= or :=) is present";
+    int equalsPos = textBeforeCursor.lastIndexOf('=');
+    return textBeforeCursor.substring(equalsPos + 1).trim();
     }
 }
