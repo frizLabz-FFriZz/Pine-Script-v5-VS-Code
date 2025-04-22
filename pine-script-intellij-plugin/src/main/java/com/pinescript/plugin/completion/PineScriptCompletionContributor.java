@@ -104,15 +104,22 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         */
 
         LOG.info("Checking if cursor at offset " + offset + " is inside string");
-        int lineStart = text.lastIndexOf('\n', offset - 1);
-        lineStart = (lineStart == -1) ? 0 : lineStart + 1;
-        int lineEnd = text.indexOf('\n', offset);
-        lineEnd = (lineEnd == -1) ? text.length() : lineEnd;
-        String currentLine = text.substring(lineStart, lineEnd);
+        String currentLine;
+        int relativeOffset;
+        if (text.indexOf('\n') == -1) {
+            currentLine = text;
+            relativeOffset = offset;
+        } else {
+            int lineStart = text.lastIndexOf('\n', offset - 1);
+            lineStart = (lineStart == -1) ? 0 : lineStart + 1;
+            int lineEnd = text.indexOf('\n', offset);
+            lineEnd = (lineEnd == -1) ? text.length() : lineEnd;
+            currentLine = text.substring(lineStart, lineEnd);
+            relativeOffset = offset - lineStart;
+        }
         
         boolean insideString = false;
         char openingQuote = '\0';
-        int relativeOffset = offset - lineStart;
         
         for (int i = 0; i < relativeOffset; i++) {
             char c = currentLine.charAt(i);
@@ -345,25 +352,27 @@ public class PineScriptCompletionContributor extends CompletionContributor {
     @Override
     public void fillCompletionVariants(@NotNull CompletionParameters parameters, @NotNull CompletionResultSet result) {
         Document document = parameters.getEditor().getDocument();
-        int offset = parameters.getOffset();
+        int initialOffset = parameters.getOffset();
         String documentText = document.getText();
        
         // Explicitly write to IDE logs for diagnostics
-        LOG.warn("PineScriptCompletionContributor running at offset " + offset);
+        LOG.warn("PineScriptCompletionContributor running at offset " + initialOffset);
 
         // Get text from line start up to cursor position
-        int lineStart = document.getLineStartOffset(document.getLineNumber(offset));
-        String textBeforeCursor = documentText.substring(lineStart, offset);
-        LOG.info("[fillCompletionVariants] Text before cursor: '" + textBeforeCursor + "'");
+        int lineStart = document.getLineStartOffset(document.getLineNumber(initialOffset));
+        String textBeforeCursor = documentText.substring(lineStart, initialOffset);
+        // Calculate a relative offset for operations on the trimmed text
+        int offset = initialOffset - lineStart;
+        LOG.info("[fillCompletionVariants] Text before cursor: '" + textBeforeCursor + "', relative offset: " + offset);
         
         // Skip autocompletion if inside a comment
-        if (isInsideComment(documentText, offset)) {
+        if (isInsideComment(documentText, initialOffset)) {
         LOG.info("[fillCompletionVariants] Cursor is inside a comment, skipping autocompletion");
             return; // no autocomplete
         }
 
         // Skip autocompletion if inside a string
-        if (isInsideString(documentText, offset)) {
+        if (isInsideString(documentText, initialOffset)) {
             LOG.info("[fillCompletionVariants] Cursor is inside a string, skipping autocompletion");
             return; // no autocomplete
         }
@@ -421,16 +430,22 @@ public class PineScriptCompletionContributor extends CompletionContributor {
             
             // Add parameter completions
             if (currentFunctionName != null) {
-                currentParamIndex = getParamIndexFromText(documentText.substring(0, offset));
+                currentParamIndex = getParamIndexFromText(textBeforeCursor.substring(0, offset));
                 addParameterCompletions(filteredResult, currentFunctionName, currentParamIndex, version);
             }
-            return; // Skip standard completion
+            //return; // Skip standard completion
         }
 
         // Call the parent implementation to handle the standard completion
-        LOG.warn("🔍 [fillCompletionVariants] Calling super.fillCompletionVariants");
+        /*LOG.warn("🔍 [fillCompletionVariants] Calling super.fillCompletionVariants");
         super.fillCompletionVariants(parameters, result);
-        LOG.warn("🔍 [fillCompletionVariants] Returned from super.fillCompletionVariants");
+        LOG.warn("🔍 [fillCompletionVariants] Returned from super.fillCompletionVariants");*/
+        LOG.warn("🔍 [fillCompletionVariants] Calling addAllCompletionItems");
+        addAllCompletionItems(result, version);
+        
+        addStandardCompletions(parameters, result, documentText, initialOffset, version);
+
+        LOG.warn("🔍 [fillCompletionVariants] Calling addScannedCompletions");
         addScannedCompletions(parameters, result, null);
     }
     
@@ -689,13 +704,20 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         // unit test for text="someVar = someOpenFunctionOnMultipleLines(firstParam=someValue, 
         // secondParam=someOtherValue, thirdParam=someThirdValue, ", offset=text.lastIndexOf("firstParam") => true
 
-        // Get the current line.
+    // Determine current line and relative offset, handling single-line input
+    String currentLine;
+    int relativeOffset;
+    if (text.indexOf('\n') == -1) {
+        currentLine = text;
+        relativeOffset = offset;
+    } else {
         int lineStart = text.lastIndexOf('\n', offset - 1);
         lineStart = (lineStart == -1) ? 0 : lineStart + 1;
         int lineEnd = text.indexOf('\n', offset);
         lineEnd = (lineEnd == -1) ? text.length() : lineEnd;
-        String currentLine = text.substring(lineStart, lineEnd);
-        int relativeOffset = offset - lineStart;
+        currentLine = text.substring(lineStart, lineEnd);
+        relativeOffset = offset - lineStart;
+    }
 
         // unit test for text="someVar = someOpenFunction(firstParam=someValue, ", offset=text.length()-1 => true
         // unit test for text="someVar = someOpenFunction(firstParam=someValue, ", offset=lastIndexOf("someOpenFunction") => false
@@ -3074,11 +3096,29 @@ public class PineScriptCompletionContributor extends CompletionContributor {
      * Pine Script supports only single-line comments starting with "//".
      */
     private static boolean isInsideComment(String text, int position) {
-        // Get the current line.
-        int lineStart = text.lastIndexOf('\n', position - 1);
-        lineStart = (lineStart == -1) ? 0 : lineStart + 1;
-        String line = text.substring(lineStart, position);
-        return line.trim().startsWith("//");
+    // Handle single-line input without newline characters
+    if (text.indexOf('\n') == -1) {
+        int commentStart = text.indexOf("//");
+        return commentStart >= 0 && position >= commentStart;
+    }
+
+    // Find start and end of the current line
+    int lineStart = text.lastIndexOf('\n', position - 1);
+    lineStart = (lineStart == -1) ? 0 : lineStart + 1;
+    int lineEnd = text.indexOf('\n', position);
+    lineEnd = (lineEnd == -1) ? text.length() : lineEnd;
+
+        // Extract current line
+        String line = text.substring(lineStart, lineEnd);
+
+    // Position of cursor relative to the current line
+    int cursorPositionInLine = position - lineStart;
+
+    // Find position of "//" in the line
+    int commentStart = line.indexOf("//");
+
+    // Cursor is inside a comment if "//" appears before the cursor position
+    return commentStart >= 0 && cursorPositionInLine >= commentStart;
     }
 
     /**
