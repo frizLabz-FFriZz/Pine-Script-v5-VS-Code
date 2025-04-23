@@ -26,3 +26,6 @@ build/
 .Trashes
 ehthumbs.db
 Thumbs.db 
+
+# Ignore the .venv folder
+.venv

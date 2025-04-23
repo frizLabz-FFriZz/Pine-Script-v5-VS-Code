@@ -23,14 +23,14 @@ task generateLexer(type: JavaExec) {
 }
 
 intellij {
-    version = '2023.3.4'
+    version = '2024.1'
     type = 'IC' // IntelliJ IDEA Community Edition
     plugins = ['com.intellij.java', 'org.jetbrains.plugins.textmate']
 }
 
 patchPluginXml {
     sinceBuild = '233'
-    untilBuild = '243.*'
+    untilBuild = '251.*'
     changeNotes = """
       <h3>0.1.0</h3>
       <ul>
