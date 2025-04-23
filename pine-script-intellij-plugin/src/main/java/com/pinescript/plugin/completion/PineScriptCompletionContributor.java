@@ -398,8 +398,8 @@ public class PineScriptCompletionContributor extends CompletionContributor {
         // Check if we're in a variable assignment context with either = or :=
         if (isAssignmentStatement(textBeforeCursor, offset)) {
             LOG.warn("🔍 [fillCompletionVariants] Assignment statement detected");
-            // Try to infer the expected type
-            String expectedType = inferExpectedType(textBeforeCursor);
+            // Try to infer the expected type using the entire document text
+            String expectedType = inferExpectedType(documentText);
             
             if (expectedType != null) {
                 LOG.warn("🔍 [fillCompletionVariants] Expected type for '" + textBeforeCursor + "' is '" + expectedType + "'");
