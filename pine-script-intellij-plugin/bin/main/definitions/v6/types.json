@@ -1,0 +1,74 @@
+[
+    {
+        "name": "array",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_array"
+    },
+    {
+        "name": "bool",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_bool"
+    },
+    {
+        "name": "box",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_box"
+    },
+    {
+        "name": "chart.point",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_chart.point"
+    },
+    {
+        "name": "color",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_color"
+    },
+    {
+        "name": "const",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_const"
+    },
+    {
+        "name": "float",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_float"
+    },
+    {
+        "name": "int",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_int"
+    },
+    {
+        "name": "label",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_label"
+    },
+    {
+        "name": "line",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_line"
+    },
+    {
+        "name": "linefill",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_linefill"
+    },
+    {
+        "name": "map",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_map"
+    },
+    {
+        "name": "matrix",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_matrix"
+    },
+    {
+        "name": "polyline",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_polyline"
+    },
+    {
+        "name": "series",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_series"
+    },
+    {
+        "name": "simple",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_simple"
+    },
+    {
+        "name": "string",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_string"
+    },
+    {
+        "name": "table",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#type_table"
+    }
+]

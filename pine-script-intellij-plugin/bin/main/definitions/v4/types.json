@@ -1,0 +1,38 @@
+[
+    {
+        "name": "bool",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#type_bool"
+    },
+    {
+        "name": "box",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#type_box"
+    },
+    {
+        "name": "color",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#type_color"
+    },
+    {
+        "name": "float",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#type_float"
+    },
+    {
+        "name": "int",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#type_int"
+    },
+    {
+        "name": "label",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#type_label"
+    },
+    {
+        "name": "line",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#type_line"
+    },
+    {
+        "name": "string",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#type_string"
+    },
+    {
+        "name": "table",
+        "url": "https://www.tradingview.com/pine-script-reference/v4/#type_table"
+    }
+]

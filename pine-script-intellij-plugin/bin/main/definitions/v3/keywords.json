@@ -1,0 +1,22 @@
+[
+    {
+        "name": "and",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#kw_and"
+    },
+    {
+        "name": "for",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#kw_for"
+    },
+    {
+        "name": "if",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#kw_if"
+    },
+    {
+        "name": "not",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#kw_not"
+    },
+    {
+        "name": "or",
+        "url": "https://www.tradingview.com/pine-script-reference/v3/#kw_or"
+    }
+]

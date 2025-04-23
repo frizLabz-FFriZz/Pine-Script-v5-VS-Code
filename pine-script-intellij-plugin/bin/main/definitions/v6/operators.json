@@ -1,0 +1,82 @@
+[
+    {
+        "name": "-",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_-"
+    },
+    {
+        "name": "-=",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_-="
+    },
+    {
+        "name": ":=",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_:="
+    },
+    {
+        "name": "!=",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_!="
+    },
+    {
+        "name": "?:",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_?:"
+    },
+    {
+        "name": "[]",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_[]"
+    },
+    {
+        "name": "*",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_*"
+    },
+    {
+        "name": "*=",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_*="
+    },
+    {
+        "name": "/",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_/"
+    },
+    {
+        "name": "/=",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_/="
+    },
+    {
+        "name": "%",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_%"
+    },
+    {
+        "name": "%=",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_%="
+    },
+    {
+        "name": "+",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_+"
+    },
+    {
+        "name": "+=",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_+="
+    },
+    {
+        "name": "<",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_<"
+    },
+    {
+        "name": "<=",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_<="
+    },
+    {
+        "name": "==",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_=="
+    },
+    {
+        "name": "=>",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_=>"
+    },
+    {
+        "name": ">",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_>"
+    },
+    {
+        "name": ">=",
+        "url": "https://www.tradingview.com/pine-script-reference/v6/#op_>="
+    }
+]
