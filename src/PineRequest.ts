@@ -48,7 +48,6 @@ export class PineRequest {
    * @returns {Promise<any>} A promise that resolves to the response from the request.
    */
   async request(method: string, url: string): Promise<any> {
-
     // Ensure node-fetch is loaded
     await this.loadFetchModule()
     // Initialize a new URLSearchParams object
@@ -118,7 +117,6 @@ export class PineRequest {
     }
   }
 
-
   /**
    * Get a PineScript script by ID part and version.
    * @param {string} scriptIdPart - ID part of the script.
@@ -132,7 +130,6 @@ export class PineRequest {
       console.error(error)
     }
   }
-
 
   /**
    * Get a list of standard scripts.
@@ -175,7 +172,6 @@ export class PineRequest {
     return true
   }
 
-
   // /**
   //  * Get a list of saved scripts.
   //  * @returns {Promise<any>} - List of saved scripts.
@@ -193,7 +189,6 @@ export class PineRequest {
   //   }
   // }
 
-
   // /**
   //  * Check if a session ID is available.
   //  * @returns {boolean} - True if a session ID is available, otherwise false.
@@ -205,5 +200,4 @@ export class PineRequest {
   //   }
   //   return true
   // }
-
 }

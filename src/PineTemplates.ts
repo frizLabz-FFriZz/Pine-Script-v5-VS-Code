@@ -2,12 +2,11 @@ import { fs, path } from './index'
 import * as vscode from 'vscode'
 import { Class } from './PineClass'
 
-
 /**
  * Class for managing PineScript templates.
  */
 export class PineTemplates {
-  date = new Date().toLocaleDateString();
+  date = new Date().toLocaleDateString()
 
   /**
    * Save and open a new script with the provided template content.
@@ -17,27 +16,27 @@ export class PineTemplates {
   async saveAndOpenNewScript(templateContent: string, scriptName?: string): Promise<void> {
     // If no script name is provided or it's empty, prompt for a new name
     if (!scriptName || scriptName.trim() === '' || scriptName === '_inputbox_') {
-      scriptName = await this.getNameInputBox();
+      scriptName = await this.getNameInputBox()
     }
 
-    const workspaceFolder = vscode.workspace.workspaceFolders![0].uri.fsPath;
-    const scriptDir = path.join(workspaceFolder, 'PineScripts');
-    let filePath = path.join(scriptDir, `${scriptName}.pine`);
+    const workspaceFolder = vscode.workspace.workspaceFolders![0].uri.fsPath
+    const scriptDir = path.join(workspaceFolder, 'PineScripts')
+    let filePath = path.join(scriptDir, `${scriptName}.pine`)
 
     // Check if the file already exists
     if (fs.existsSync(filePath)) {
-      vscode.window.showInformationMessage('Name already exists, please enter a different name.');
-      return this.saveAndOpenNewScript(templateContent, '_inputbox_'); // Recursive call to prompt again
+      vscode.window.showInformationMessage('Name already exists, please enter a different name.')
+      return this.saveAndOpenNewScript(templateContent, '_inputbox_') // Recursive call to prompt again
     } else {
       // Create the file since it doesn't exist
-      const uri = vscode.Uri.file(filePath);
+      const uri = vscode.Uri.file(filePath)
       // Convert the string content to a Uint8Array
-      const encoder = new TextEncoder(); // TextEncoder encodes into utf-8 by default
-      const uint8Array = encoder.encode(templateContent);
+      const encoder = new TextEncoder() // TextEncoder encodes into utf-8 by default
+      const uint8Array = encoder.encode(templateContent)
       // Write the Uint8Array to the file
-      await vscode.workspace.fs.writeFile(uri, uint8Array);
+      await vscode.workspace.fs.writeFile(uri, uint8Array)
       // Open the newly created file in the editor
-      vscode.window.showTextDocument(uri);
+      vscode.window.showTextDocument(uri)
     }
   }
 
@@ -49,25 +48,23 @@ export class PineTemplates {
     const saveName: string | undefined = await vscode.window.showInputBox({
       prompt: 'Enter a save name for your script:',
       value: '',
-    });
+    })
 
     if (!saveName) {
-      vscode.window.showErrorMessage('You must enter a save name. Please try again:');
-      return this.getNameInputBox(); // Recursive call to prompt again
+      vscode.window.showErrorMessage('You must enter a save name. Please try again:')
+      return this.getNameInputBox() // Recursive call to prompt again
     }
 
-    return saveName;
+    return saveName
   }
-
 
   /**
    * Create and save a new indicator script template.
    */
   async getIndicatorTemplate() {
     const scriptName = await this.getNameInputBox()
-    const name = await Class.PineUserInputs?.getUsername() ?? ''
-    const template =
-      `// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+    const name = (await Class.PineUserInputs?.getUsername()) ?? ''
+    const template = `// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © ${name}
 
 //@version=5
@@ -84,9 +81,8 @@ plot(close)`
    */
   async getStrategyTemplate() {
     const scriptName = await this.getNameInputBox()
-    const name = await Class.PineUserInputs?.getUsername() ?? ''
-    const template =
-      `// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+    const name = (await Class.PineUserInputs?.getUsername()) ?? ''
+    const template = `// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © ${name}
 
 //@version=5
@@ -109,9 +105,8 @@ if (shortCondition)
    */
   async getLibraryTemplate() {
     const scriptName = await this.getNameInputBox()
-    const name = await Class.PineUserInputs?.getUsername() ?? ''
-    const template =
-      `// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+    const name = (await Class.PineUserInputs?.getUsername()) ?? ''
+    const template = `// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © ${name}
 
 //@version=5

@@ -1,7 +1,6 @@
 import * as vscode from 'vscode'
 
 export class VSCode {
-
   private static currentFile: string | undefined
   private static lastFile: string | undefined
   private static recursiveCount: number
@@ -42,7 +41,6 @@ export class VSCode {
     }
   }
 
-
   public static _Languages() {
     return VSCode.vsc.languages
   }
@@ -50,7 +48,6 @@ export class VSCode {
   public static _Commands() {
     return VSCode.vsc.commands
   }
-
 
   public static _Window() {
     return VSCode.vsc.window
@@ -77,14 +74,14 @@ export class VSCode {
   }
 
   public static _Range() {
-    const position = VSCode._Position();
-    return position ? new VSCode.vsc.Range(position, position) : undefined;
+    const position = VSCode._Position()
+    return position ? new VSCode.vsc.Range(position, position) : undefined
   }
 
   public static _CurrentFile() {
-    VSCode.lastFile = VSCode.currentFile;
-    VSCode.currentFile = VSCode._Document()?.fileName;
-    return VSCode.currentFile;
+    VSCode.lastFile = VSCode.currentFile
+    VSCode.currentFile = VSCode._Document()?.fileName
+    return VSCode.currentFile
   }
 
   public static _VSCode() {
@@ -213,5 +210,3 @@ export class VSCode {
 }
 
 export const { vsc } = VSCode
-
-

@@ -26,8 +26,6 @@ indicator("Organized Pine Script Syntax Test",overlay = true)
 // @strategy_alert_message "This is a strategy alert message."
 var const int thingy = 0
 
-MyUDT.new(myColorField=color.blue)
-
 // #############################################################################
 // #  Keywords
 // #############################################################################
@@ -119,6 +117,8 @@ type MyUDT
     polyline                  myPolyline
     array<MyUDT>              nested_self
 
+
+MyUDT.new(myColorField=color.blue)
 
 // #############################################################################
 // #  Variable Declarations and Initialization
@@ -579,8 +579,8 @@ string priceAction = switch
 // -- For
 // -----------------------------------------------------------------------------
 
-for i = 0 to 10 by 2
-    label.new(x = bar_index - i,y = high - i,text = str.tostring(i),color = color.new(color.orange,i * 10))
+for index = 0 to 10 by 2
+    label.new(x = bar_index - index,y = high - index,text = str.tostring(index),color = color.new(color.orange,index * 10))
 
 // -- For...in (for arrays and matrices)
 for val in myIntArray
@@ -610,7 +610,7 @@ library("CompactSyntaxDemo", overlay = true)
 int     inpLen      = input.int(14, "Length", minval=1, maxval=100, step=1, tooltip="Length of the indicator", group = "Main")
 float   inpSrc      = input.source(close, "Source", group = "Main", confirm = false)
 bool    inpShow     = input.bool(true, "Show Plot", inline="Plot", group="Display")
-string  inpColor    = input.color(#2157f3, "", inline="Plot", group="Display")
+color  inpColor    = input.color(#2157f3, "", inline="Plot", group="Display")
 string  inpConfirm  = input.string("Confirm", "Confirmation", ["Confirm", "No Confirm"], "Confirm?", group = "Main")
 
 // --- Exported Enum ---
@@ -659,14 +659,17 @@ method updateMap(internalUDT this, string key, float val) =>
 
 // --- Var/Varip ---
 var my_map = map.new<string, float>()
-my_map.put("initial_key", 1.234)
+if barstate.isfirst
+    my_map.put("initial_key", 1.234)
+
 varip internalUDT inst = internalUDT.new( 
           my_int  = inpLen,
           my_str  = "42",
           my_map  = my_map,
           my_arr  = array.new<MyExportedUDT>()
           )
-inst  := inst                        // Essential for varip persistence
+
+inst := inst // Essential for varip persistence
 
 
 
@@ -677,7 +680,7 @@ inst.updateMap("new_key", calc_result) // Method call
 float final_result = inst.my_map.get("new_key") * inpSrc
 
 // --- Plot ---
-plot(final_result, "Result", color.parse(inpColor), display = inpShow ? display.all : display.none)
+plot(final_result, "Result", inpColor, display = inpShow ? display.all : display.none)
 
 // -- Switch --
 string switch_test = switch inpConfirm
@@ -689,5 +692,10 @@ string switch_test = switch inpConfirm
 var myarray = array.new<string>(5,"hello")
 for [index,value] in myarray
     log.info(" index={0}, val={1} ",index,value)
+
+
+string blah = "example"
+
+
 
 

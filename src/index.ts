@@ -2,7 +2,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-// Only used for typedocs generation tryed to not use from the index 
+// Only used for typedocs generation tryed to not use from the index
 // to avoid circular dependencies
 export { fs, path }
 export { VSCode } from './VSCode'
@@ -32,10 +32,3 @@ export { PineRequest } from './PineRequest'
 export { PineRenameProvider } from './PineRenameProvider'
 export { PineSignatureHelpProvider } from './PineSignatureHelpProvider'
 export { PineParser } from './PineParser'
-
-
-
-
-
-
-

@@ -50,7 +50,9 @@ export class PineSharedCompletionState {
    * @param completions - The new completions object.
    */
   static setCompletions(completions: Record<string, any>) {
-    if (!completions) { return }
+    if (!completions) {
+      return
+    }
     PineSharedCompletionState.sigCompletionsFlag = true
     PineSharedCompletionState.sigCompletions = completions
   }
@@ -64,7 +66,7 @@ export class PineSharedCompletionState {
 
   /** Gets the current active argument.
    * @returns The current active argument.
-    */
+   */
   static get getIsLastArg() {
     return PineSharedCompletionState.lastArg
   }
@@ -79,7 +81,10 @@ export class PineSharedCompletionState {
    */
   static setActiveArg(activeArgument: any) {
     PineSharedCompletionState.activeArg = activeArgument
-    if (PineSharedCompletionState.sigCompletions && PineSharedCompletionState.sigCompletions[activeArgument]?.length > 0) {
+    if (
+      PineSharedCompletionState.sigCompletions &&
+      PineSharedCompletionState.sigCompletions[activeArgument]?.length > 0
+    ) {
       vscode.commands.executeCommand('editor.action.triggerSuggest')
     }
   }

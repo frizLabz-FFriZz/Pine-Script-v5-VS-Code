@@ -2,8 +2,7 @@ import { path } from './index'
 import * as vscode from 'vscode'
 import { Class } from './PineClass'
 import * as fs from 'fs'
-import * as os from 'os';
-
+import * as os from 'os'
 
 /** PineScriptList class is responsible for managing a list of Pine Scripts. */
 export class PineScriptList {
@@ -109,7 +108,6 @@ export class PineScriptList {
     }
   }
 
-
   /**
    * Populates the script list with the user's saved scripts.
    * @param {vscode.QuickPickItem[]} scriptList - The list of scripts.
@@ -171,45 +169,43 @@ export class PineScriptList {
     }
   }
 
-
   /**
- * Handles the Pine script response.
- * @param {any} response - The response object containing the script details.
- */
+   * Handles the Pine script response.
+   * @param {any} response - The response object containing the script details.
+   */
   async handlePineScript(response: any): Promise<void> {
     // Check if there is at least one workspace folder
     if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
-      const workspaceFolder = vscode.workspace.workspaceFolders[0].uri.fsPath;
-      const scriptDir = path.join(workspaceFolder, 'PineScripts');
-      const scriptPrevDir = path.join(scriptDir, 'PreviousPineScripts');
+      const workspaceFolder = vscode.workspace.workspaceFolders[0].uri.fsPath
+      const scriptDir = path.join(workspaceFolder, 'PineScripts')
+      const scriptPrevDir = path.join(scriptDir, 'PreviousPineScripts')
 
-      await this.createDirectoryIfNotExists(scriptDir);
-      await this.createDirectoryIfNotExists(scriptPrevDir);
+      await this.createDirectoryIfNotExists(scriptDir)
+      await this.createDirectoryIfNotExists(scriptPrevDir)
 
-      const existingFilePath = path.join(scriptDir, `${response.scriptName}.pine`);
-      const existingFileUri = vscode.Uri.file(existingFilePath);
+      const existingFilePath = path.join(scriptDir, `${response.scriptName}.pine`)
+      const existingFileUri = vscode.Uri.file(existingFilePath)
 
       try {
-        const existingFileStat = await vscode.workspace.fs.stat(existingFileUri);
+        const existingFileStat = await vscode.workspace.fs.stat(existingFileUri)
         if (existingFileStat) {
-          await this.processExistingFile(existingFileUri, scriptDir, response.scriptName, response.source);
-          await this.openDocument(existingFileUri);
+          await this.processExistingFile(existingFileUri, scriptDir, response.scriptName, response.source)
+          await this.openDocument(existingFileUri)
         }
       } catch (err) {
-        await vscode.workspace.fs.writeFile(existingFileUri, Buffer.from(response.source));
-        await this.openDocument(existingFileUri);
+        await vscode.workspace.fs.writeFile(existingFileUri, Buffer.from(response.source))
+        await this.openDocument(existingFileUri)
       }
     } else {
       // No workspace folder is open, so we'll save the file in a temporary location
-      const tempFolderPath = os.tmpdir();
-      const tempFilePath = path.join(tempFolderPath, `${response.scriptName}.pine`);
-      const tempFileUri = vscode.Uri.file(tempFilePath);
+      const tempFolderPath = os.tmpdir()
+      const tempFilePath = path.join(tempFolderPath, `${response.scriptName}.pine`)
+      const tempFileUri = vscode.Uri.file(tempFilePath)
 
-      await vscode.workspace.fs.writeFile(tempFileUri, Buffer.from(response.source));
-      await this.openDocument(tempFileUri);
+      await vscode.workspace.fs.writeFile(tempFileUri, Buffer.from(response.source))
+      await this.openDocument(tempFileUri)
     }
   }
-
 
   /**
    * Creates a directory if it does not exist.
@@ -223,50 +219,48 @@ export class PineScriptList {
     }
   }
 
-
-
   /**
- * Processes an existing file by renaming it with a unique number suffix if a file with the same name already exists.
- * @param {vscode.Uri} existingFileUri - The URI of the existing file.
- * @param {string} scriptDir - The directory of the script.
- * @param {string} name - The name of the script.
- * @param {string} newContent - The new content of the script.
- */
+   * Processes an existing file by renaming it with a unique number suffix if a file with the same name already exists.
+   * @param {vscode.Uri} existingFileUri - The URI of the existing file.
+   * @param {string} scriptDir - The directory of the script.
+   * @param {string} name - The name of the script.
+   * @param {string} newContent - The new content of the script.
+   */
   async processExistingFile(
     existingFileUri: vscode.Uri,
     scriptDir: string,
     name: string,
     newContent: string,
   ): Promise<void> {
-    const previousScriptsDir = path.join(scriptDir, 'PreviousPineScripts');
-    await this.ensureDirectoryExists(previousScriptsDir);
+    const previousScriptsDir = path.join(scriptDir, 'PreviousPineScripts')
+    await this.ensureDirectoryExists(previousScriptsDir)
 
-    let counter = 1;
-    let newFileName = `${name}_${counter}.pine`;
-    let newFilePath = path.join(previousScriptsDir, newFileName);
+    let counter = 1
+    let newFileName = `${name}_${counter}.pine`
+    let newFilePath = path.join(previousScriptsDir, newFileName)
 
     // Loop to find a unique file name
     while (fs.existsSync(newFilePath)) {
-      counter++;
-      newFileName = `${name}_${counter}.pine`;
-      newFilePath = path.join(previousScriptsDir, newFileName);
+      counter++
+      newFileName = `${name}_${counter}.pine`
+      newFilePath = path.join(previousScriptsDir, newFileName)
     }
 
-    const newFileUri = vscode.Uri.file(newFilePath);
-    await vscode.workspace.fs.rename(existingFileUri, newFileUri, { overwrite: true });
+    const newFileUri = vscode.Uri.file(newFilePath)
+    await vscode.workspace.fs.rename(existingFileUri, newFileUri, { overwrite: true })
 
-    const newScriptFilePath = path.join(scriptDir, `${name}.pine`);
-    const newScriptFileUri = vscode.Uri.file(newScriptFilePath);
-    await vscode.workspace.fs.writeFile(newScriptFileUri, Buffer.from(newContent));
+    const newScriptFilePath = path.join(scriptDir, `${name}.pine`)
+    const newScriptFileUri = vscode.Uri.file(newScriptFilePath)
+    await vscode.workspace.fs.writeFile(newScriptFileUri, Buffer.from(newContent))
   }
 
   /**
- * Ensures that the given directory exists, creating it if necessary.
- * @param {string} dirPath - The path to the directory.
- */
+   * Ensures that the given directory exists, creating it if necessary.
+   * @param {string} dirPath - The path to the directory.
+   */
   private async ensureDirectoryExists(dirPath: string): Promise<void> {
     if (!fs.existsSync(dirPath)) {
-      await vscode.workspace.fs.createDirectory(vscode.Uri.file(dirPath));
+      await vscode.workspace.fs.createDirectory(vscode.Uri.file(dirPath))
     }
   }
 
@@ -278,9 +272,7 @@ export class PineScriptList {
     const doc = await vscode.workspace.openTextDocument(fileUri)
     await vscode.window.showTextDocument(doc)
   }
-
 }
-
 
 // async userScriptList(scriptList: vscode.QuickPickItem[]) {
 //   this.scriptList = await Class.PineRequest.getSavedList()
@@ -294,7 +286,6 @@ export class PineScriptList {
 //     scriptList.push(options)
 //   }
 // }
-
 
 // /**
 //  * Processes an existing file by moving it to the previous scripts directory, saving the new content, and opening the diff view.
@@ -381,4 +372,3 @@ export class PineScriptList {
 //     `${currentFileName} (v${selectedVersion} vs Opened)`,
 //   )
 // }
-

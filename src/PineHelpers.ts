@@ -1,9 +1,6 @@
 import { Class } from './PineClass'
 
-
-
 export class Helpers {
-
   /**
    * Checks if the description exists and appends a new line
    * @param desc - The description to check
@@ -14,8 +11,8 @@ export class Helpers {
   }
 
   /**
-    * @property {RegExp[]} regexToReplace - An array of regexes to replace for formatting the syntax
-    */
+   * @property {RegExp[]} regexToReplace - An array of regexes to replace for formatting the syntax
+   */
   static regexToReplace: [RegExp, string][] = [
     [/undetermined type/g, '<?>'],
     [/(\w+)\[\]/g, 'array<$1>'],
@@ -36,8 +33,10 @@ export class Helpers {
    */
   static replaceSyntax(str: string) {
     try {
-      if (!str || typeof str !== 'string') { return str }
-      return this.regexToReplace.reduce((acc, [regex, replacement]) => acc.replace(regex, replacement), str);
+      if (!str || typeof str !== 'string') {
+        return str
+      }
+      return this.regexToReplace.reduce((acc, [regex, replacement]) => acc.replace(regex, replacement), str)
     } catch (e) {
       console.error(e, 'replaceSyntax')
       return str
@@ -46,7 +45,9 @@ export class Helpers {
 
   static replaceFunctionSignatures(str: string) {
     try {
-      if (!str || typeof str !== 'string') { return str }
+      if (!str || typeof str !== 'string') {
+        return str
+      }
       return str.replace(/(?<=\(|,\s*)(?:\w+\s+)?((?:[\w<>\[\].]+|map<[^,]+,[^>]+>)\s+)?(?=\w+)/g, '')
     } catch (e) {
       console.error(e, 'replaceSignatures')
@@ -72,7 +73,9 @@ export class Helpers {
           methodSplit = [syntaxContent]
         }
         for (const i of methodSplit) {
-          methodBuild.push(i.replace(/(?:([\w.]+\s*\([^)]+\))?([\w.]+\s*\())([^,)]+,?\s*(?:\s*[\w.]+>\s\w+,\s)?)(.+)/, '$1$2$4'))
+          methodBuild.push(
+            i.replace(/(?:([\w.]+\s*\([^)]+\))?([\w.]+\s*\())([^,)]+,?\s*(?:\s*[\w.]+>\s\w+,\s)?)(.+)/, '$1$2$4'),
+          )
         }
         syntaxContent = methodBuild.join('\n')
       }
@@ -90,7 +93,6 @@ export class Helpers {
    * @returns The type if a match is found, null otherwise
    */
   static checkDocsMatch(expression: string, ...keys: string[]) {
-
     let out: string | Record<string, any> | undefined = undefined
 
     try {
@@ -138,11 +140,18 @@ export class Helpers {
         }
       }
 
-      const docStrings = [['variables', 'variables2'], ['constants'], ['functions', 'completionFunctions'], ['methods', 'methods2']]
+      const docStrings = [
+        ['variables', 'variables2'],
+        ['constants'],
+        ['functions', 'completionFunctions'],
+        ['methods', 'methods2'],
+      ]
       let outType: string | Record<string, any> | undefined = undefined
       for (const i of docStrings) {
         outType = Helpers.checkDocsMatch(expression, ...i)
-        if (outType) { break }
+        if (outType) {
+          break
+        }
       }
 
       if (typeof outType === 'string') {
@@ -157,9 +166,9 @@ export class Helpers {
   }
 
   /**
-    * Checks if the expression is a variable
-    * @param keyedDocs - The documentation object to check
-    * @returns The type of the expression if it is a variable, null otherwise
+   * Checks if the expression is a variable
+   * @param keyedDocs - The documentation object to check
+   * @returns The type of the expression if it is a variable, null otherwise
    */
   static returnTypeArrayCheck(keyedDocs: any, otherKeys: string[] | null = null) {
     let out: string = ''
@@ -172,9 +181,8 @@ export class Helpers {
 
       for (const i of keys) {
         if (keyedDocs?.[i]) {
-
           if (Array.isArray(keyedDocs?.[i])) {
-            out = [... new Set(keyedDocs?.[i])].join('|')
+            out = [...new Set(keyedDocs?.[i])].join('|')
             break
           }
 
@@ -190,9 +198,9 @@ export class Helpers {
   }
 
   /**
-    * Checks if the expression is a variable
-    * @param keyedDocs - The documentation object to check
-    * @returns The type of the expression if it is a variable, null otherwise
+   * Checks if the expression is a variable
+   * @param keyedDocs - The documentation object to check
+   * @returns The type of the expression if it is a variable, null otherwise
    */
   static getThisTypes(keyedDocs: any) {
     let out: string = ''
@@ -227,7 +235,6 @@ export class Helpers {
           .replace(/(`)\s*\[\s*/g, ' $1[')
           .replace(/(\w+)\s*(\[\])/g, '$1$2')
           .replace(/undetermined type/g, '<?>')
-
       }
       return type
     } catch (e) {
@@ -244,7 +251,9 @@ export class Helpers {
    */
   static formatArgsForSyntax(doc: any, modifiedSyntax: string): string {
     try {
-      if (!doc?.args) { return modifiedSyntax }
+      if (!doc?.args) {
+        return modifiedSyntax
+      }
       for (const arg of doc?.args) {
         let def = arg?.default ?? undefined
         if (def && typeof def === 'string') {
@@ -300,9 +309,9 @@ export class Helpers {
 
       return hasArgs
         ? syntax
-          .replace(/\(\s*/g, '(\n   ')
-          .replace(/(?<!map<[^,]+),\s*(?=[^\u2192]*\u2192)/g, ',\n   ')
-          .replace(/\s*\)\s*\u2192\s*/g, '\n) \u2192 ')
+            .replace(/\(\s*/g, '(\n   ')
+            .replace(/(?<!map<[^,]+),\s*(?=[^\u2192]*\u2192)/g, ',\n   ')
+            .replace(/\s*\)\s*\u2192\s*/g, '\n) \u2192 ')
         : syntax
     } catch (e) {
       console.error(e, 'modifySyntax')
@@ -320,7 +329,7 @@ export class Helpers {
   static formatSyntax(name: string, doc: any, isMethod: boolean, namespace: string | null = null): string {
     try {
       let modifiedSyntax = (isMethod ? doc.methodSyntax : doc.syntax) ?? name
-      const getKey = (isMethod ? 'methods' : 'functions')
+      const getKey = isMethod ? 'methods' : 'functions'
       if (modifiedSyntax !== name && modifiedSyntax === typeof 'string') {
         const filterDocs = Class.PineDocsManager.getDocs(getKey, getKey + '2').filter((i: any) => i.name === name)
         const synLen = filterDocs.length
@@ -347,7 +356,9 @@ export class Helpers {
   static formatUrl(input: string) {
     try {
       input = input.toString()
-      if (!input) { return input }
+      if (!input) {
+        return input
+      }
       const regex = /(\[[\w\.]+\]\()(#(?:var|fun|op|kw|type|an|const)_)([\w\.]+\))/g
       return input.replace(regex, ` $1${Helpers.url}$2$3`)
     } catch (e) {
