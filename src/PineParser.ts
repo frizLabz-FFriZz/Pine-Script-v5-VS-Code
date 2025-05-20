@@ -12,15 +12,15 @@ export class PineParser {
   // Refactored regular expressions with named capture groups for better readability and maintainability
   // Type Definition Pattern
   typePattern: RegExp =
-    /(?<udtGroup>(?<annotationsGroup>(^\/\/\s*(?:@(?:type|field)[^\n]*))+(?=^((?:method\s+)?(export\s+)?)?\w+))?((export)?\s*(type)\s*(?<typeName>\w+)\n(?<fieldsGroup>(?:(?:\s+[^\n]+)\n+|\s*\n)+)))(?=(?:\b|^\/\/\s*@|(?:^\/\/[^@\n]*?$)+|$))/gm
+    /(?<udtGroup>(?<annotationsGroup>(?:^\/\/\s*(?:@(?:type|field)[^\n]*\n))+)?(?<udtExportKeyword>export)?\s*(type)\s*(?<typeName>\w+)\n(?<fieldsGroup>(?:(?:\s+[^\n]+)\n+|\s*\n)+))(?=(?:\b|^\/\/\s*@|(?:^\/\/[^@\n]*?$)+|$))/gm
 
   // Fields Pattern within Type Definition
   fieldsPattern: RegExp =
-    /^\s+(?:(?:(?:(array|matrix|map)<(?<genericTypes>(?<genericType1>([a-zA-Z_][a-zA-Z_0-9]*\.)?([a-zA-Z_][a-zA-Z_0-9]*)),)?(?<genericType2>([a-zA-Z_][a-zA-Z_0-9]*\.)?([a-zA-Z_][a-zA-Z_0-9]*)))>)|(?<fieldType>([a-zA-Z_][a-zA-Z_0-9]*\.)?([a-zA-Z_][a-zA-Z_0-9]*))((?<isArray>\[\])?)\s+)?(?<fieldName>[a-zA-Z_][a-zA-Z0-9_]*)(?:(?=\s*=\s*)(?:(?<defaultValueSingleQuote>'.*')|(?<defaultValueDoubleQuote>".*")|(?<defaultValueNumber>\d*(\.(\d+[eE]?\d+)?\d*|\d+))|(?<defaultValueColor>#[a-fA-F0-9]{6,8})|(?<defaultValueIdentifier>([a-zA-Z_][a-zA-Z0-9_]*\.)*[a-zA-Z_][a-zA-Z0-9_]*)))?$/gm
+    /^\s+(?<isConst>const\s+)?(?:(?:(?:(array|matrix|map)<(?<genericTypes>(?<genericType1>([a-zA-Z_][a-zA-Z_0-9]*\.)?([a-zA-Z_][a-zA-Z_0-9]*)),)?(?<genericType2>([a-zA-Z_][a-zA-Z_0-9]*\.)?([a-zA-Z_][a-zA-Z_0-9]*)))>)|(?<fieldType>([a-zA-Z_][a-zA-Z_0-9]*\.)?([a-zA-Z_][a-zA-Z_0-9]*))((?<isArray>\[\])?)\s+)?(?<fieldName>[a-zA-Z_][a-zA-Z0-9_]*)(?:(?=\s*=\s*)(?:(?<defaultValueSingleQuote>'.*')|(?<defaultValueDoubleQuote>".*")|(?<defaultValueNumber>\d*(\.(\d+[eE]?\d+)?\d*|\d+))|(?<defaultValueColor>#[a-fA-F0-9]{6,8})|(?<defaultValueIdentifier>([a-zA-Z_][a-zA-Z_0-9]*\.)*[a-zA-Z_][a-zA-Z0-9_]*)))?$/gm
 
   // Function Definition Pattern
   funcPattern: RegExp =
-    /(\/\/\s*@f(?:@?.*\n)+?)?(?<exportKeyword>export)?\s*(?<methodKeyword>method)?\s*(?<functionName>\w+)\s*\(\s*(?<parameters>[^\)]+?)\s*\)\s*?=>\s*?(?<body>(?:.*\n+)+?)(?=^\b|^\/\/\s*\@|$)/gm
+    /(?<docstring>(?:\/\/\s*@f(?:@?.*\n)+?)?)?(?<exportKeyword>export)?\s*(?<methodKeyword>method)?\s*(?<functionName>\w+)\s*\(\s*(?<parameters>[^\)]+?)\s*\)\s*?=>\s*?(?<body>(?:.*\n+)+?)(?=^\b|^\/\/\s*\@|$)/gm
 
   // Function Argument Pattern
   funcArgPattern: RegExp =
@@ -181,7 +181,7 @@ export class PineParser {
       const functionMatches = script.matchAll(this.funcPattern)
 
       for (const funcMatch of functionMatches) {
-        const { functionName, parameters, body } = funcMatch.groups! // Non-null assertion is safe due to regex match
+        const { docstring, exportKeyword, methodKeyword, functionName, parameters, body } = funcMatch.groups! // Non-null assertion is safe due to regex match
 
         const name = (alias ? alias + '.' : '') + functionName
         const functionBuild: any = {
@@ -189,6 +189,17 @@ export class PineParser {
           args: [],
           originalName: functionName,
           body: body,
+          doc: docstring, // Store the captured docstring
+          kind: "User Function", // Add a specific kind for user-defined functions
+        }
+
+        if (exportKeyword) {
+          functionBuild.export = true;
+          functionBuild.kind = "User Export Function"; // More specific kind
+        }
+        if (methodKeyword) {
+          functionBuild.method = true;
+          functionBuild.kind = "User Method"; // More specific kind
         }
 
         const funcParamsMatches = parameters.matchAll(this.funcArgPattern)
@@ -215,6 +226,22 @@ export class PineParser {
             argsDict.modifier = argModifier // simple | series
           }
           functionBuild.args.push(argsDict)
+        }
+        // Parse @param descriptions from docstring
+        if (docstring) {
+          const lines = docstring.split('\n');
+          functionBuild.args.forEach(arg => {
+            if (arg.name) {
+              const paramLineRegex = new RegExp(`^\\s*\\/\\/\\s*@param\\s+${arg.name}\\s*(?:\\([^)]*\\))?\\s*(.+)`, 'i');
+              for (const line of lines) {
+                const match = line.match(paramLineRegex);
+                if (match && match[1]) {
+                  arg.desc = match[1].trim();
+                  break; 
+                }
+              }
+            }
+          });
         }
         parsedFunctions.push(functionBuild)
       }
@@ -248,7 +275,7 @@ export class PineParser {
       const typeMatches = script.matchAll(this.typePattern)
 
       for (const typeMatch of typeMatches) {
-        const { typeName, fieldsGroup } = typeMatch.groups! // Non-null assertion is safe due to regex match
+        const { annotationsGroup, udtExportKeyword, typeName, fieldsGroup } = typeMatch.groups!
 
         const name = (alias ? alias + '.' : '') + typeName
 
@@ -256,6 +283,13 @@ export class PineParser {
           name: name,
           fields: [],
           originalName: typeName,
+          kind: "User Type", // Assign kind
+          doc: annotationsGroup || '', // Store docstring
+        }
+
+        if (udtExportKeyword) {
+          typeBuild.export = true;
+          typeBuild.kind = "User Export Type"; // More specific kind
         }
 
         if (fieldsGroup) {
@@ -263,6 +297,7 @@ export class PineParser {
           for (const fieldMatch of fieldMatches) {
             const {
               genericTypes,
+              isConst, // New capture group
               genericType1,
               genericType2,
               fieldType,
@@ -273,13 +308,17 @@ export class PineParser {
               defaultValueNumber,
               defaultValueColor,
               defaultValueIdentifier,
-            } = fieldMatch.groups! // Non-null assertion is safe due to regex match
+            } = fieldMatch.groups!
 
             let resolvedFieldType = genericTypes
               ? `${fieldMatch[1] /* array|matrix|map */}<${genericType1 || ''}${
                   genericType1 && genericType2 ? ',' : ''
                 }${genericType2 || ''}>`
-              : fieldType + (isArray || '')
+              : fieldType + (isArray || '');
+            
+            // Prepend 'const ' if isConst is captured
+            // resolvedFieldType = isConst ? `const ${resolvedFieldType}` : resolvedFieldType;
+            // No, we store isConst separately. Type itself remains 'string', not 'const string'.
 
             const fieldValue =
               defaultValueSingleQuote ||
@@ -291,10 +330,16 @@ export class PineParser {
             const fieldsDict: Record<string, any> = {
               name: fieldName,
               type: resolvedFieldType,
+              kind: "Field", 
+            }
+            if (isConst) {
+              fieldsDict.isConst = true;
             }
             if (fieldValue) {
               fieldsDict.default = fieldValue
             }
+            // TODO: Parse @field annotations from annotationsGroup for this specific fieldName
+            // and add to fieldsDict.desc
             typeBuild.fields.push(fieldsDict)
           }
         }
