@@ -173,7 +173,8 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
       }
 
       // Check for const fields first (potential enum members) based on docDetails
-      if (docDetails?.isConst && kind?.toLowerCase().includes('field')) {
+      const fieldKinds = new Set(["field", "Field", "FIELD"]); // Explicitly define valid field kinds
+      if (docDetails?.isConst && fieldKinds.has(kind)) {
         return vscode.CompletionItemKind.EnumMember; 
       }
 
