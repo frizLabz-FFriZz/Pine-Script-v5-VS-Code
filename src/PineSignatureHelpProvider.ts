@@ -712,8 +712,40 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
         completions.push(...paramArray)
       }
 
-      if (docs) {
-        const argTypes = this.getArgTypes(docs)
+      // Add literal suggestions for primitive types if no specific values were found or to augment them
+      if (docs) { // docs here is argDocs for the current parameter/field
+        const currentArgPrimaryType = (this.getArgTypes(docs)?.[0] || '').toLowerCase(); // Get primary type like 'string', 'bool', 'int', 'float'
+        
+        switch (currentArgPrimaryType) {
+          case 'string':
+            if (!completions.some(c => c.name === '""' || c.kind === 'Literal String')) { // Avoid adding if already suggested (e.g. as a default)
+              completions.push({ name: '""', kind: 'Literal String', desc: 'Empty string literal.', type: 'string', default: false });
+            }
+            break;
+          case 'bool':
+            if (!completions.some(c => c.name === 'true')) {
+              completions.push({ name: 'true', kind: 'Boolean', desc: 'Boolean true.', type: 'bool', default: false });
+            }
+            if (!completions.some(c => c.name === 'false')) {
+              completions.push({ name: 'false', kind: 'Boolean', desc: 'Boolean false.', type: 'bool', default: false });
+            }
+            break;
+          case 'int':
+          case 'float':
+            // Check if '0' or a variant is already present from variable suggestions or default value
+            const hasNumericZeroEquivalent = completions.some(c => c.name === '0' || c.name === '0.0' || c.name === 'na');
+            if (!hasNumericZeroEquivalent) {
+                 completions.push({ name: '0', kind: 'Value', desc: `Number zero.`, type: currentArgPrimaryType, default: false });
+            }
+            // Suggest 'na' for numeric types if not already present (often used as a default/nil value in Pine)
+            if (!completions.some(c => c.name === 'na')) {
+                completions.push({ name: 'na', kind: 'Value', desc: 'Not a number value.', type: currentArgPrimaryType, default: false });
+            }
+            break;
+        }
+        
+        // Existing logic for suggesting variables of matching types
+        // Reuse cached argTypes instead of re-calling this.getArgTypes(docs)
         const maps = [
           Class.PineDocsManager.getMap('fields2'),
           Class.PineDocsManager.getMap('variables2'),
