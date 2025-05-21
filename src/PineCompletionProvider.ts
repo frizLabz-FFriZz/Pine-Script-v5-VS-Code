@@ -173,8 +173,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
       }
 
       // Check for const fields first (potential enum members) based on docDetails
-      const fieldKinds = new Set(["field", "Field", "FIELD"]); // Explicitly define valid field kinds
-      if (docDetails?.isConst && fieldKinds.has(kind)) {
+      if (docDetails?.isConst && kind?.toLowerCase().includes('field')) {
         return vscode.CompletionItemKind.EnumMember; 
       }
 
@@ -201,7 +200,8 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         Parameter: vscode.CompletionItemKind.TypeParameter, 
         Field: vscode.CompletionItemKind.Field, 
         Enum: vscode.CompletionItemKind.Enum, 
-        EnumMember: vscode.CompletionItemKind.EnumMember, // Handles cases where kind is already "EnumMember"
+        EnumMember: vscode.CompletionItemKind.EnumMember, 
+        "Literal String": vscode.CompletionItemKind.Text, // For "" string literals
         Other: vscode.CompletionItemKind.Value,
       }
       
@@ -700,11 +700,10 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
           completionData.kind?.toLowerCase().includes('property')
         ) {
           itemKind = vscode.CompletionItemKind.Field
-        } else if (completionData.kind?.toLowerCase().includes('parameter')) {
-          itemKind = vscode.CompletionItemKind.Variable
-        } else {
-          itemKind = await this.determineCompletionItemKind(completionData.kind)
-        }
+        // Let determineCompletionItemKind handle all kind assignments consistently
+        // The specific if/else if here for field/property/parameter was overriding it.
+        itemKind = await this.determineCompletionItemKind(completionData.kind, completionData);
+
 
         const completionItem = await this.createCompletionItem(
           document,
@@ -1131,49 +1130,64 @@ export class PineInlineCompletionContext implements vscode.InlineCompletionItemP
   async argumentInlineCompletions(
     document: vscode.TextDocument,
     position: vscode.Position,
-    docs: Record<string, any>[],
+    allSuggestionsForActiveArg: Record<string, any>[],
   ) {
     try {
-      if (!docs || docs.length === 0) {
-        PineSharedCompletionState.clearCompletions()
-        return []
-      }
-      const existingFields = new Set<string>()
-      const linePrefix = document.lineAt(position).text.substring(0, position.character)
-      const existingPairsMatch = linePrefix.matchAll(/(\w+)=/g) // match fieldName=
-
-      for (const match of existingPairsMatch) {
-        if (match && match[1]) {
-          existingFields.add(match[1])
-        }
-      }
-      let index = 0
-      for (const completion of docs) {
-        if (existingFields.has(completion.name.replace('=', ''))) {
-          continue
-        }
-
-        const completionItem = await this.createInlineCompletionItem(
-          document,
-          completion.name,
-          null,
-          completion,
-          position,
-          true,
-        )
-
-        if (completionItem) {
-          completionItem.insertText = `order${index.toString().padStart(4, '0')}` // Keep sortText if needed for ordering
-          this.completionItems.push(completionItem)
-        }
-        index++
+      this.completionItems = []; 
+      if (!allSuggestionsForActiveArg || allSuggestionsForActiveArg.length === 0) {
+        return []; 
       }
 
-      PineSharedCompletionState.clearCompletions()
-      return new vscode.InlineCompletionList(this.completionItems)
+      const linePrefix = document.lineAt(position.line).text.substring(0, position.character);
+      const whatUserIsTypingMatch = linePrefix.match(/(\w*)$/); // What user is currently typing for the current argument
+      const whatUserIsTyping = whatUserIsTypingMatch ? whatUserIsTypingMatch[0].toLowerCase() : "";
+      
+      let bestSuggestionForInline: Record<string, any> | null = null;
+
+      // Scenario 1: Cursor is immediately after '(' or ', ' (empty argument slot)
+      if (linePrefix.endsWith('(') || linePrefix.match(/,\s*$/)) {
+        // Suggest the first available field/param name (these names end with '=')
+        bestSuggestionForInline = allSuggestionsForActiveArg.find(s => s.name.endsWith('='));
+      } 
+      // Scenario 2: User is typing something for the argument
+      else if (whatUserIsTyping) {
+        // Prioritize matching a field/param name that starts with what user is typing
+        bestSuggestionForInline = allSuggestionsForActiveArg.find(
+          s => s.name.endsWith('=') && s.name.toLowerCase().startsWith(whatUserIsTyping)
+        );
+        if (!bestSuggestionForInline) {
+          // If not matching a field/param name, try to match a value suggestion
+          bestSuggestionForInline = allSuggestionsForActiveArg.find(
+            s => !s.name.endsWith('=') && s.name.toLowerCase().startsWith(whatUserIsTyping)
+          );
+        }
+      }
+      // Scenario 3: Cursor is after "fieldname = " (i.e., linePrefix ends with "= " or just "=")
+      // Suggest a value for the current field.
+      else if (linePrefix.match(/=\s*$/)) {
+        // activeArg should be the LHS of '='. allSuggestionsForActiveArg are for this activeArg.
+        // We prefer a value suggestion (not ending with '=')
+        bestSuggestionForInline = allSuggestionsForActiveArg.find(s => !s.name.endsWith('='));
+      }
+
+      if (bestSuggestionForInline) {
+        const inlineCompletion = await this.createInlineCompletionItem(
+            document, 
+            bestSuggestionForInline.name, 
+            null, 
+            bestSuggestionForInline, 
+            position, 
+            true, 
+            whatUserIsTyping 
+        );
+        if (inlineCompletion) {
+          this.completionItems.push(inlineCompletion);
+        }
+      }
+      return new vscode.InlineCompletionList(this.completionItems);
     } catch (error) {
-      console.error(error)
-      return []
+      console.error('Error in argumentInlineCompletions (InlineContext):', error);
+      return [];
     }
   }
 }
