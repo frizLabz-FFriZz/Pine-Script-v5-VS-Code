@@ -745,7 +745,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
         }
         
         // Existing logic for suggesting variables of matching types
-        const argTypes = this.getArgTypes(docs) // Re-get or use currentArgPrimaryType if only single type is primary
+        // Reuse cached argTypes instead of re-calling this.getArgTypes(docs)
         const maps = [
           Class.PineDocsManager.getMap('fields2'),
           Class.PineDocsManager.getMap('variables2'),
