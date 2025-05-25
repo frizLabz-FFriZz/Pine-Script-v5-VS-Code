@@ -190,16 +190,16 @@ export class PineParser {
           originalName: functionName,
           body: body,
           doc: docstring, // Store the captured docstring
-          kind: "User Function", // Add a specific kind for user-defined functions
+          kind: 'User Function', // Add a specific kind for user-defined functions
         }
 
         if (exportKeyword) {
-          functionBuild.export = true;
-          functionBuild.kind = "User Export Function"; // More specific kind
+          functionBuild.export = true
+          functionBuild.kind = 'User Export Function' // More specific kind
         }
         if (methodKeyword) {
-          functionBuild.method = true;
-          functionBuild.kind = "User Method"; // More specific kind
+          functionBuild.method = true
+          functionBuild.kind = 'User Method' // More specific kind
         }
 
         const funcParamsMatches = parameters.matchAll(this.funcArgPattern)
@@ -229,19 +229,30 @@ export class PineParser {
         }
         // Parse @param descriptions from docstring
         if (docstring) {
-          const lines = docstring.split('\n');
-          functionBuild.args.forEach(arg => {
+          const lines = docstring.split('\n')
+          interface ParsedFunctionArgument {
+            name: string
+            required: boolean
+            default?: string
+            type?: string
+            modifier?: string
+            desc?: string
+          }
+          functionBuild.args.forEach((arg: ParsedFunctionArgument) => {
             if (arg.name) {
-              const paramLineRegex = new RegExp(`^\\s*\\/\\/\\s*@param\\s+${arg.name}\\s*(?:\\([^)]*\\))?\\s*(.+)`, 'i');
+              const paramLineRegex: RegExp = new RegExp(
+                `^\\s*\\/\\/\\s*@param\\s+${arg.name}\\s*(?:\\([^)]*\\))?\\s*(.+)`,
+                'i',
+              )
               for (const line of lines) {
-                const match = line.match(paramLineRegex);
+                const match: RegExpMatchArray | null = line.match(paramLineRegex)
                 if (match && match[1]) {
-                  arg.desc = match[1].trim();
-                  break; 
+                  arg.desc = match[1].trim()
+                  break
                 }
               }
             }
-          });
+          })
         }
         parsedFunctions.push(functionBuild)
       }
@@ -283,13 +294,13 @@ export class PineParser {
           name: name,
           fields: [],
           originalName: typeName,
-          kind: "User Type", // Assign kind
+          kind: 'User Type', // Assign kind
           doc: annotationsGroup || '', // Store docstring
         }
 
         if (udtExportKeyword) {
-          typeBuild.export = true;
-          typeBuild.kind = "User Export Type"; // More specific kind
+          typeBuild.export = true
+          typeBuild.kind = 'User Export Type' // More specific kind
         }
 
         if (fieldsGroup) {
@@ -314,8 +325,8 @@ export class PineParser {
               ? `${fieldMatch[1] /* array|matrix|map */}<${genericType1 || ''}${
                   genericType1 && genericType2 ? ',' : ''
                 }${genericType2 || ''}>`
-              : fieldType + (isArray || '');
-            
+              : fieldType + (isArray || '')
+
             // Prepend 'const ' if isConst is captured
             // resolvedFieldType = isConst ? `const ${resolvedFieldType}` : resolvedFieldType;
             // No, we store isConst separately. Type itself remains 'string', not 'const string'.
@@ -330,10 +341,10 @@ export class PineParser {
             const fieldsDict: Record<string, any> = {
               name: fieldName,
               type: resolvedFieldType,
-              kind: "Field", 
+              kind: 'Field',
             }
             if (isConst) {
-              fieldsDict.isConst = true;
+              fieldsDict.isConst = true
             }
             if (fieldValue) {
               fieldsDict.default = fieldValue
