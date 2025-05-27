@@ -110,7 +110,7 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
 
       const formattedDesc = Helpers.formatUrl(Helpers?.checkDesc(doc?.desc))
       // Determine the kind of the completion item
-      const itemKind = await this.determineCompletionItemKind(kind)
+      const itemKind = await this.determineCompletionItemKind(kind, doc) // Pass doc to determineCompletionItemKind
       // Create a new CompletionItem object
       const completionItem = new vscode.CompletionItem(label, itemKind)
       completionItem.documentation = new vscode.MarkdownString(`${formattedDesc} \`\`\`pine\n${modifiedSyntax}\n\`\`\``)
@@ -165,15 +165,26 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
    * @param kind - The type of the item.
    * @returns The kind of the completion item.
    */
-  async determineCompletionItemKind(kind?: string) {
+  async determineCompletionItemKind(kind?: string, docDetails?: any) {
+    // Added docDetails parameter
     try {
       // If the kind is not specified, return Text as the default kind
       if (!kind) {
         return vscode.CompletionItemKind.Text
       }
 
+      // Check for const fields first (potential enum members) based on docDetails
+      if (docDetails?.isConst && kind?.toLowerCase().includes('field')) {
+        return vscode.CompletionItemKind.EnumMember
+      }
+
       // Define a mapping from item types to completion item kinds
       const kinds: any = {
+        'User Export Function': vscode.CompletionItemKind.Function,
+        'User Method': vscode.CompletionItemKind.Method,
+        'User Function': vscode.CompletionItemKind.Function,
+        'User Export Type': vscode.CompletionItemKind.Class,
+        'User Type': vscode.CompletionItemKind.Class,
         Function: vscode.CompletionItemKind.Function,
         Method: vscode.CompletionItemKind.Method,
         Local: vscode.CompletionItemKind.Module,
@@ -183,17 +194,28 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         Control: vscode.CompletionItemKind.Keyword,
         Variable: vscode.CompletionItemKind.Variable,
         Boolean: vscode.CompletionItemKind.EnumMember,
-        Constant: vscode.CompletionItemKind.Enum,
+        Constant: vscode.CompletionItemKind.Constant,
         Type: vscode.CompletionItemKind.Class,
         Annotation: vscode.CompletionItemKind.Reference,
         Property: vscode.CompletionItemKind.Property,
-        Parameter: vscode.CompletionItemKind.TypeParameter, // Corrected to TypeParameter
-        Field: vscode.CompletionItemKind.Field, // Added Field kind
+        Parameter: vscode.CompletionItemKind.TypeParameter,
+        Field: vscode.CompletionItemKind.Field,
+        Enum: vscode.CompletionItemKind.Enum,
+        EnumMember: vscode.CompletionItemKind.EnumMember,
+        'Literal String': vscode.CompletionItemKind.Text, // For "" string literals
         Other: vscode.CompletionItemKind.Value,
       }
+
       // For each key in the mapping, if the kind includes the key, return the corresponding completion item kind
+      // Check for exact match first, then .includes()
+      const lowerKind = kind.toLowerCase()
       for (const key in kinds) {
-        if (kind.toLowerCase().includes(key.toLowerCase())) {
+        if (lowerKind === key.toLowerCase()) {
+          return kinds[key]
+        }
+      }
+      for (const key in kinds) {
+        if (lowerKind.includes(key.toLowerCase())) {
           return kinds[key]
         }
       }
@@ -438,7 +460,9 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
       }
 
       await this.functionCompletions(document, position, match)
-      await this.methodCompletions(document, position, match)
+      await this.methodCompletions(document, position, match) // Standard method completions
+      await this.udtConstructorCompletions(document, position, match) // UDT .new completions
+      await this.instanceFieldCompletions(document, position, match) // UDT instance field completions
 
       if (this.completionItems.length > 0) {
         return new vscode.CompletionList(this.completionItems, true)
@@ -446,6 +470,198 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
     } catch (error) {
       console.error(error)
       return []
+    }
+  }
+
+  /**
+   * Provides completion items for UDT instance fields (e.g., myobj.fieldname).
+   * @param document - The current document.
+   * @param position - The current position within the document.
+   * @param match - The text to match (e.g., "myobj." or "myobj.field")
+   * @returns null
+   */
+  async instanceFieldCompletions(document: vscode.TextDocument, position: vscode.Position, match: string) {
+    try {
+      if (!match.includes('.') || match.endsWith('.')) {
+        // Needs a variable name and at least a dot.
+        // If it only ends with a dot, we proceed. If it's "myobj.fiel", partialFieldName is "fiel"
+      } else if (match.split('.').length > 2) {
+        return // Avoids myobj.field.somethingElse for now
+      }
+
+      const parts = match.split('.')
+      const variableName = parts[0]
+      const partialFieldName = parts.length > 1 ? parts[1] : ''
+
+      if (!variableName) {
+        return
+      }
+
+      const variablesMap = Class.PineDocsManager.getMap('variables', 'variables2')
+      const udtMap = Class.PineDocsManager.getMap('UDT', 'types') // For user-defined types/enums
+      const constantsMap = Class.PineDocsManager.getMap('constants')
+
+      let udtNameOrNamespace = ''
+      let definitionToUse = null
+      let fieldsToIterate = null
+      let sourceKind = '' // 'UDT', 'VariableUDT', 'BuiltInNamespace'
+
+      const variableDoc = variablesMap.get(variableName)
+
+      if (variableDoc && variableDoc.type) {
+        // It's a variable instance
+        udtNameOrNamespace = variableDoc.type
+        definitionToUse = udtMap.get(udtNameOrNamespace)
+        if (definitionToUse) {
+          fieldsToIterate = definitionToUse.fields
+          sourceKind = 'VariableUDT'
+        }
+      } else {
+        // Not a variable, try if variableName is a UDT name directly (static context)
+        definitionToUse = udtMap.get(variableName)
+        if (definitionToUse) {
+          udtNameOrNamespace = variableName
+          fieldsToIterate = definitionToUse.fields
+          sourceKind = 'UDT'
+        }
+      }
+
+      // If not resolved as UDT or variable pointing to UDT, check for built-in namespaces
+      if (!definitionToUse) {
+        udtNameOrNamespace = variableName // The part before dot is the namespace itself
+        const namespaceMembers = []
+        for (const [constName, constDoc] of constantsMap.entries()) {
+          if (constDoc.namespace === udtNameOrNamespace || constName.startsWith(udtNameOrNamespace + '.')) {
+            namespaceMembers.push({
+              name: constDoc.name.startsWith(udtNameOrNamespace + '.')
+                ? constDoc.name.substring(udtNameOrNamespace.length + 1)
+                : constDoc.name,
+              type: constDoc.type || 'unknown',
+              isConst: true,
+              default: constDoc.syntax || constDoc.name,
+              description: constDoc.desc,
+            })
+          }
+        }
+        if (namespaceMembers.length > 0) {
+          fieldsToIterate = namespaceMembers
+          // Try to get a doc for the namespace itself if it exists as a variable (e.g. 'color' is a var)
+          const namespaceVariableDoc = variablesMap.get(udtNameOrNamespace)
+          definitionToUse = {
+            name: udtNameOrNamespace,
+            doc: namespaceVariableDoc?.desc || `Built-in namespace: ${udtNameOrNamespace}`,
+          }
+          sourceKind = 'BuiltInNamespace'
+        }
+      }
+
+      if (!definitionToUse || !fieldsToIterate || !Array.isArray(fieldsToIterate)) {
+        // console.log(`Definition for ${variableName} (resolved to ${udtNameOrNamespace}) not found or has no fields/members.`);
+        return
+      }
+
+      // console.log(`Suggesting fields/members for ${variableName} (resolved to ${udtNameOrNamespace}). Partial: '${partialFieldName}'`);
+
+      for (const field of fieldsToIterate) {
+        // field can now be an actual field or a constant member
+        if (partialFieldName && !field.name.toLowerCase().startsWith(partialFieldName.toLowerCase())) {
+          continue // Filter if there's a partial name
+        }
+
+        const itemKind =
+          field.isConst || sourceKind === 'BuiltInNamespace'
+            ? vscode.CompletionItemKind.EnumMember
+            : vscode.CompletionItemKind.Field
+        const label = field.name
+        const completionItem = new vscode.CompletionItem(label, itemKind)
+        completionItem.insertText = field.name
+
+        const detailPrefix = itemKind === vscode.CompletionItemKind.EnumMember ? '(enum member)' : '(field)'
+        completionItem.detail = `${detailPrefix} ${field.name}: ${field.type}`
+
+        let docString = new vscode.MarkdownString()
+        docString.appendCodeblock(`${detailPrefix} ${variableName}.${field.name}: ${field.type}`, 'pine')
+        if (field.description) {
+          // If direct description is available (e.g. from built-in constants)
+          docString.appendMarkdown(`\n\n${field.description}`)
+        } else if (definitionToUse.doc && sourceKind === 'UDT') {
+          // For user-defined types, try to extract from @field
+          const fieldDescRegex = new RegExp(`@field\\s+${field.name}\\s*\\([^)]*\\)\\s*(.*)`, 'i')
+          const fieldDescMatch = definitionToUse.doc.match(fieldDescRegex)
+          if (fieldDescMatch && fieldDescMatch[1]) {
+            docString.appendMarkdown(`\n\n${fieldDescMatch[1].trim()}`)
+          }
+        }
+
+        if (field.default !== undefined) {
+          // For EnumMembers that are constants, their 'default' might be their actual value.
+          if (itemKind === vscode.CompletionItemKind.EnumMember) {
+            docString.appendMarkdown(`\n\n*Value: \`${field.default}\`*`)
+          } else {
+            docString.appendMarkdown(`\n\n*Default: \`${field.default}\`*`)
+          }
+        }
+        completionItem.documentation = docString
+
+        // Adjust range for replacement
+        const linePrefix = document.lineAt(position.line).text.substring(0, position.character)
+        const currentWordMatch = linePrefix.substring(linePrefix.lastIndexOf('.') + 1).match(/(\w*)$/)
+        let replaceStart = position
+        if (currentWordMatch && currentWordMatch[1]) {
+          replaceStart = position.translate(0, -currentWordMatch[1].length)
+        }
+        completionItem.range = new vscode.Range(replaceStart, position)
+
+        this.completionItems.push(completionItem)
+      }
+    } catch (error) {
+      console.error('Error in instanceFieldCompletions:', error)
+    }
+  }
+
+  /**
+   * Provides completion items for UDT constructors (e.g., MyType.new).
+   * @param document - The current document.
+   * @param position - The current position within the document.
+   * @param match - The text to match (e.g., "MyType.")
+   * @returns null
+   */
+  async udtConstructorCompletions(document: vscode.TextDocument, position: vscode.Position, match: string) {
+    try {
+      if (!match.endsWith('.')) {
+        return // Only proceed if the match ends with a dot
+      }
+
+      const udtName = match.slice(0, -1) // Remove the trailing dot to get the UDT name
+
+      if (!udtName) {
+        return
+      }
+
+      const udtMap = Class.PineDocsManager.getMap('UDT', 'types') // Get UDTs
+      const udtDoc = udtMap.get(udtName)
+
+      if (udtDoc) {
+        // If the prefix is a known UDT
+        const label = 'new()'
+        const completionItem = new vscode.CompletionItem(label, vscode.CompletionItemKind.Constructor)
+        completionItem.insertText = new vscode.SnippetString('new($1)$0')
+        completionItem.detail = `${udtName}.new(...) Constructor`
+        completionItem.documentation = new vscode.MarkdownString(`Creates a new instance of \`${udtName}\`.`)
+
+        // Adjust range to replace only 'new' part if user already typed part of it.
+        const linePrefix = document.lineAt(position.line).text.substring(0, position.character)
+        const methodMatch = linePrefix.match(/(\w*)$/)
+        let replaceStart = position
+        if (methodMatch && methodMatch[1]) {
+          replaceStart = position.translate(0, -methodMatch[1].length)
+        }
+        completionItem.range = new vscode.Range(replaceStart, position)
+
+        this.completionItems.push(completionItem)
+      }
+    } catch (error) {
+      console.error('Error in udtConstructorCompletions:', error)
     }
   }
 
@@ -495,37 +711,36 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
           completionData.kind?.toLowerCase().includes('property')
         ) {
           itemKind = vscode.CompletionItemKind.Field
-        } else if (completionData.kind?.toLowerCase().includes('parameter')) {
-          itemKind = vscode.CompletionItemKind.Variable
-        } else {
-          itemKind = await this.determineCompletionItemKind(completionData.kind)
+          // Let determineCompletionItemKind handle all kind assignments consistently
+          // The specific if/else if here for field/property/parameter was overriding it.
+          itemKind = await this.determineCompletionItemKind(completionData.kind, completionData)
+
+          const completionItem = await this.createCompletionItem(
+            document,
+            completionData.name,
+            null,
+            completionData,
+            position,
+            true,
+          )
+
+          if (completionItem) {
+            completionItem.kind = itemKind
+            completionItem.sortText = `order${index.toString().padStart(4, '0')}`
+            this.completionItems.push(completionItem)
+            anyAdded = true
+          }
+          index++
         }
 
-        const completionItem = await this.createCompletionItem(
-          document,
-          completionData.name,
-          null,
-          completionData,
-          position,
-          true,
-        )
-
-        if (completionItem) {
-          completionItem.kind = itemKind
-          completionItem.sortText = `order${index.toString().padStart(4, '0')}`
-          this.completionItems.push(completionItem)
-          anyAdded = true
+        // Only clear completions if there are no more to suggest
+        if (!anyAdded) {
+          PineSharedCompletionState.clearCompletions()
+          return []
         }
-        index++
-      }
 
-      // Only clear completions if there are no more to suggest
-      if (!anyAdded) {
-        PineSharedCompletionState.clearCompletions()
-        return []
+        return new vscode.CompletionList(this.completionItems)
       }
-
-      return new vscode.CompletionList(this.completionItems)
     } catch (error) {
       console.error(error)
       PineSharedCompletionState.clearCompletions()
@@ -926,48 +1141,64 @@ export class PineInlineCompletionContext implements vscode.InlineCompletionItemP
   async argumentInlineCompletions(
     document: vscode.TextDocument,
     position: vscode.Position,
-    docs: Record<string, any>[],
+    allSuggestionsForActiveArg: Record<string, any>[],
   ) {
     try {
-      if (!docs || docs.length === 0) {
-        PineSharedCompletionState.clearCompletions()
+      this.completionItems = []
+      if (!allSuggestionsForActiveArg || allSuggestionsForActiveArg.length === 0) {
         return []
       }
-      const existingFields = new Set<string>()
-      const linePrefix = document.lineAt(position).text.substring(0, position.character)
-      const existingPairsMatch = linePrefix.matchAll(/(\w+)=/g) // match fieldName=
 
-      for (const match of existingPairsMatch) {
-        if (match && match[1]) {
-          existingFields.add(match[1])
+      const linePrefix = document.lineAt(position.line).text.substring(0, position.character)
+      const whatUserIsTypingMatch = linePrefix.match(/(\w*)$/) // What user is currently typing for the current argument
+      const whatUserIsTyping = whatUserIsTypingMatch ? whatUserIsTypingMatch[0].toLowerCase() : ''
+
+      let bestSuggestionForInline: Record<string, any> | null = null
+
+      // Scenario 1: Cursor is immediately after '(' or ', ' (empty argument slot)
+      if (linePrefix.endsWith('(') || linePrefix.match(/,\s*$/)) {
+        // Suggest the first available field/param name (these names end with '=')
+        bestSuggestionForInline = allSuggestionsForActiveArg.find((s) => s.name.endsWith('=')) ?? null
+      }
+      // Scenario 2: User is typing something for the argument
+      else if (whatUserIsTyping) {
+        // Prioritize matching a field/param name that starts with what user is typing
+        bestSuggestionForInline =
+          allSuggestionsForActiveArg.find(
+            (s) => s.name.endsWith('=') && s.name.toLowerCase().startsWith(whatUserIsTyping),
+          ) ?? null
+        if (!bestSuggestionForInline) {
+          // If not matching a field/param name, try to match a value suggestion
+          bestSuggestionForInline =
+            allSuggestionsForActiveArg.find(
+              (s) => !s.name.endsWith('=') && s.name.toLowerCase().startsWith(whatUserIsTyping),
+            ) ?? null
         }
       }
-      let index = 0
-      for (const completion of docs) {
-        if (existingFields.has(completion.name.replace('=', ''))) {
-          continue
-        }
+      // Scenario 3: Cursor is after "fieldname = " (i.e., linePrefix ends with "= " or just "=")
+      // Suggest a value for the current field.
+      else if (linePrefix.match(/=\s*$/)) {
+        // activeArg should be the LHS of '='. allSuggestionsForActiveArg are for this activeArg.
+        // We prefer a value suggestion (not ending with '=')
+        bestSuggestionForInline = allSuggestionsForActiveArg.find((s) => !s.name.endsWith('=')) ?? null
+      }
 
-        const completionItem = await this.createInlineCompletionItem(
+      if (bestSuggestionForInline) {
+        const inlineCompletion = await this.createInlineCompletionItem(
           document,
-          completion.name,
+          bestSuggestionForInline.name,
           null,
-          completion,
+          bestSuggestionForInline,
           position,
           true,
         )
-
-        if (completionItem) {
-          completionItem.insertText = `order${index.toString().padStart(4, '0')}` // Keep sortText if needed for ordering
-          this.completionItems.push(completionItem)
+        if (inlineCompletion) {
+          this.completionItems.push(inlineCompletion)
         }
-        index++
       }
-
-      PineSharedCompletionState.clearCompletions()
       return new vscode.InlineCompletionList(this.completionItems)
     } catch (error) {
-      console.error(error)
+      console.error('Error in argumentInlineCompletions (InlineContext):', error)
       return []
     }
   }

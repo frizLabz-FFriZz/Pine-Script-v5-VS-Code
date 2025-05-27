@@ -382,34 +382,61 @@ export class PineDocsManager {
 
         for (const doc of docs) {
           const { name } = doc
-          let currentDocs = currentMap.get(name)
+          let currentDocEntry = currentMap.get(name)
 
-          if (currentDocs && doc[keyType] && doc[keyType].length > 0) {
-            // Ensure the currentDocs[keyType] exists and is an array.
-            if (!Array.isArray(currentDocs[keyType])) {
-              currentDocs[keyType] = []
+          if (currentDocEntry) {
+            // Update existing entry
+            // Prioritize details from PineParser (doc) for user-defined functions
+            currentDocEntry.kind = doc.kind || currentDocEntry.kind;
+            currentDocEntry.body = doc.body || currentDocEntry.body; 
+            currentDocEntry.doc = doc.doc || currentDocEntry.doc; // Parsed docstring
+
+            if (doc.export !== undefined) {
+              currentDocEntry.export = doc.export;
+            }
+            if (doc.method !== undefined) {
+              currentDocEntry.method = doc.method;
             }
 
-            for (let arg of doc[keyType]) {
-              const argName = arg.name
-              let currentArg = currentDocs[keyType].find((a: any) => a.name === argName)
+            // Merge arguments (keyType is 'args' for functions) or fields (keyType is 'fields' for UDTs)
+            if (doc[keyType] && doc[keyType].length > 0) {
+              if (!Array.isArray(currentDocEntry[keyType])) {
+                currentDocEntry[keyType] = []
+              }
+              for (let parsedMember of doc[keyType]) { // Can be an argument or a field
+                const memberName = parsedMember.name
+                let currentMember = currentDocEntry[keyType].find((m: any) => m.name === memberName)
 
-              if (currentArg) {
-                // Update properties of the existing argument.
-                currentArg.required = arg.required
-                if (arg.default) {
-                  currentArg.default = arg.default
-                }
-                if (currentArg.type === 'undefined type') {
-                  currentArg.type = arg.type
+                if (currentMember) {
+                  // Update properties of the existing member (arg or field)
+                  currentMember.type = parsedMember.type || currentMember.type;
+                  currentMember.kind = parsedMember.kind || currentMember.kind; // Ensure kind is updated
+                  if (parsedMember.default !== undefined) { // Check for undefined to allow setting null or empty string defaults
+                    currentMember.default = parsedMember.default
+                  }
+                  if (parsedMember.isConst !== undefined) { // Ensure isConst is updated
+                    currentMember.isConst = parsedMember.isConst;
+                  }
+                  if (keyType === 'args') { // Argument-specific properties
+                    currentMember.required = parsedMember.required; // Note: UDT fields don't typically have 'required' in the same way as func args
+                    if (parsedMember.modifier) {
+                      currentMember.modifier = parsedMember.modifier;
+                    }
+                  }
+                } else {
+                  // Add new member if not found
+                  currentDocEntry[keyType].push(parsedMember);
                 }
               }
             }
-            // Update the map with the modified document.
-            currentMap.set(name, currentDocs)
+            currentMap.set(name, currentDocEntry)
+          } else if (keyType === 'args' || keyType === 'fields') { 
+            // Add new entry if it doesn't exist in the map (for functions/args or UDTs/fields)
+            currentMap.set(name, doc);
           }
         }
         // Save the updated map.
+        // The structure expected by setDocs is [{ docs: [...] }]
         this.setDocs([{ docs: Array.from(currentMap.values()) }], k)
       }
     } catch (error) {
