@@ -12,6 +12,8 @@ export let errorDecorationType: vscode.TextEditorDecorationType;
 export let warningDecorationType: vscode.TextEditorDecorationType;
 
 export function deactivate() {
+  errorDecorationType.dispose() 
+  warningDecorationType.dispose()
   PineLint.versionClear()
   PineLint.handleDocumentChange()
   return undefined
