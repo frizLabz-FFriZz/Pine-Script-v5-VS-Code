@@ -2,7 +2,7 @@
 import { Helpers, PineSharedCompletionState } from './index' // Assuming these are correctly defined elsewhere
 import { Class } from './PineClass' // Assuming PineDocsManager is accessed via Class
 import * as vscode from 'vscode'
-import { PineCompletionService, CompletionDoc } from './PineCompletionService' // Assuming this is the correct import path
+// PineCompletionService and CompletionDoc are not used in this file.
 
 function buildLabel(
   name: string,

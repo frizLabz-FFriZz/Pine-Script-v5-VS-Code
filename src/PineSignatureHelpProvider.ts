@@ -28,7 +28,7 @@ import { Helpers, PineSharedCompletionState } from './index'
 import { Class } from './PineClass'
 import * as vscode from 'vscode'
 import { PineDocsManager } from './PineDocsManager'
-import { PineCompletionService } from './PineCompletionService'
+// PineCompletionService is accessed via Class.pineCompletionService
 
 interface CompletionItem {
   name: string
@@ -63,7 +63,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
   private newFunction: boolean = false
   private keyValueMatchesSave: any = null
   private lastSelection: string | null = null
-  private pineCompletionService: PineCompletionService
+  // private pineCompletionService: PineCompletionService // Removed
   private docsToMatchArgumentCompletions?: Map<string | number, PineDocsManager> = Class.PineDocsManager.getMap(
     'variables',
     'constants',
@@ -72,7 +72,10 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
   )
 
   constructor() {
-    this.pineCompletionService = new PineCompletionService(Class.PineDocsManager)
+    // Constructor is now empty or can be used for other initializations
+    // if (!Class.pineCompletionService) {
+    //     console.error("PineCompletionService not initialized in Class object!");
+    // }
   }
 
   /**
@@ -119,7 +122,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       if (isUdtNew && udtName) {
         // const udtMap = Class.PineDocsManager.getMap('UDT', 'types')
         // const udtDocs = udtMap.get(udtName)
-        const udtDocs = this.pineCompletionService.getFunctionDocs(udtName + '.new')
+        const udtDocs = Class.pineCompletionService.getFunctionDocs(udtName + '.new')
 
         if (udtDocs && udtDocs.args) { // Expect 'args' from service instead of 'fields'
           const fieldCompletions: Record<string, any> = {}
@@ -212,7 +215,7 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
       // }
       // const docs = map.get(functionName)
 
-      const docs = this.pineCompletionService.getFunctionDocs(functionName)
+      const docs = Class.pineCompletionService.getFunctionDocs(functionName)
 
       if (!docs) {
         return null

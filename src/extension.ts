@@ -6,6 +6,7 @@ import { PineTypify } from './index'
 import { PineLint } from './PineLint'
 import { checkForNewVersionAndShowChangelog } from './newVersionPopUp'
 import * as vscode from 'vscode'
+import { PineCompletionService } from './PineCompletionService'
 
 export function deactivate() {
   PineLint.versionClear()
@@ -37,6 +38,14 @@ export async function activate(context: vscode.ExtensionContext) {
   // Set context
   VSCode.setContext(context)
   Class.setContext(context)
+
+  // Initialize PineDocsManager and PineCompletionService
+  // PineDocsManager is accessed via a getter that initializes it if not already.
+  // We need to ensure PineDocsManager is ready before PineCompletionService uses it.
+  // Accessing the getter ensures it's initialized.
+  _ = Class.PineDocsManager // Ensure PineDocsManager is initialized
+  Class.pineCompletionService = new PineCompletionService(Class.PineDocsManager);
+
   PineLint.initialLint()
 
   // Push subscriptions to context

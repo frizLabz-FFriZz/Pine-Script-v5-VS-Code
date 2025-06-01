@@ -1,10 +1,10 @@
 import { Helpers, PineSharedCompletionState } from './index'
 import { Class } from './PineClass'
 import * as vscode from 'vscode'
-import { PineCompletionService, CompletionDoc } from './PineCompletionService'
+import { CompletionDoc } from './PineCompletionService' // PineCompletionService itself is no longer instantiated here
 
 export class PineCompletionProvider implements vscode.CompletionItemProvider {
-  private pineCompletionService: PineCompletionService
+  // private pineCompletionService: PineCompletionService // Removed
   completionItems: vscode.CompletionItem[] = []
   docType: any
   userDocs: any
@@ -17,7 +17,10 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
   sigCompletions: Record<string, any> = {}
 
   constructor() {
-    this.pineCompletionService = new PineCompletionService(Class.PineDocsManager)
+    // Constructor is now empty or can be used for other initializations
+    // if (!Class.pineCompletionService) {
+    //     console.error("PineCompletionService not initialized in Class object!");
+    // }
   }
 
   /**
@@ -84,19 +87,21 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
     document: vscode.TextDocument,
     name: string,
     namespace: string | null,
-    doc: any,
+    doc: CompletionDoc, // Changed from any to CompletionDoc
     position: vscode.Position,
     argCompletion: boolean = false,
   ) {
     try {
       // Determine if the item is a method
-      const isMethod = doc?.isMethod ?? false
+      const isMethod = doc.isMethod ?? false
       // Get the kind of the item
-      const kind = doc?.kind
+      const kind = doc.kind
       // Determine if the item is the default (applies to function params for now)
-      let preselect = doc?.preselect ?? false ? doc.preselect : doc?.default ?? false
+      // doc.doc refers to the original documentation object stored inside CompletionDoc
+      let preselect = doc.doc?.preselect ?? doc.default ?? false
 
       // name the label variable
+      // 'name' parameter is the specific name for this completion (e.g. function name, method name)
       let label = name
       // If the item is a function or method, add parentheses to the name
       let openParen = ''
@@ -109,14 +114,17 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         moveCursor = true
       }
       // Format the syntax and check for overloads
-      const modifiedSyntax = Helpers.formatSyntax(name, doc, isMethod, namespace)
+      // Pass doc.doc (original doc object) to formatSyntax if it expects that structure
+      const modifiedSyntax = Helpers.formatSyntax(name, doc.doc, isMethod, namespace)
       // Format the label and description
       label = isMethod ? `${namespace}.${label.split('.').pop()}` : label
       label = label + openParen + closeParen
 
-      const formattedDesc = Helpers.formatUrl(Helpers?.checkDesc(doc?.desc))
+      // Use doc.description from CompletionDoc, fallback to doc.doc.desc if needed by checkDesc
+      const formattedDesc = Helpers.formatUrl(Helpers?.checkDesc(doc.description || doc.doc?.desc))
       // Determine the kind of the completion item
-      const itemKind = await this.determineCompletionItemKind(kind, doc) // Pass doc to determineCompletionItemKind
+      // Pass doc.doc (original doc object) to determineCompletionItemKind for docDetails
+      const itemKind = await this.determineCompletionItemKind(kind, doc.doc)
       // Create a new CompletionItem object
       const completionItem = new vscode.CompletionItem(label, itemKind)
       completionItem.documentation = new vscode.MarkdownString(`${formattedDesc} \`\`\`pine\n${modifiedSyntax}\n\`\`\``)
@@ -272,17 +280,17 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
       }
 
       const allCompletions: CompletionDoc[] = []
-      allCompletions.push(...this.pineCompletionService.getGeneralCompletions(match))
-      allCompletions.push(...this.pineCompletionService.getMethodCompletions(match))
-      allCompletions.push(...this.pineCompletionService.getUdtConstructorCompletions(match))
-      allCompletions.push(...this.pineCompletionService.getInstanceFieldCompletions(match))
+      allCompletions.push(...Class.pineCompletionService.getGeneralCompletions(match))
+      allCompletions.push(...Class.pineCompletionService.getMethodCompletions(match))
+      allCompletions.push(...Class.pineCompletionService.getUdtConstructorCompletions(match))
+      allCompletions.push(...Class.pineCompletionService.getInstanceFieldCompletions(match))
 
       for (const completionDoc of allCompletions) {
         const vscodeCompletionItem = await this.createCompletionItem(
           document,
-          completionDoc.name,
-          completionDoc.namespace,
-          completionDoc.doc,
+          completionDoc.name, // This is correct, completionDoc.name is the specific name
+          completionDoc.namespace, // Correct
+          completionDoc, // Pass the whole CompletionDoc object as the 'doc' argument
           position,
           false,
         )
