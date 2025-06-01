@@ -159,9 +159,9 @@ export class PineLint {
       PineLint.setDiagnostics(uri, diagnostics)
     }
 
-    if (VSCode.ActiveTextEditor) {
-      VSCode.ActiveTextEditor.setDecorations(errorDecorationType, errorDecorationRanges);
-      VSCode.ActiveTextEditor.setDecorations(warningDecorationType, warningDecorationRanges);
+    if (targetEditor) {
+      targetEditor.setDecorations(errorDecorationType, errorDecorationRanges);
+      targetEditor.setDecorations(warningDecorationType, warningDecorationRanges);
     }
   }
   /**
