@@ -67,12 +67,6 @@ export async function activate(context: vscode.ExtensionContext) {
         timerStart = new Date().getTime()
       }
     }),
-    vscode.workspace.onDidChangeTextDocument(async (event) => {
-      if (event.contentChanges.length > 0) {
-        PineLint.handleDocumentChange()
-        timerStart = new Date().getTime()
-      }
-    }),
 
     vscode.workspace.onDidChangeConfiguration(() => {
       console.log('Configuration changed')

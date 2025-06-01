@@ -1,8 +1,10 @@
 import { Helpers, PineSharedCompletionState } from './index'
 import { Class } from './PineClass'
 import * as vscode from 'vscode'
+import { PineCompletionService, CompletionDoc } from './PineCompletionService'
 
 export class PineCompletionProvider implements vscode.CompletionItemProvider {
+  private pineCompletionService: PineCompletionService
   completionItems: vscode.CompletionItem[] = []
   docType: any
   userDocs: any
@@ -13,6 +15,10 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
   activeArg: string | null = null
   argumentCompletionsFlag: boolean = false
   sigCompletions: Record<string, any> = {}
+
+  constructor() {
+    this.pineCompletionService = new PineCompletionService(Class.PineDocsManager)
+  }
 
   /**
    * Checks if completions are available for the current context.
@@ -241,200 +247,6 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
   }
 
   /**
-   * Provides completion items for method completions.
-   * @param document - The current document.
-   * @param position - The current position within the document.
-   * @param match - The text to match.
-   * @returns null
-   */
-  async methodCompletions(document: vscode.TextDocument, position: vscode.Position, match: string) {
-    try {
-      const map = Class.PineDocsManager.getMap('methods', 'methods2')
-
-      let namespace: string = ''
-      let funcName: string = ''
-
-      if (match.includes('.')) {
-        const split = match.split('.')
-        if (split.length > 1) {
-          namespace = split.shift() ?? ''
-          funcName = split.join('.') ?? ''
-        }
-      } else {
-        return []
-      }
-
-      if (!namespace || Class.PineDocsManager.getAliases.includes(namespace)) {
-        return []
-      }
-
-      const lowerNamespace = namespace.toLowerCase()
-      const lowerFuncName = funcName.toLowerCase()
-      const fullName = `${lowerNamespace}.${lowerFuncName}`
-
-      for (let [name, doc] of map.entries()) {
-        if (!doc.isMethod || name[0] === '*') {
-          continue
-        }
-
-        let docNameSplitLast: string | null = null
-        if (name.includes('.')) {
-          const docNameSplit = name.split('.')
-          docNameSplitLast = docNameSplit.pop() ?? null
-        } else {
-          docNameSplitLast = name
-        }
-
-        const namejoin = `${namespace}.${docNameSplitLast}`
-        const lowerNameJoin = namejoin.toLowerCase()
-
-        if (lowerNamespace && docNameSplitLast) {
-          let typoTrack = 0
-          let minorTypoCount = 0
-          let matchIndex = 0
-
-          for (let i = 0; i < fullName.length; i++) {
-            const char = fullName[i]
-            const foundIndex = lowerNameJoin.indexOf(char, matchIndex)
-
-            if (foundIndex === -1) {
-              typoTrack++
-              if (typoTrack > 1) {
-                break
-              }
-            } else if (foundIndex !== matchIndex) {
-              minorTypoCount++
-              if (minorTypoCount >= 3) {
-                break
-              }
-              matchIndex = foundIndex + 1
-            } else {
-              matchIndex++
-            }
-          }
-
-          if (typoTrack > 1 || minorTypoCount >= 3) {
-            continue
-          }
-
-          let nType = Helpers.identifyType(namespace)
-          let dType = Helpers.getThisTypes(doc)
-
-          if (!nType || !dType) {
-            continue
-          }
-
-          // Convert array types to a more consistent format
-          nType = nType.replace(/([\w.]+)\[\]/, 'array<$1>')
-          dType = dType.replace(/([\w.]+)\[\]/, 'array<$1>')
-
-          // Normalize dType to one of the basic types if it includes any of 'array', 'matrix', 'map'
-          const basicTypes = ['array', 'matrix', 'map']
-          const replacementTypes = ['any', 'type', 'array', 'matrix', 'map']
-
-          for (const t of basicTypes) {
-            if (dType.includes(t)) {
-              for (const r of replacementTypes) {
-                if (dType.includes(r) || dType === r) {
-                  dType = t
-                  break
-                }
-              }
-              break
-            }
-          }
-
-          // Ensure types are strings and perform the final type check
-          if (typeof nType !== 'string' || typeof dType !== 'string') {
-            continue
-          }
-
-          if (!nType.includes(dType)) {
-            continue
-          }
-
-          const completionItem = await this.createCompletionItem(document, name, namespace, doc, position, false)
-          if (completionItem) {
-            this.completionItems.push(completionItem)
-          }
-        }
-      }
-    } catch (error) {
-      console.error('An error occurred:', error)
-      return []
-    }
-  }
-
-  /**
-   * Provides completion items for function completions.
-   * @param document - The current document.
-   * @param position - The current position within the document.
-   * @param match - The text to match.
-   * @returns null
-   */
-  async functionCompletions(document: vscode.TextDocument, position: vscode.Position, match: string) {
-    try {
-      // Get the documentation map
-      const map = Class.PineDocsManager.getMap(
-        'functions',
-        'completionFunctions',
-        'variables',
-        'variables2',
-        'constants',
-        'UDT',
-        'types',
-        'imports',
-        'controls',
-        'annotations',
-        'fields',
-        'fields2',
-      )
-
-      const lowerMatch = match.toLowerCase()
-      const matchLength = match.length
-
-      for (const [name, doc] of map.entries()) {
-        const lowerName = name.toLowerCase()
-        if (lowerName.startsWith(lowerMatch[0])) {
-          let minorTypoCount = 0
-          let majorTypoCount = 0
-          let matchIndex = 0
-
-          for (let i = 0; i < matchLength; i++) {
-            const char = lowerMatch[i]
-            const foundIndex = lowerName.indexOf(char, matchIndex)
-
-            if (foundIndex === -1) {
-              majorTypoCount++
-              if (majorTypoCount > 1) {
-                break
-              }
-            } else if (foundIndex !== matchIndex) {
-              minorTypoCount++
-              if (minorTypoCount >= 3) {
-                break
-              }
-              matchIndex = foundIndex + 1
-            } else {
-              matchIndex++
-            }
-          }
-
-          if (majorTypoCount <= 1 && minorTypoCount < 3) {
-            const completionItem = await this.createCompletionItem(document, name, null, doc, position, false)
-            if (completionItem) {
-              this.completionItems.push(completionItem)
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error(error)
-      return []
-    }
-  }
-
-  /**
    * Provides completion items for the main completions.
    * @param document - The current document.
    * @param position - The current position within the document.
@@ -459,10 +271,25 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
         return []
       }
 
-      await this.functionCompletions(document, position, match)
-      await this.methodCompletions(document, position, match) // Standard method completions
-      await this.udtConstructorCompletions(document, position, match) // UDT .new completions
-      await this.instanceFieldCompletions(document, position, match) // UDT instance field completions
+      const allCompletions: CompletionDoc[] = []
+      allCompletions.push(...this.pineCompletionService.getGeneralCompletions(match))
+      allCompletions.push(...this.pineCompletionService.getMethodCompletions(match))
+      allCompletions.push(...this.pineCompletionService.getUdtConstructorCompletions(match))
+      allCompletions.push(...this.pineCompletionService.getInstanceFieldCompletions(match))
+
+      for (const completionDoc of allCompletions) {
+        const vscodeCompletionItem = await this.createCompletionItem(
+          document,
+          completionDoc.name,
+          completionDoc.namespace,
+          completionDoc.doc,
+          position,
+          false,
+        )
+        if (vscodeCompletionItem) {
+          this.completionItems.push(vscodeCompletionItem)
+        }
+      }
 
       if (this.completionItems.length > 0) {
         return new vscode.CompletionList(this.completionItems, true)
@@ -470,198 +297,6 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
     } catch (error) {
       console.error(error)
       return []
-    }
-  }
-
-  /**
-   * Provides completion items for UDT instance fields (e.g., myobj.fieldname).
-   * @param document - The current document.
-   * @param position - The current position within the document.
-   * @param match - The text to match (e.g., "myobj." or "myobj.field")
-   * @returns null
-   */
-  async instanceFieldCompletions(document: vscode.TextDocument, position: vscode.Position, match: string) {
-    try {
-      if (!match.includes('.') || match.endsWith('.')) {
-        // Needs a variable name and at least a dot.
-        // If it only ends with a dot, we proceed. If it's "myobj.fiel", partialFieldName is "fiel"
-      } else if (match.split('.').length > 2) {
-        return // Avoids myobj.field.somethingElse for now
-      }
-
-      const parts = match.split('.')
-      const variableName = parts[0]
-      const partialFieldName = parts.length > 1 ? parts[1] : ''
-
-      if (!variableName) {
-        return
-      }
-
-      const variablesMap = Class.PineDocsManager.getMap('variables', 'variables2')
-      const udtMap = Class.PineDocsManager.getMap('UDT', 'types') // For user-defined types/enums
-      const constantsMap = Class.PineDocsManager.getMap('constants')
-
-      let udtNameOrNamespace = ''
-      let definitionToUse = null
-      let fieldsToIterate = null
-      let sourceKind = '' // 'UDT', 'VariableUDT', 'BuiltInNamespace'
-
-      const variableDoc = variablesMap.get(variableName)
-
-      if (variableDoc && variableDoc.type) {
-        // It's a variable instance
-        udtNameOrNamespace = variableDoc.type
-        definitionToUse = udtMap.get(udtNameOrNamespace)
-        if (definitionToUse) {
-          fieldsToIterate = definitionToUse.fields
-          sourceKind = 'VariableUDT'
-        }
-      } else {
-        // Not a variable, try if variableName is a UDT name directly (static context)
-        definitionToUse = udtMap.get(variableName)
-        if (definitionToUse) {
-          udtNameOrNamespace = variableName
-          fieldsToIterate = definitionToUse.fields
-          sourceKind = 'UDT'
-        }
-      }
-
-      // If not resolved as UDT or variable pointing to UDT, check for built-in namespaces
-      if (!definitionToUse) {
-        udtNameOrNamespace = variableName // The part before dot is the namespace itself
-        const namespaceMembers = []
-        for (const [constName, constDoc] of constantsMap.entries()) {
-          if (constDoc.namespace === udtNameOrNamespace || constName.startsWith(udtNameOrNamespace + '.')) {
-            namespaceMembers.push({
-              name: constDoc.name.startsWith(udtNameOrNamespace + '.')
-                ? constDoc.name.substring(udtNameOrNamespace.length + 1)
-                : constDoc.name,
-              type: constDoc.type || 'unknown',
-              isConst: true,
-              default: constDoc.syntax || constDoc.name,
-              description: constDoc.desc,
-            })
-          }
-        }
-        if (namespaceMembers.length > 0) {
-          fieldsToIterate = namespaceMembers
-          // Try to get a doc for the namespace itself if it exists as a variable (e.g. 'color' is a var)
-          const namespaceVariableDoc = variablesMap.get(udtNameOrNamespace)
-          definitionToUse = {
-            name: udtNameOrNamespace,
-            doc: namespaceVariableDoc?.desc || `Built-in namespace: ${udtNameOrNamespace}`,
-          }
-          sourceKind = 'BuiltInNamespace'
-        }
-      }
-
-      if (!definitionToUse || !fieldsToIterate || !Array.isArray(fieldsToIterate)) {
-        // console.log(`Definition for ${variableName} (resolved to ${udtNameOrNamespace}) not found or has no fields/members.`);
-        return
-      }
-
-      // console.log(`Suggesting fields/members for ${variableName} (resolved to ${udtNameOrNamespace}). Partial: '${partialFieldName}'`);
-
-      for (const field of fieldsToIterate) {
-        // field can now be an actual field or a constant member
-        if (partialFieldName && !field.name.toLowerCase().startsWith(partialFieldName.toLowerCase())) {
-          continue // Filter if there's a partial name
-        }
-
-        const itemKind =
-          field.isConst || sourceKind === 'BuiltInNamespace'
-            ? vscode.CompletionItemKind.EnumMember
-            : vscode.CompletionItemKind.Field
-        const label = field.name
-        const completionItem = new vscode.CompletionItem(label, itemKind)
-        completionItem.insertText = field.name
-
-        const detailPrefix = itemKind === vscode.CompletionItemKind.EnumMember ? '(enum member)' : '(field)'
-        completionItem.detail = `${detailPrefix} ${field.name}: ${field.type}`
-
-        let docString = new vscode.MarkdownString()
-        docString.appendCodeblock(`${detailPrefix} ${variableName}.${field.name}: ${field.type}`, 'pine')
-        if (field.description) {
-          // If direct description is available (e.g. from built-in constants)
-          docString.appendMarkdown(`\n\n${field.description}`)
-        } else if (definitionToUse.doc && sourceKind === 'UDT') {
-          // For user-defined types, try to extract from @field
-          const fieldDescRegex = new RegExp(`@field\\s+${field.name}\\s*\\([^)]*\\)\\s*(.*)`, 'i')
-          const fieldDescMatch = definitionToUse.doc.match(fieldDescRegex)
-          if (fieldDescMatch && fieldDescMatch[1]) {
-            docString.appendMarkdown(`\n\n${fieldDescMatch[1].trim()}`)
-          }
-        }
-
-        if (field.default !== undefined) {
-          // For EnumMembers that are constants, their 'default' might be their actual value.
-          if (itemKind === vscode.CompletionItemKind.EnumMember) {
-            docString.appendMarkdown(`\n\n*Value: \`${field.default}\`*`)
-          } else {
-            docString.appendMarkdown(`\n\n*Default: \`${field.default}\`*`)
-          }
-        }
-        completionItem.documentation = docString
-
-        // Adjust range for replacement
-        const linePrefix = document.lineAt(position.line).text.substring(0, position.character)
-        const currentWordMatch = linePrefix.substring(linePrefix.lastIndexOf('.') + 1).match(/(\w*)$/)
-        let replaceStart = position
-        if (currentWordMatch && currentWordMatch[1]) {
-          replaceStart = position.translate(0, -currentWordMatch[1].length)
-        }
-        completionItem.range = new vscode.Range(replaceStart, position)
-
-        this.completionItems.push(completionItem)
-      }
-    } catch (error) {
-      console.error('Error in instanceFieldCompletions:', error)
-    }
-  }
-
-  /**
-   * Provides completion items for UDT constructors (e.g., MyType.new).
-   * @param document - The current document.
-   * @param position - The current position within the document.
-   * @param match - The text to match (e.g., "MyType.")
-   * @returns null
-   */
-  async udtConstructorCompletions(document: vscode.TextDocument, position: vscode.Position, match: string) {
-    try {
-      if (!match.endsWith('.')) {
-        return // Only proceed if the match ends with a dot
-      }
-
-      const udtName = match.slice(0, -1) // Remove the trailing dot to get the UDT name
-
-      if (!udtName) {
-        return
-      }
-
-      const udtMap = Class.PineDocsManager.getMap('UDT', 'types') // Get UDTs
-      const udtDoc = udtMap.get(udtName)
-
-      if (udtDoc) {
-        // If the prefix is a known UDT
-        const label = 'new()'
-        const completionItem = new vscode.CompletionItem(label, vscode.CompletionItemKind.Constructor)
-        completionItem.insertText = new vscode.SnippetString('new($1)$0')
-        completionItem.detail = `${udtName}.new(...) Constructor`
-        completionItem.documentation = new vscode.MarkdownString(`Creates a new instance of \`${udtName}\`.`)
-
-        // Adjust range to replace only 'new' part if user already typed part of it.
-        const linePrefix = document.lineAt(position.line).text.substring(0, position.character)
-        const methodMatch = linePrefix.match(/(\w*)$/)
-        let replaceStart = position
-        if (methodMatch && methodMatch[1]) {
-          replaceStart = position.translate(0, -methodMatch[1].length)
-        }
-        completionItem.range = new vscode.Range(replaceStart, position)
-
-        this.completionItems.push(completionItem)
-      }
-    } catch (error) {
-      console.error('Error in udtConstructorCompletions:', error)
     }
   }
 
