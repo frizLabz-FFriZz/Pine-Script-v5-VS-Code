@@ -106,7 +106,8 @@ export class PineLint {
    * Updates the diagnostics for the active document.
    * @param dataGroups - The groups of data to update the diagnostics with.
    */
-   static async updateDiagnostics(documentUri: vscode.Uri, ...dataGroups: any[][]): Promise<void> {
+   static async updateDiagnostics( ...dataGroups: any[][]): Promise<void> {
+    const documentUri: vscode.Uri = VSCode.Uri
     const targetEditor = vscode.window.visibleTextEditors.find(
       editor => editor.document.uri.toString() === documentUri.toString()
     );
