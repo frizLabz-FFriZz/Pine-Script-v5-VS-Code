@@ -8,6 +8,9 @@ import { checkForNewVersionAndShowChangelog } from './newVersionPopUp'
 import * as vscode from 'vscode'
 import { PineCompletionService } from './PineCompletionService'
 
+export let errorDecorationType: vscode.TextEditorDecorationType;
+export let warningDecorationType: vscode.TextEditorDecorationType;
+
 export function deactivate() {
   PineLint.versionClear()
   PineLint.handleDocumentChange()
@@ -38,6 +41,16 @@ export async function activate(context: vscode.ExtensionContext) {
   // Set context
   VSCode.setContext(context)
   Class.setContext(context)
+
+  errorDecorationType = vscode.window.createTextEditorDecorationType({
+    backgroundColor: new vscode.ThemeColor('pine.errorBackground'),
+    gutterIconPath: context.asAbsolutePath('media/error-icon.svg'),
+  });
+
+  warningDecorationType = vscode.window.createTextEditorDecorationType({
+    backgroundColor: new vscode.ThemeColor('pine.warningBackground'),
+    gutterIconPath: context.asAbsolutePath('media/warning-icon.svg'),
+  });
 
   // Initialize PineDocsManager and PineCompletionService
   // PineDocsManager is accessed via a getter that initializes it if not already.

@@ -2,6 +2,7 @@ import { debounce } from 'lodash'
 import * as vscode from 'vscode'
 import { VSCode } from './VSCode'
 import { Class } from './PineClass'
+import { errorDecorationType, warningDecorationType } from './extension';
 
 /**
  * PineLint class is responsible for linting Pine Script code.
@@ -106,7 +107,14 @@ export class PineLint {
    * @param dataGroups - The groups of data to update the diagnostics with.
    */
   static async updateDiagnostics(...dataGroups: any[][]): Promise<void> {
+    if (VSCode.ActiveTextEditor) {
+      VSCode.ActiveTextEditor.setDecorations(errorDecorationType, []);
+      VSCode.ActiveTextEditor.setDecorations(warningDecorationType, []);
+    }
+
     const diagnostics: vscode.Diagnostic[] = []
+    const errorDecorationRanges: vscode.Range[] = [];
+    const warningDecorationRanges: vscode.Range[] = [];
     let i = 0
     for (const group of dataGroups) {
       i += 1
@@ -133,12 +141,23 @@ export class PineLint {
         }
 
         diagnostics.push(new vscode.Diagnostic(range, message, severity))
+
+        if (severity === vscode.DiagnosticSeverity.Error) {
+          errorDecorationRanges.push(range);
+        } else if (severity === vscode.DiagnosticSeverity.Warning) {
+          warningDecorationRanges.push(range);
+        }
       }
     }
 
     const uri = VSCode.Uri
     if (uri) {
       PineLint.setDiagnostics(uri, diagnostics)
+    }
+
+    if (VSCode.ActiveTextEditor) {
+      VSCode.ActiveTextEditor.setDecorations(errorDecorationType, errorDecorationRanges);
+      VSCode.ActiveTextEditor.setDecorations(warningDecorationType, warningDecorationRanges);
     }
   }
   /**

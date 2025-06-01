@@ -39,6 +39,44 @@
     ],
     "configuration": {},
     "submenus": [ { "id": "pine.mysubmenuNonPineFile", "label": " Pine Script v5" } ],
+    "colors": [
+      {
+        "id": "pine.errorBackground",
+        "description": "Background color for error highlights.",
+        "defaults": {
+          "dark": "rgba(255, 0, 0, 0.1)",
+          "light": "rgba(255, 0, 0, 0.1)",
+          "highContrast": "rgba(255, 0, 0, 0.1)"
+        }
+      },
+      {
+        "id": "pine.warningBackground",
+        "description": "Background color for warning highlights.",
+        "defaults": {
+          "dark": "rgba(255, 255, 0, 0.1)",
+          "light": "rgba(255, 255, 0, 0.1)",
+          "highContrast": "rgba(255, 255, 0, 0.1)"
+        }
+      },
+      {
+        "id": "pine.errorGutterIcon",
+        "description": "Color for the error gutter icon. (Note: Current SVG icon has fixed color)",
+        "defaults": {
+          "dark": "#FF0000",
+          "light": "#FF0000",
+          "highContrast": "#FF0000"
+        }
+      },
+      {
+        "id": "pine.warningGutterIcon",
+        "description": "Color for the warning gutter icon. (Note: Current SVG icon has fixed color)",
+        "defaults": {
+          "dark": "#FFFF00",
+          "light": "#FFFF00",
+          "highContrast": "#FFFF00"
+        }
+      }
+    ],
     "commands": [
       { "command": "pine.mysubmenuNonPineFile", "title": "Pine Script Options" , "category": "navigation", "when": "!editorLangId == pine" }, { "command": "pine.mysubmenu2"          , "title": "Pine Script Options" , "category": "navigation", "when": "editorLangId == pine"  },
       { "command": "pine.typify"              , "title": "Typify Variables"    , "category": "navigation"                                  }, { "command": "pine.completionAccepted"  , "title": "Completion Accepted"                                                             },
