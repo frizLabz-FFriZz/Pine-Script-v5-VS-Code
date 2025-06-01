@@ -19,11 +19,13 @@ import { PineHoverFunction } from './PineHoverProvider/PineHoverIsFunction'
 import { PineHoverMethod } from './PineHoverProvider/PineHoverIsMethod'
 import { PineRenameProvider } from './PineRenameProvider'
 import { PineParser } from './PineParser'
+import { PineCompletionService } from './PineCompletionService'
 
 export class Class {
   public static context: vscode.ExtensionContext | undefined
 
   public static pineDocsManager: PineDocsManager
+  public static pineCompletionService: PineCompletionService;
   public static pineUserInputs: PineUserInputs
   public static pineRequest: PineRequest
   public static pineHoverProvider: PineHoverProvider
