@@ -106,11 +106,15 @@ export class PineLint {
    * Updates the diagnostics for the active document.
    * @param dataGroups - The groups of data to update the diagnostics with.
    */
-  static async updateDiagnostics(...dataGroups: any[][]): Promise<void> {
-    if (VSCode.ActiveTextEditor) {
-      VSCode.ActiveTextEditor.setDecorations(errorDecorationType, []);
-      VSCode.ActiveTextEditor.setDecorations(warningDecorationType, []);
+   static async updateDiagnostics(documentUri: vscode.Uri, ...dataGroups: any[][]): Promise<void> {
+    const targetEditor = vscode.window.visibleTextEditors.find(
+      editor => editor.document.uri.toString() === documentUri.toString()
+    );
+    if (targetEditor) {
+      targetEditor.setDecorations(errorDecorationType, []);
+      targetEditor.setDecorations(warningDecorationType, []);
     }
+     
 
     const diagnostics: vscode.Diagnostic[] = []
     const errorDecorationRanges: vscode.Range[] = [];
