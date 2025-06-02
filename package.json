@@ -40,41 +40,13 @@
     "configuration": {},
     "submenus": [ { "id": "pine.mysubmenuNonPineFile", "label": " Pine Script v5" } ],
     "colors": [
-      {
-        "id": "pine.errorBackground",
-        "description": "Background color for error highlights.",
-        "defaults": {
-          "dark": "rgba(255, 0, 0, 0.1)",
-          "light": "rgba(255, 0, 0, 0.1)",
-          "highContrast": "rgba(255, 0, 0, 0.1)"
-        }
-      },
-      {
-        "id": "pine.warningBackground",
-        "description": "Background color for warning highlights.",
-        "defaults": {
-          "dark": "rgba(255, 255, 0, 0.1)",
-          "light": "rgba(255, 255, 0, 0.1)",
-          "highContrast": "rgba(255, 255, 0, 0.1)"
-        }
-      },
-      {
-        "id": "pine.errorGutterIcon",
-        "description": "Color for the error gutter icon. (Note: Current SVG icon has fixed color)",
-        "defaults": {
-          "dark": "#FF0000",
-          "light": "#FF0000",
-          "highContrast": "#FF0000"
-        }
-      },
+      { "id": "pine.errorBackground", "description": "Background color for error highlights.", "defaults": { "dark": "rgba(255, 0, 0, 0.1)", "light": "rgba(255, 0, 0, 0.1)", "highContrast": "rgba(255, 0, 0, 0.1)" } },
+      { "id": "pine.warningBackground", "description": "Background color for warning highlights.", "defaults": { "dark": "rgba(255, 255, 0, 0.1)", "light": "rgba(255, 255, 0, 0.1)", "highContrast": "rgba(255, 255, 0, 0.1)" } },
+      { "id": "pine.errorGutterIcon", "description": "Color for the error gutter icon. (Note: Current SVG icon has fixed color)", "defaults": { "dark": "editorOverviewRuler.errorForeground", "light": "editorOverviewRuler.errorForeground", "highContrast": "editorOverviewRuler.errorForeground" } },
       {
         "id": "pine.warningGutterIcon",
         "description": "Color for the warning gutter icon. (Note: Current SVG icon has fixed color)",
-        "defaults": {
-          "dark": "#FFFF00",
-          "light": "#FFFF00",
-          "highContrast": "#FFFF00"
-        }
+        "defaults": { "dark": "editorOverviewRuler.warningForeground", "light": "editorOverviewRuler.warningForeground", "highContrast": "editorOverviewRuler.warningForeground" }
       }
     ],
     "commands": [
@@ -86,7 +58,7 @@
     ],
     "menus": {
       "editor/context": [
-        { "submenu": "pine.mysubmenuNonPineFile", "when": "editorLangId !== pine"                     , "group": "Pine"                                     },
+        { "submenu": "pine.mysubmenuNonPineFile", "when": "editorLangId !== pine"                     , "group": "Pine"                                              },
         {                                         "when": "editorLangId == pine && editorHasSelection", "group": "9_pinescript@1", "command": "pine.typify"          },
         {                                         "when": "editorLangId == pine && editorHasSelection", "group": "9_pinescript@2", "command": "pine.docString"       },
         {                                         "when": "editorLangId == pine"                      , "group": "9_pinescript@3", "command": "pine.getStandardList" }
@@ -96,7 +68,8 @@
     "snippets": [],
     "languages": [ { "id": "pine", "icon": { "light": "media/PineLogo.png", "dark": "media/PineLogo.png" }, "aliases": [ "pinescript", "pine" ], "extensions": [ ".ps", ".pine", ".pinescript" ], "configuration": "config/language-configuration.json" } ],
     "documentSymbolProvider": [ { "language": "pine", "scheme": "file" } ],
-    "grammars": [ { "language": "pine", "scopeName": "source.pine", "path": "syntaxes/pine.tmLanguage.json" }, { "scopeName": "source.markdown", "path": "syntaxes/pine-embedded.tmLanguage.json", "injectTo": [ "text.html.markdown" ] } ]
+    "grammars": [ { "language": "pine", "scopeName": "source.pine", "path": "syntaxes/pine.tmLanguage.json" }, { "scopeName": "source.markdown", "path": "syntaxes/pine-embedded.tmLanguage.json", "injectTo": [ "text.html.markdown" ] } ],
+    "configurationDefaults": { "[pine]": { "errorLens.enabled": true, "errorLens.enabledDiagnosticLevels": [ "error", "warning", "info" ], "errorLens.messageBackgroundMode": "line", "errorLens.messageEnabled": true, "errorLens.gutterIconsEnabled": true, "errorLens.gutterIconSet": "codicons" } }
   },
   "dependencies": { "debounce": "^2.1.1", "lodash": "^4.17.21", "node-fetch": "^3.3.2" },
   "devDependencies": {
@@ -125,5 +98,6 @@
     "webpack"                         : "^5.94.0",
     "webpack-cli"                     : "^5.1.4" ,
     "xo"                              : "^0.54.0"
-  }
+  },
+  "extensionDependencies": [ "usernamehw.errorlens" ]
 }

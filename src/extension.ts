@@ -8,19 +8,10 @@ import { checkForNewVersionAndShowChangelog } from './newVersionPopUp'
 import * as vscode from 'vscode'
 import { PineCompletionService } from './PineCompletionService'
 
-export let errorDecorationType: vscode.TextEditorDecorationType;
-export let warningDecorationType: vscode.TextEditorDecorationType;
-
 export function deactivate() {
-  if (errorDecorationType) {
-    errorDecorationType.dispose();
-  }
-  if (warningDecorationType) {
-    warningDecorationType.dispose();
-  }
-  PineLint.versionClear();
-  PineLint.handleDocumentChange();
-  return undefined;
+  PineLint.versionClear()
+  PineLint.handleDocumentChange()
+  return undefined
 }
 
 let timerStart: number = 0
@@ -48,22 +39,12 @@ export async function activate(context: vscode.ExtensionContext) {
   VSCode.setContext(context)
   Class.setContext(context)
 
-  errorDecorationType = vscode.window.createTextEditorDecorationType({
-    backgroundColor: new vscode.ThemeColor('pine.errorBackground'),
-    gutterIconPath: context.asAbsolutePath('media/error-icon.svg'),
-  });
-
-  warningDecorationType = vscode.window.createTextEditorDecorationType({
-    backgroundColor: new vscode.ThemeColor('pine.warningBackground'),
-    gutterIconPath: context.asAbsolutePath('media/warning-icon.svg'),
-  });
-
   // Initialize PineDocsManager and PineCompletionService
   // PineDocsManager is accessed via a getter that initializes it if not already.
   // We need to ensure PineDocsManager is ready before PineCompletionService uses it.
   // Accessing the getter ensures it's initialized.
-  _ = Class.PineDocsManager // Ensure PineDocsManager is initialized
-  Class.pineCompletionService = new PineCompletionService(Class.PineDocsManager);
+  const docmanager = Class.PineDocsManager // Ensure PineDocsManager is initialized
+  Class.pineCompletionService = new PineCompletionService(docmanager)
 
   PineLint.initialLint()
 
@@ -71,7 +52,7 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     PineLint.DiagnosticCollection,
     vscode.window.onDidChangeActiveTextEditor(async () => {
-      Class.PineDocsManager.cleanDocs()
+      docmanager.cleanDocs()
       PineResponseFlow.resetDocChange()
       if (VSCode.LanguageId !== 'pine' && !VSCode.ActivePineFile) {
         deactivate()

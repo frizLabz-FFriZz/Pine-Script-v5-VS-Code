@@ -358,11 +358,12 @@ export class PineCompletionProvider implements vscode.CompletionItemProvider {
           // The specific if/else if here for field/property/parameter was overriding it.
           itemKind = await this.determineCompletionItemKind(completionData.kind, completionData)
 
+          const docData = completionData as CompletionDoc
           const completionItem = await this.createCompletionItem(
             document,
-            completionData.name,
-            null,
-            completionData,
+            docData.name,
+            docData.namespace ?? null,
+            docData,
             position,
             true,
           )
