@@ -22,9 +22,9 @@ indicator("Organized Pine Script Syntax Test",overlay = true)
 // @field myPoint (chart.point) A chart point field
 // @field myArr (array<int>) An integer array field.
 // @field myMap (map<string,float>) A map field with string keys and float values.
-// @variable myVar (float) A float variable.
 // @strategy_alert_message "This is a strategy alert message."
-var const int thingy = 0
+// @variable myVar (float) A float variable.
+var const float myVar = 0.5
 
 // #############################################################################
 // #  Keywords
@@ -117,8 +117,6 @@ type MyUDT
     polyline                  myPolyline
     array<MyUDT>              nested_self
 
-
-MyUDT.new(myColorField=color.blue)
 
 // #############################################################################
 // #  Variable Declarations and Initialization
@@ -269,36 +267,37 @@ method my_array_methods(array<int> arr) =>
     arr.set(index = 3,value = 15)
     arr.fill(value = 7)
     arr.sort(order = order.ascending)
-    int firstElement = arr.first()
-    int lastElement = arr.last()
-    bool allPositive = arr.every() // only bool array
-    bool anyNegative = arr.some() // Returns true if at least one element of the id array is true, false otherwise.
-    int elementAtIndex2 = arr.get(index = 2)
-    int minValue = arr.min()
-    int maxValue = arr.max()
-    int rangeValue = arr.range()
-    int sumValue = arr.sum()
-    string joinedString = arr.join(separator = ",")
-    array<int> sortedIndices = arr.sort_indices(order = order.descending)
-    float percentileNearestRank = arr.percentile_nearest_rank(50)
-    float percentileLinearInterpolation = arr.percentile_linear_interpolation(percentage=0.5)
-    int index = arr.binary_search(5)
-    int leftIndex = arr.binary_search_leftmost(5)
-    int rightIndex = arr.binary_search_rightmost(5)
-    float averageValue = arr.avg()
-    float standardDeviation = arr.stdev()
-    float varianceValue = arr.variance()
-    float covarianceValue = arr.covariance(array.from(1.0,2.0,3.0))
-    int modeValue = arr.mode()
-    float medianValue = arr.median()
-    array<int> standardizedArray = arr.standardize()
-    array<int> absoluteValue = arr.abs()
-    int firstIndex = arr.indexof(value = 7)
-    int lastIndex = arr.lastindexof(value = 7)
-    bool includesValue = arr.includes(value = 15)
-    array<int> slicedArray = arr.slice(index_from = 1,index_to = -2)  // this will get indexes  1 - second last
-    int arraySize = arr.size()
-    new_arr = arr.concat(array.from(99,98,97))
+    int         firstElement                  = arr.first()
+    int         lastElement                   = arr.last()
+    array<bool> boolarr                       = array.from(true,false,true)
+    bool        allPositive                   = boolarr.every()                                      // only bool array
+    bool        anyNegative                   = boolarr.some()                                       // Returns true if at least one element of the id array is true, false otherwise.
+    int         elementAtIndex2               = arr.get(index = 2)
+    int         minValue                      = arr.min()
+    int         maxValue                      = arr.max()
+    int         rangeValue                    = arr.range()
+    int         sumValue                      = arr.sum()
+    string      joinedString                  = arr.join(separator = ",")
+    array<int>  sortedIndices                 = arr.sort_indices(order = order.descending)
+    float       percentileNearestRank         = arr.percentile_nearest_rank(50)
+    float       percentileLinearInterpolation = arr.percentile_linear_interpolation(percentage=0.5)
+    int         index                         = arr.binary_search(5)
+    int         leftIndex                     = arr.binary_search_leftmost(5)
+    int         rightIndex                    = arr.binary_search_rightmost(5)
+    float       averageValue                  = arr.avg()
+    float       standardDeviation             = arr.stdev()
+    float       varianceValue                 = arr.variance()
+    float       covarianceValue               = arr.covariance(array.from(1.0,2.0,3.0))
+    int         modeValue                     = arr.mode()
+    float       medianValue                   = arr.median()
+    array<int>  standardizedArray             = arr.standardize()
+    array<int>  absoluteValue                 = arr.abs()
+    int         firstIndex                    = arr.indexof(value = 7)
+    int         lastIndex                     = arr.lastindexof(value = 7)
+    bool        includesValue                 = arr.includes(value = 15)
+    array<int>  slicedArray                   = arr.slice(index_from = 1,index_to = -2)              // this will get indexes  1 - second last
+    int         arraySize                     = arr.size()
+    new_arr                       = arr.concat(array.from(99,98,97))
     arr.clear()
 
 // -----------------------------------------------------------------------------
@@ -610,7 +609,7 @@ library("CompactSyntaxDemo", overlay = true)
 int     inpLen      = input.int(14, "Length", minval=1, maxval=100, step=1, tooltip="Length of the indicator", group = "Main")
 float   inpSrc      = input.source(close, "Source", group = "Main", confirm = false)
 bool    inpShow     = input.bool(true, "Show Plot", inline="Plot", group="Display")
-color  inpColor    = input.color(#2157f3, "", inline="Plot", group="Display")
+color   inpColor    = input.color(#2157f3, "", inline="Plot", group="Display")
 string  inpConfirm  = input.string("Confirm", "Confirmation", ["Confirm", "No Confirm"], "Confirm?", group = "Main")
 
 // --- Exported Enum ---
@@ -659,17 +658,14 @@ method updateMap(internalUDT this, string key, float val) =>
 
 // --- Var/Varip ---
 var my_map = map.new<string, float>()
-if barstate.isfirst
-    my_map.put("initial_key", 1.234)
-
+my_map.put("initial_key", 1.234)
 varip internalUDT inst = internalUDT.new( 
           my_int  = inpLen,
           my_str  = "42",
           my_map  = my_map,
           my_arr  = array.new<MyExportedUDT>()
           )
-
-inst := inst // Essential for varip persistence
+inst  := inst // Essential for varip persistence
 
 
 
@@ -680,7 +676,7 @@ inst.updateMap("new_key", calc_result) // Method call
 float final_result = inst.my_map.get("new_key") * inpSrc
 
 // --- Plot ---
-plot(final_result, "Result", inpColor, display = inpShow ? display.all : display.none)
+plot(final_result, "Result", color.new(inpColor,50), display = inpShow ? display.all : display.none)
 
 // -- Switch --
 string switch_test = switch inpConfirm
@@ -692,10 +688,4 @@ string switch_test = switch inpConfirm
 var myarray = array.new<string>(5,"hello")
 for [index,value] in myarray
     log.info(" index={0}, val={1} ",index,value)
-
-
-string blah = "example"
-
-
-
 

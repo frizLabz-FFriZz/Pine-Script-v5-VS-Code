@@ -2,7 +2,6 @@ import { debounce } from 'lodash'
 import * as vscode from 'vscode'
 import { VSCode } from './VSCode'
 import { Class } from './PineClass'
-
 /**
  * PineLint class is responsible for linting Pine Script code.
  */
@@ -106,7 +105,21 @@ export class PineLint {
    * @param dataGroups - The groups of data to update the diagnostics with.
    */
   static async updateDiagnostics(...dataGroups: any[][]): Promise<void> {
+    const activeEditor = vscode.window.activeTextEditor
+    if (!activeEditor) {
+      return
+    }
+    const documentUri = activeEditor.document.uri
+    const targetEditor = vscode.window.visibleTextEditors.find(
+      (editor) => editor.document.uri.toString() === documentUri.toString(),
+    )
+    if (!targetEditor) {
+      return
+    }
+
     const diagnostics: vscode.Diagnostic[] = []
+    const errorDecorationRanges: vscode.Range[] = []
+    const warningDecorationRanges: vscode.Range[] = []
     let i = 0
     for (const group of dataGroups) {
       i += 1

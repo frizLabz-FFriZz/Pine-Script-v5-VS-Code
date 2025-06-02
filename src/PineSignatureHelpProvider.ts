@@ -28,6 +28,7 @@ import { Helpers, PineSharedCompletionState } from './index'
 import { Class } from './PineClass'
 import * as vscode from 'vscode'
 import { PineDocsManager } from './PineDocsManager'
+// PineCompletionService is accessed via Class.pineCompletionService
 
 interface CompletionItem {
   name: string
@@ -62,12 +63,20 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
   private newFunction: boolean = false
   private keyValueMatchesSave: any = null
   private lastSelection: string | null = null
+  // private pineCompletionService: PineCompletionService // Removed
   private docsToMatchArgumentCompletions?: Map<string | number, PineDocsManager> = Class.PineDocsManager.getMap(
     'variables',
     'constants',
     'controls',
     'types',
   )
+
+  constructor() {
+    // Constructor is now empty or can be used for other initializations
+    // if (!Class.pineCompletionService) {
+    //     console.error("PineCompletionService not initialized in Class object!");
+    // }
+  }
 
   /**
    * Provides signature help for a Pine function.
@@ -104,56 +113,79 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
         const udtMap = Class.PineDocsManager.getMap('UDT', 'types')
         if (udtMap.has(udtName)) {
           isUdtNew = true
-            const udtFunctionName = udtName
+          const udtFunctionName = udtName
         } else {
           udtName = null
         }
       }
 
       if (isUdtNew && udtName) {
-        const udtMap = Class.PineDocsManager.getMap('UDT', 'types')
-        const udtDocs = udtMap.get(udtName)
+        // const udtMap = Class.PineDocsManager.getMap('UDT', 'types')
+        // const udtDocs = udtMap.get(udtName)
+        const udtDocs = Class.pineCompletionService.getFunctionDocs(udtName + '.new')
 
-        if (udtDocs && udtDocs.fields) {
+        if (udtDocs && udtDocs.args) { // Expect 'args' from service instead of 'fields'
           const fieldCompletions: Record<string, any> = {}
           const fieldArgsForState: CompletionItem[] = []
-          const fieldNames: string[] = []
+          // const fieldNames: string[] = [] // fieldNames will be derived from udtDocs.args
 
-          udtDocs.fields.forEach((field: any, index: number) => {
+          // The service returns args with 'name', 'type', 'desc', 'default', 'required'
+          const fieldNames = udtDocs.args.map((arg: any) => arg.name)
+
+          udtDocs.args.forEach((field: any, index: number) => {
             const completionItem: CompletionItem = {
-              name: `${field.name}=`,
-              kind: 'Field',
+              name: `${field.name}=`, // Service should provide name directly
+              kind: 'Field', // Service provides kind, but here we know it's a field for .new()
               desc: field.desc || `Field ${field.name} of type ${field.type}.`,
-              defaultValue: field.defaultValue,
-              required: !field.defaultValue,
+              defaultValue: field.default, // Service provides default
+              required: field.required, // Service provides required
               preselect: index === 0,
             }
             fieldArgsForState.push(completionItem)
-            fieldNames.push(field.name)
+            // fieldNames.push(field.name); // Already handled
             fieldCompletions[field.name] = [completionItem]
           })
 
-          PineSharedCompletionState.setCompletions(fieldCompletions)
           PineSharedCompletionState.setArgs(fieldNames)
-          PineSharedCompletionState.setActiveArg(fieldNames[0] ?? '0')
 
-          interface UdtField {
-            name: string
-            type: string
-            desc?: string
-            defaultValue?: any
+          const signatureLabel = `${udtName}.new(${udtDocs.args
+            .map((f: any) => `${f.name}: ${f.type}${f.default ? ' = ...' : ''}`)
+            .join(', ')})`
+          const udtSignature: vscode.SignatureInformation = new vscode.SignatureInformation(signatureLabel)
+
+          if (udtDocs.desc) { // UDT's main description, if available from service
+            udtSignature.documentation = new vscode.MarkdownString(udtDocs.desc)
           }
-          interface UdtDocs {
-            fields: UdtField[]
-          }
-          const udtDocsTyped = udtDocs as UdtDocs
-          const udtSignature: vscode.SignatureInformation = new vscode.SignatureInformation(
-            `${udtName}.new(${udtDocsTyped.fields.map((f: UdtField) => `${f.name}: ${f.type}`).join(', ')})`,
-          )
-          udtSignature.parameters = udtDocs.fields.map(
-            (f: any) => new vscode.ParameterInformation(`${f.name}: ${f.type}`, f.desc),
-          )
+
+          udtSignature.parameters = udtDocs.args.map((field: any) => {
+            const paramLabel = `${field.name}: ${field.type}`
+            let docString = new vscode.MarkdownString()
+            docString.appendCodeblock(`(field) ${paramLabel}`, 'pine')
+            if (field.desc) {
+              docString.appendMarkdown(`\n\n${field.desc}`)
+            }
+            // The old logic for extracting @field from udtDocs.doc might be less relevant
+            // if the service's getFunctionDocs for .new already processes fields into args with descriptions.
+            return new vscode.ParameterInformation(paramLabel, docString)
+          })
           this.signatureHelp.signatures.push(udtSignature)
+          this.paramIndexes = [fieldNames]
+          this.activeSignature = 0
+
+          this.signatureHelp.activeParameter = this.calculateActiveParameter()
+          PineSharedCompletionState.setActiveParameterNumber(this.signatureHelp.activeParameter)
+
+          const activeFieldDoc = udtDocs.args[this.signatureHelp.activeParameter]
+          if (activeFieldDoc) {
+            const simplifiedDocsForField = {
+              args: udtDocs.args, // Pass all fields (as args) for context
+              name: udtName + '.new',
+            }
+            const udtActiveSignatureHelper = udtDocs.args.map((f: any) => ({ arg: f.name, type: f.type }))
+            await this.sendCompletions(simplifiedDocsForField, udtActiveSignatureHelper)
+          }
+
+          await this.setActiveArg(this.signatureHelp)
 
           // --- DEBUG LOGS ---
           // console.log('UDT Name:', udtName)
@@ -177,17 +209,22 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
         return null
       }
 
-      const { isMethod, map } = this.determineFunctionType(functionName)
-      if (!map) {
-        return null
-      }
+      // const { isMethod, map } = this.determineFunctionType(functionName)
+      // if (!map) {
+      //   return null
+      // }
+      // const docs = map.get(functionName)
 
-      const docs = map.get(functionName)
+      const docs = Class.pineCompletionService.getFunctionDocs(functionName)
+
       if (!docs) {
         return null
       }
 
-      const methodString = isMethod ? this.extractMethodString(docs) : null
+      const isMethod = docs.kind === 'Method' // Determine if it's a method from the service response
+      // const methodString = isMethod ? this.extractMethodString(docs) : null // extractMethodString might be obsolete if service provides full name
+      const methodString = isMethod ? functionName : null // Use functionName if it's a method (e.g. namespace.methodName)
+
       const [buildSignatures, activeSignatureHelper, paramIndexes] = this.buildSignatures(docs, isMethod, methodString)
       this.paramIndexes = paramIndexes
       this.signatureHelp.signatures = buildSignatures
@@ -258,48 +295,48 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
     return trimMatch?.[0] || null
   }
 
-  private determineFunctionType(functionName: string): { isMethod: boolean; map: Map<string, PineDocsManager> | null } {
-    let isMethod = false
-    let map: Map<string, PineDocsManager> | null = null
+  // private determineFunctionType(functionName: string): { isMethod: boolean; map: Map<string, PineDocsManager> | null } {
+  //   let isMethod = false
+  //   let map: Map<string, PineDocsManager> | null = null
 
-    const funcMap = Class.PineDocsManager.getMap('functions', 'functions2')
-    if (funcMap.has(functionName)) {
-      return { isMethod, map: funcMap }
-    }
+  //   const funcMap = Class.PineDocsManager.getMap('functions', 'functions2')
+  //   if (funcMap.has(functionName)) {
+  //     return { isMethod, map: funcMap }
+  //   }
 
-    const methodMap = Class.PineDocsManager.getMap('methods', 'methods2')
-    for (const key of methodMap.keys()) {
-      const keySplit = key.includes('.') ? key.split('.')[1] : key
-      const [namespace, methodName] = functionName.split('.')
+  //   const methodMap = Class.PineDocsManager.getMap('methods', 'methods2')
+  //   for (const key of methodMap.keys()) {
+  //     const keySplit = key.includes('.') ? key.split('.')[1] : key
+  //     const [namespace, methodName] = functionName.split('.')
 
-      if (keySplit === methodName) {
-        const type = Helpers.identifyType(namespace)
-        const docs = methodMap.get(key)
+  //     if (keySplit === methodName) {
+  //       const type = Helpers.identifyType(namespace)
+  //       const docs = methodMap.get(key)
 
-        if (
-          !type ||
-          !docs ||
-          (typeof type === 'string' && !docs.thisType.includes(Helpers.replaceType(type).replace(/<[^>]+>|\[\]/g, '')))
-        ) {
-          continue
-        }
+  //       if (
+  //         !type ||
+  //         !docs ||
+  //         (typeof type === 'string' && !docs.thisType.includes(Helpers.replaceType(type).replace(/<[^>]+>|\[\]/g, '')))
+  //       ) {
+  //         continue
+  //       }
 
-        isMethod = true
-        return { isMethod, map: methodMap }
-      }
-    }
+  //       isMethod = true
+  //       return { isMethod, map: methodMap }
+  //     }
+  //   }
 
-    return { isMethod, map }
-  }
+  //   return { isMethod, map }
+  // }
 
-  private extractMethodString(docs: PineDocsManager): string | null {
-    const trimMatch = this.line.slice(0, this.line.lastIndexOf('(', this.position.character)).match(/([\w.]+)$/g)
-    const methodString = trimMatch?.[0] || null
-    return methodString && docs.thisType ? methodString : null
-  }
+  // private extractMethodString(docs: PineDocsManager): string | null {
+  //   const trimMatch = this.line.slice(0, this.line.lastIndexOf('(', this.position.character)).match(/([\w.]+)$/g)
+  //   const methodString = trimMatch?.[0] || null
+  //   return methodString && docs.thisType ? methodString : null
+  // }
 
   private buildSignatures(
-    docs: PineDocsManager,
+    docs: any, // Changed from PineDocsManager to any to accept service response
     isMethod: boolean = false,
     methodString: string | null = null,
   ): [vscode.SignatureInformation[], Record<string, string>[][], string[][]] {
@@ -669,8 +706,63 @@ export class PineSignatureHelpProvider implements vscode.SignatureHelpProvider {
         completions.push(...paramArray)
       }
 
+      // Add literal suggestions for primitive types if no specific values were found or to augment them
       if (docs) {
+        // docs here is argDocs for the current parameter/field
+        const currentArgPrimaryType = (this.getArgTypes(docs)?.[0] || '').toLowerCase() // Get primary type like 'string', 'bool', 'int', 'float'
+
+        switch (currentArgPrimaryType) {
+          case 'string':
+            if (!completions.some((c) => c.name === '""' || c.kind === 'Literal String')) {
+              // Avoid adding if already suggested (e.g. as a default)
+              completions.push({
+                name: '""',
+                kind: 'Literal String',
+                desc: 'Empty string literal.',
+                type: 'string',
+                default: false,
+              })
+            }
+            break
+          case 'bool':
+            if (!completions.some((c) => c.name === 'true')) {
+              completions.push({ name: 'true', kind: 'Boolean', desc: 'Boolean true.', type: 'bool', default: false })
+            }
+            if (!completions.some((c) => c.name === 'false')) {
+              completions.push({ name: 'false', kind: 'Boolean', desc: 'Boolean false.', type: 'bool', default: false })
+            }
+            break
+          case 'int':
+          case 'float':
+            // Check if '0' or a variant is already present from variable suggestions or default value
+            const hasNumericZeroEquivalent = completions.some(
+              (c) => c.name === '0' || c.name === '0.0' || c.name === 'na',
+            )
+            if (!hasNumericZeroEquivalent) {
+              completions.push({
+                name: '0',
+                kind: 'Value',
+                desc: `Number zero.`,
+                type: currentArgPrimaryType,
+                default: false,
+              })
+            }
+            // Suggest 'na' for numeric types if not already present (often used as a default/nil value in Pine)
+            if (!completions.some((c) => c.name === 'na')) {
+              completions.push({
+                name: 'na',
+                kind: 'Value',
+                desc: 'Not a number value.',
+                type: currentArgPrimaryType,
+                default: false,
+              })
+            }
+            break
+        }
+
+        // Existing logic for suggesting variables of matching types
         const argTypes = this.getArgTypes(docs)
+        // Reuse cached argTypes instead of re-calling this.getArgTypes(docs)
         const maps = [
           Class.PineDocsManager.getMap('fields2'),
           Class.PineDocsManager.getMap('variables2'),

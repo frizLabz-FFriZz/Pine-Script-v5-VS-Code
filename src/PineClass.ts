@@ -7,7 +7,9 @@ import { PineUserInputs } from './PineUserInputs'
 import { PineHoverProvider } from './PineHoverProvider/PineHoverProvider'
 import { PineLibCompletionProvider } from './PineLibCompletionProvider'
 import { PineLibHoverProvider } from './PineLibHoverProvider'
-import { PineInlineCompletionContext, PineCompletionProvider } from './PineCompletionProvider'
+import { PineCompletionProvider } from './PineCompletionProvider'
+import { PineInlineCompletionContext } from './PineInlineCompletionContext'
+//  * Lints the current PineScript file.
 import { PineFormatResponse } from './PineFormatResponse'
 import { PineScriptList } from './PineScriptList'
 import { PineTemplates } from './PineTemplates'
@@ -17,11 +19,13 @@ import { PineHoverFunction } from './PineHoverProvider/PineHoverIsFunction'
 import { PineHoverMethod } from './PineHoverProvider/PineHoverIsMethod'
 import { PineRenameProvider } from './PineRenameProvider'
 import { PineParser } from './PineParser'
+import { PineCompletionService } from './PineCompletionService'
 
 export class Class {
   public static context: vscode.ExtensionContext | undefined
 
   public static pineDocsManager: PineDocsManager
+  public static pineCompletionService: PineCompletionService;
   public static pineUserInputs: PineUserInputs
   public static pineRequest: PineRequest
   public static pineHoverProvider: PineHoverProvider
